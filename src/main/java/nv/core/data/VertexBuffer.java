@@ -1,4 +1,4 @@
-package data;
+package nv.core.data;
 
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;

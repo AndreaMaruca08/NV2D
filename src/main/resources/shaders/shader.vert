@@ -1,16 +1,18 @@
 #version 450
 
-// Input dal buffer dei vertici (definiti in GraphicsPipeline)
-layout(location = 0) in vec2 inPosition; // X, Y
-layout(location = 1) in vec3 inColor;    // R, G, B
+layout(set = 0, binding = 0) uniform UniformBufferObject {
+    mat4 ortho;
+} ubo;
 
-// Output inviato al Fragment Shader
+layout(location = 0) in vec2 inPosition;
+layout(location = 1) in vec3 inColor;
+layout(location = 2) in vec2 inUV;        // nuovo
+
 layout(location = 0) out vec3 fragColor;
+layout(location = 1) out vec2 fragUV;     // nuovo
 
 void main() {
-    // gl_Position richiede un vec4 (X, Y, Z, W). Impostiamo Z a 0.0 e W a 1.0 per il 2D
-    gl_Position = vec4(inPosition, 0.0, 1.0);
-
-    // Passiamo il colore così com'è al fragment shader
+    gl_Position = ubo.ortho * vec4(inPosition, 0.0, 1.0);
     fragColor = inColor;
+    fragUV    = inUV;
 }

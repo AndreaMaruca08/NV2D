@@ -1,0 +1,589 @@
+package nv.core;
+
+import nv.core.components.NvComponent;
+import nv.core.data.DynamicVertexBuffer;
+import nv.core.data.DynamicIndexBuffer;
+import nv.core.data.FontAtlas;
+import nv.core.data.TextureImage;
+import nv.core.data.DescriptorManager;
+
+import nv.core.drawing.NvGraphic;
+import nv.core.drawing.Scene;
+import org.lwjgl.PointerBuffer;
+import org.lwjgl.glfw.*;
+import org.lwjgl.vulkan.*;
+import org.lwjgl.system.MemoryStack;
+
+import java.awt.Font;
+import java.awt.Dimension;
+import java.awt.Toolkit;
+import java.nio.IntBuffer;
+import java.nio.LongBuffer;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.lwjgl.glfw.GLFW.*;
+import static org.lwjgl.vulkan.KHRSurface.vkDestroySurfaceKHR;
+import static org.lwjgl.vulkan.KHRSwapchain.*;
+import static org.lwjgl.vulkan.VK10.*;
+
+/**
+ * <h3>Entry point for the NV game engine</h3>
+ * <p>SingleTone class responsible for managing the application's Vulkan resources and rendering pipeline</p>
+ * @since 1.0
+ */
+public class NvApp implements Runnable {
+
+    private long window;
+    private VkInstance instance;
+    private VkDevice device;
+    private long surface;
+    private Swapchain swapchain;
+    private GraphicsPipeline pipeline;
+    private CommandBuffers commandBuffers;
+    private VkPhysicalDevice physicalDevice;
+    private VkQueue graphicsQueue;
+    private long renderPass;
+    private long[] framebuffers;
+    private UpdateCycle updateCycle;
+
+    // Capacità massima pre-allocata (aumenta se servi più geometria)
+    private int maxVertices = 16_384; // vertici × 7 float
+    private int maxIndices  = 32_768; // indici short
+
+    // Geometria dinamica
+    private DynamicVertexBuffer dynamicVertexBuffer;
+    private DynamicIndexBuffer  dynamicIndexBuffer;
+    private int totalIndexCount;
+
+    // Risorse Font
+    private FontAtlas fontAtlas;
+    private TextureImage fontTexture;
+
+    // UBO e Descrittori
+    private OrthoUBO ubo;
+    private DescriptorManager descriptorManager;
+
+    // Sincronizzazione CPU <-> GPU
+    private long imageAvailableSemaphore;
+    private long renderFinishedSemaphore;
+    private long inFlightFence;
+
+    private boolean framebufferResized = false;
+
+    private double lastFrameTime = 0.0;
+    private float deltaTime = 0.0f;
+
+    private static final Dimension SCREEN = Toolkit.getDefaultToolkit().getScreenSize();
+
+    private final List<NvComponent> treeComponent = new ArrayList<>();
+
+    private static NvApp appInstance;
+    public static void invalidate(){
+        appInstance = null;
+    }
+    public static NvApp getInstance(){
+        if(appInstance == null)
+            appInstance = new NvApp();
+        return appInstance;
+    }
+    public static NvApp createInstance(int maxVertices, int maxIndices, UpdateCycle updateCycle){
+        if(appInstance == null)
+            appInstance = new NvApp(maxVertices, maxIndices, updateCycle);
+        return appInstance;
+    }
+    public static NvApp createInstance(UpdateCycle updateCycle){
+        if(appInstance == null)
+            appInstance = new NvApp(updateCycle);
+        return appInstance;
+    }
+
+    private NvApp(int maxVertices, int maxIndices) {
+        this.maxVertices = maxVertices;
+        this.maxIndices  = maxIndices;
+    }
+    private NvApp(int maxVertices, int maxIndices, UpdateCycle updateCycle) {
+        this.maxVertices = maxVertices;
+        this.maxIndices  = maxIndices;
+        this.updateCycle = updateCycle;
+    }
+    private NvApp(UpdateCycle updateCycle) {
+        this.updateCycle = updateCycle;
+    }
+    private NvApp() {
+        this.updateCycle = (_) -> {};
+    }
+
+    public void addTreeComponent(NvComponent component){
+        treeComponent.add(component);
+    }
+    public void removeComponent(NvComponent component){
+        treeComponent.remove(component);
+    }
+
+    private final NvGraphic graphic = new NvGraphic();
+
+    private Scene calculateScene(){
+        final float w = swapchain.getWidth();
+        final float h = swapchain.getHeight();
+        final float wu = 8.0f / 512.0f;
+        final float wv = 8.0f / 512.0f;
+
+        graphic.initialize(w, h, wu, wv, fontAtlas);
+        for(NvComponent component : treeComponent){
+            component.draw(graphic);
+        }
+        return new Scene(graphic.getVertices(), graphic.getIndices());
+    }
+
+    @Override
+    public void run() {
+        initWindow();
+        initVulkan();
+        mainLoop();
+        cleanup();
+    }
+    public void changeFont(Font font){
+        this.fontAtlas = new FontAtlas(font);
+    }
+
+    private void initWindow() {
+        if (!glfwInit()) throw new IllegalStateException("Impossibile inizializzare GLFW");
+
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+
+        window = glfwCreateWindow(SCREEN.width, SCREEN.height, "NeverNester2Dlib", 0, 0);
+        if (window == 0) throw new RuntimeException("Impossibile creare la finestra GLFW");
+
+        glfwSetFramebufferSizeCallback(window, (windowHandle, width, height) -> {
+            framebufferResized = true;
+        });
+    }
+
+    private void initVulkan() {
+        createInstance();
+        createSurface();
+        pickPhysicalDeviceAndCreateLogicalDevice();
+
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            IntBuffer pWidth  = stack.mallocInt(1);
+            IntBuffer pHeight = stack.mallocInt(1);
+            glfwGetFramebufferSize(window, pWidth, pHeight);
+            this.swapchain = new Swapchain(device, surface, pWidth.get(0), pHeight.get(0));
+        }
+
+        createRenderPass();
+
+        this.fontAtlas   = new FontAtlas(new Font("SansSerif", Font.PLAIN, 42));
+        this.fontTexture = new TextureImage(
+                device, physicalDevice, graphicsQueue,
+                fontAtlas.getPixelBuffer(), fontAtlas.getWidth(), fontAtlas.getHeight()
+        );
+
+        int imageCount = swapchain.getImageViews().length;
+        this.ubo               = new OrthoUBO(device, physicalDevice, imageCount);
+        this.descriptorManager = new DescriptorManager(device, ubo, fontTexture, imageCount);
+
+        this.pipeline = new GraphicsPipeline(
+                device, swapchain, renderPass,
+                descriptorManager.getDescriptorSetLayoutHandle()
+        );
+
+        createFramebuffers();
+        buildCombinedGeometry();
+
+        this.commandBuffers = new CommandBuffers(device, pipeline, swapchain);
+        createSyncObjects();
+    }
+
+    // -------------------------------------------------------------------------
+    // Scena demo: quadrato, triangolo e testo centrato
+    // -------------------------------------------------------------------------
+
+    /**
+     * Genera la geometria (quad per carattere) per una stringa di testo.
+     * Formato vertice: x, y, r, g, b, u, v (7 float per vertice, 4 vertici per carattere).
+     */
+
+
+    /**
+     * Pre-alloca i buffer GPU con la capacità massima dichiarata.
+     * I dati vengono caricati subito tramite rebuildScene().
+     */
+    private void buildCombinedGeometry() {
+        long vertexBufferSize = (long) maxVertices * 7 * Float.BYTES;
+        this.dynamicVertexBuffer = new DynamicVertexBuffer(device, physicalDevice, vertexBufferSize);
+        this.dynamicIndexBuffer  = new DynamicIndexBuffer(device, physicalDevice, maxIndices);
+        rebuildScene(calculateScene());
+    }
+
+    /**
+     * Carica una nuova Scene nei buffer GPU.
+     * Sicuro da chiamare ogni frame DOPO vkWaitForFences (GPU idle sul frame corrente).
+     *
+     * @param scene la scena da caricare
+     */
+    protected final void rebuildScene(Scene scene) {
+        dynamicVertexBuffer.update(scene.vertices());
+        totalIndexCount = dynamicIndexBuffer.update(scene.indices());
+    }
+
+    // -------------------------------------------------------------------------
+    // Sincronizzazione, loop principale e frame rendering
+    // -------------------------------------------------------------------------
+
+    private void createSyncObjects() {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkSemaphoreCreateInfo semaphoreInfo = VkSemaphoreCreateInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
+            VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_FENCE_CREATE_INFO)
+                    .flags(VK_FENCE_CREATE_SIGNALED_BIT);
+
+            LongBuffer pImgAvail = stack.mallocLong(1);
+            LongBuffer pRndDone  = stack.mallocLong(1);
+            LongBuffer pFence    = stack.mallocLong(1);
+
+            if (vkCreateSemaphore(device, semaphoreInfo, null, pImgAvail) != VK_SUCCESS ||
+                vkCreateSemaphore(device, semaphoreInfo, null, pRndDone)  != VK_SUCCESS ||
+                vkCreateFence(device, fenceInfo, null, pFence)            != VK_SUCCESS) {
+                throw new RuntimeException("Impossibile creare gli oggetti di sincronizzazione.");
+            }
+
+            this.imageAvailableSemaphore = pImgAvail.get(0);
+            this.renderFinishedSemaphore = pRndDone.get(0);
+            this.inFlightFence           = pFence.get(0);
+        }
+    }
+
+    private void mainLoop() {
+        lastFrameTime = glfwGetTime();
+        while (!glfwWindowShouldClose(window)) {
+            double now = glfwGetTime();
+            deltaTime     = (float) (now - lastFrameTime);
+            lastFrameTime = now;
+            glfwPollEvents();
+            drawFrame();
+            updateCycle.update(deltaTime);
+        }
+        vkDeviceWaitIdle(device);
+    }
+
+    private void drawFrame() {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            vkWaitForFences(device, inFlightFence, true, Long.MAX_VALUE);
+            vkResetFences(device, inFlightFence);
+
+            // GPU idle: sicuro aggiornare i buffer ogni frame
+            rebuildScene(calculateScene());
+
+            IntBuffer pImageIndex = stack.mallocInt(1);
+            int acquireResult = vkAcquireNextImageKHR(device, swapchain.getHandle(), Long.MAX_VALUE,
+                    imageAvailableSemaphore, VK_NULL_HANDLE, pImageIndex);
+
+            if (acquireResult == VK_ERROR_OUT_OF_DATE_KHR) {
+                recreateSwapchain();
+                return;
+            }
+
+            if (acquireResult != VK_SUCCESS && acquireResult != VK_SUBOPTIMAL_KHR) {
+                throw new RuntimeException("Errore durante l'acquisizione dell'immagine della swapchain.");
+            }
+
+            int imageIndex = pImageIndex.get(0);
+
+            ubo.update(imageIndex, 0f, (float) swapchain.getWidth(), 0f, (float) swapchain.getHeight());
+
+            commandBuffers.record(
+                    renderPass,
+                    framebuffers[imageIndex],
+                    pipeline.getHandle(),
+                    pipeline.getPipelineLayoutHandle(),
+                    dynamicVertexBuffer.getHandle(),
+                    dynamicIndexBuffer.getHandle(),
+                    totalIndexCount,
+                    descriptorManager.getDescriptorSet(imageIndex),
+                    swapchain.getWidth(),
+                    swapchain.getHeight()
+            );
+
+            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_SUBMIT_INFO)
+                    .pWaitSemaphores(stack.longs(imageAvailableSemaphore))
+                    .pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT))
+                    .pCommandBuffers(stack.pointers(commandBuffers.getCommandBuffer()))
+                    .pSignalSemaphores(stack.longs(renderFinishedSemaphore));
+
+            if (vkQueueSubmit(graphicsQueue, submitInfo, inFlightFence) != VK_SUCCESS) {
+                throw new RuntimeException("Errore nel submit della lista comandi alla GPU.");
+            }
+
+            LongBuffer signalSemaphores = stack.longs(renderFinishedSemaphore);
+            VkPresentInfoKHR presentInfo = VkPresentInfoKHR.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_PRESENT_INFO_KHR)
+                    .pWaitSemaphores(signalSemaphores)
+                    .swapchainCount(1)
+                    .pSwapchains(stack.longs(swapchain.getHandle()))
+                    .pImageIndices(pImageIndex);
+
+            int presentResult = vkQueuePresentKHR(graphicsQueue, presentInfo);
+
+            if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR || framebufferResized) {
+                framebufferResized = false;
+                recreateSwapchain();
+            } else if (presentResult != VK_SUCCESS) {
+                throw new RuntimeException("Errore durante la presentazione della swapchain.");
+            }
+        }
+    }
+
+    private void recreateSwapchain() {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            IntBuffer width = stack.mallocInt(1);
+            IntBuffer height = stack.mallocInt(1);
+
+            glfwGetFramebufferSize(window, width, height);
+
+            while (width.get(0) == 0 || height.get(0) == 0) {
+                glfwWaitEvents();
+                glfwGetFramebufferSize(window, width, height);
+            }
+        }
+
+        vkDeviceWaitIdle(device);
+
+        cleanupSwapchainResources();
+
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            IntBuffer pWidth = stack.mallocInt(1);
+            IntBuffer pHeight = stack.mallocInt(1);
+
+            glfwGetFramebufferSize(window, pWidth, pHeight);
+
+            this.swapchain = new Swapchain(device, surface, pWidth.get(0), pHeight.get(0));
+        }
+
+        createFramebuffers();
+
+        if (commandBuffers != null) {
+            commandBuffers.free();
+        }
+
+        this.commandBuffers = new CommandBuffers(device, pipeline, swapchain);
+        pipeline.close();
+        pipeline = new GraphicsPipeline(
+                device,
+                swapchain,
+                renderPass,
+                descriptorManager.getDescriptorSetLayoutHandle()
+        );
+    }
+
+    private void cleanupSwapchainResources() {
+        if (framebuffers != null) {
+            for (long framebuffer : framebuffers) {
+                vkDestroyFramebuffer(device, framebuffer, null);
+            }
+            framebuffers = null;
+        }
+
+        if (swapchain != null) {
+            swapchain.close();
+            swapchain = null;
+        }
+    }
+
+
+    // -------------------------------------------------------------------------
+    // Inizializzazione Vulkan (instance, surface, device, renderpass, framebuffers)
+    // -------------------------------------------------------------------------
+
+    private void createInstance() {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkApplicationInfo appInfo = VkApplicationInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_APPLICATION_INFO)
+                    .pApplicationName(stack.UTF8("NeverNester2Dlib"))
+                    .applicationVersion(VK_MAKE_VERSION(0, 1, 0))
+                    .pEngineName(stack.UTF8("NeverNester2Dlib"))
+                    .engineVersion(VK_MAKE_VERSION(0, 1, 0))
+                    .apiVersion(VK_API_VERSION_1_0);
+
+            PointerBuffer glfwExtensions = GLFWVulkan.glfwGetRequiredInstanceExtensions();
+            if (glfwExtensions == null) throw new RuntimeException("Estensioni Vulkan GLFW non trovate.");
+
+            VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO)
+                    .pApplicationInfo(appInfo)
+                    .ppEnabledExtensionNames(glfwExtensions);
+
+            PointerBuffer pInstance = stack.mallocPointer(1);
+            if (vkCreateInstance(createInfo, null, pInstance) != VK_SUCCESS) {
+                throw new RuntimeException("Impossibile creare l'istanza Vulkan.");
+            }
+            this.instance = new VkInstance(pInstance.get(0), createInfo);
+        }
+    }
+
+    private void createSurface() {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            LongBuffer pSurface = stack.mallocLong(1);
+            if (GLFWVulkan.glfwCreateWindowSurface(instance, window, null, pSurface) != VK_SUCCESS) {
+                throw new RuntimeException("Impossibile creare la surface Vulkan.");
+            }
+            this.surface = pSurface.get(0);
+        }
+    }
+
+    private void pickPhysicalDeviceAndCreateLogicalDevice() {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            IntBuffer pDeviceCount = stack.mallocInt(1);
+            vkEnumeratePhysicalDevices(instance, pDeviceCount, null);
+            if (pDeviceCount.get(0) == 0) throw new RuntimeException("Nessuna GPU Vulkan trovata.");
+
+            PointerBuffer pPhysicalDevices = stack.mallocPointer(pDeviceCount.get(0));
+            vkEnumeratePhysicalDevices(instance, pDeviceCount, pPhysicalDevices);
+            this.physicalDevice = new VkPhysicalDevice(pPhysicalDevices.get(0), instance);
+
+            IntBuffer pQueueFamilyCount = stack.mallocInt(1);
+            vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, pQueueFamilyCount, null);
+            VkQueueFamilyProperties.Buffer queueFamilies =
+                    VkQueueFamilyProperties.calloc(pQueueFamilyCount.get(0), stack);
+            vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, pQueueFamilyCount, queueFamilies);
+
+            int graphicsQFI = -1;
+            for (int i = 0; i < queueFamilies.capacity(); i++) {
+                if ((queueFamilies.get(i).queueFlags() & VK_QUEUE_GRAPHICS_BIT) != 0) {
+                    graphicsQFI = i;
+                    break;
+                }
+            }
+            if (graphicsQFI == -1) throw new RuntimeException("Nessuna queue grafica trovata.");
+
+            VkDeviceQueueCreateInfo.Buffer queueCreateInfo = VkDeviceQueueCreateInfo.calloc(1, stack)
+                    .sType(VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO)
+                    .queueFamilyIndex(graphicsQFI)
+                    .pQueuePriorities(stack.floats(1.0f));
+
+            PointerBuffer deviceExtensions = stack.mallocPointer(2);
+            deviceExtensions.put(stack.UTF8(VK_KHR_SWAPCHAIN_EXTENSION_NAME));
+            deviceExtensions.put(stack.UTF8("VK_KHR_portability_subset"));
+            deviceExtensions.flip();
+
+            VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO)
+                    .pQueueCreateInfos(queueCreateInfo)
+                    .ppEnabledExtensionNames(deviceExtensions);
+
+            PointerBuffer pDevice = stack.mallocPointer(1);
+            if (vkCreateDevice(physicalDevice, createInfo, null, pDevice) != VK_SUCCESS) {
+                throw new RuntimeException("Impossibile creare il Logical Device.");
+            }
+            this.device = new VkDevice(pDevice.get(0), physicalDevice, createInfo);
+
+            PointerBuffer pQueue = stack.mallocPointer(1);
+            vkGetDeviceQueue(device, graphicsQFI, 0, pQueue);
+            this.graphicsQueue = new VkQueue(pQueue.get(0), device);
+        }
+    }
+
+    private void createRenderPass() {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkAttachmentDescription.Buffer colorAttachment = VkAttachmentDescription.calloc(1, stack)
+                    .format(swapchain.getFormat())
+                    .samples(VK_SAMPLE_COUNT_1_BIT)
+                    .loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
+                    .storeOp(VK_ATTACHMENT_STORE_OP_STORE)
+                    .stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+                    .stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+                    .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+                    .finalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
+            VkAttachmentReference.Buffer colorRef = VkAttachmentReference.calloc(1, stack)
+                    .attachment(0)
+                    .layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+            VkSubpassDescription.Buffer subpass = VkSubpassDescription.calloc(1, stack)
+                    .pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
+                    .colorAttachmentCount(1)
+                    .pColorAttachments(colorRef);
+
+            VkSubpassDependency.Buffer dependency = VkSubpassDependency.calloc(1, stack)
+                    .srcSubpass(VK_SUBPASS_EXTERNAL)
+                    .dstSubpass(0)
+                    .srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+                    .srcAccessMask(0)
+                    .dstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+                    .dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+
+            VkRenderPassCreateInfo renderPassInfo = VkRenderPassCreateInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO)
+                    .pAttachments(colorAttachment)
+                    .pSubpasses(subpass)
+                    .pDependencies(dependency);
+
+            LongBuffer pRenderPass = stack.mallocLong(1);
+            if (vkCreateRenderPass(device, renderPassInfo, null, pRenderPass) != VK_SUCCESS) {
+                throw new RuntimeException("Impossibile creare il Render Pass.");
+            }
+            this.renderPass = pRenderPass.get(0);
+        }
+    }
+
+    private void createFramebuffers() {
+        long[] imageViews = swapchain.getImageViews();
+        this.framebuffers = new long[imageViews.length];
+
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            LongBuffer attachments = stack.mallocLong(1);
+
+            VkFramebufferCreateInfo fbInfo = VkFramebufferCreateInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO)
+                    .renderPass(renderPass)
+                    .width(swapchain.getWidth())
+                    .height(swapchain.getHeight())
+                    .layers(1);
+
+            for (int i = 0; i < imageViews.length; i++) {
+                attachments.put(0, imageViews[i]);
+                fbInfo.pAttachments(attachments);
+
+                LongBuffer pFb = stack.mallocLong(1);
+                if (vkCreateFramebuffer(device, fbInfo, null, pFb) != VK_SUCCESS) {
+                    throw new RuntimeException("Impossibile creare il Framebuffer [" + i + "]");
+                }
+                this.framebuffers[i] = pFb.get(0);
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Cleanup
+    // -------------------------------------------------------------------------
+
+    private void cleanup() {
+        if (device != null) {
+            vkDestroySemaphore(device, imageAvailableSemaphore, null);
+            vkDestroySemaphore(device, renderFinishedSemaphore, null);
+            vkDestroyFence(device, inFlightFence, null);
+        }
+
+        if (commandBuffers      != null) commandBuffers.free();
+        if (framebuffers        != null) for (long fb : framebuffers) vkDestroyFramebuffer(device, fb, null);
+        if (descriptorManager   != null) descriptorManager.close();
+        if (ubo                 != null) ubo.close();
+        if (fontTexture         != null) fontTexture.close();
+        if (fontAtlas           != null) fontAtlas.close();
+        if (pipeline            != null) pipeline.close();
+        if (renderPass          != 0)    vkDestroyRenderPass(device, renderPass, null);
+        if (dynamicVertexBuffer != null) dynamicVertexBuffer.close();
+        if (dynamicIndexBuffer  != null) dynamicIndexBuffer.close();
+        if (swapchain           != null) swapchain.close();
+        if (surface             != 0)    vkDestroySurfaceKHR(instance, surface, null);
+        if (device              != null) vkDestroyDevice(device, null);
+        if (instance            != null) vkDestroyInstance(instance, null);
+
+        glfwDestroyWindow(window);
+        glfwTerminate();
+    }
+}

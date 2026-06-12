@@ -1,3 +1,5 @@
+package nv.core;
+
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 import java.nio.IntBuffer;
@@ -14,7 +16,7 @@ public class Swapchain implements AutoCloseable {
     private final int width;
     private final int height;
 
-    // Nuovi campi necessari per far comunicare la Swapchain con la Pipeline e i Framebuffer
+    // Nuovi campi necessari per far comunicare la nv.core.Swapchain con la Pipeline e i Framebuffer
     private final int imageFormat;
     private final long[] imageViews;
 
@@ -26,7 +28,7 @@ public class Swapchain implements AutoCloseable {
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
 
-            // 1. Configurazione e creazione della Swapchain
+            // 1. Configurazione e creazione della nv.core.Swapchain
             VkSwapchainCreateInfoKHR createInfo = VkSwapchainCreateInfoKHR.calloc(stack);
             createInfo.sType(VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
             createInfo.surface(surfaceHandle);
@@ -49,7 +51,7 @@ public class Swapchain implements AutoCloseable {
             LongBuffer pSwapchain = stack.mallocLong(1);
             int result = vkCreateSwapchainKHR(device, createInfo, null, pSwapchain);
             if (result != VK_SUCCESS) {
-                throw new RuntimeException("Impossibile creare la Swapchain Vulkan. Codice errore: " + result);
+                throw new RuntimeException("Impossibile creare la nv.core.Swapchain Vulkan. Codice errore: " + result);
             }
             this.swapchainHandle = pSwapchain.get(0);
 
@@ -101,7 +103,7 @@ public class Swapchain implements AutoCloseable {
         }
     }
 
-    // Metodi Getter richiesti da VulkanApp e GraphicsPipeline
+    // Metodi Getter richiesti da nv.core.NvApp e nv.core.GraphicsPipeline
     public long getHandle() {
         return swapchainHandle;
     }
@@ -130,7 +132,7 @@ public class Swapchain implements AutoCloseable {
                 vkDestroyImageView(device, imageView, null);
             }
         }
-        // Infine abbattiamo la Swapchain nativa sulla GPU
+        // Infine abbattiamo la nv.core.Swapchain nativa sulla GPU
         vkDestroySwapchainKHR(device, swapchainHandle, null);
     }
 }
