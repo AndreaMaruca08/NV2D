@@ -1,5 +1,6 @@
 package nv.components;
 
+import nv.components.vectors.Vector2D;
 import nv.core.UpdateCycle;
 
 import java.util.ArrayList;
@@ -77,7 +78,13 @@ public abstract class NvComp implements UpdateCycle {
     }
 
     protected void mouseEnter(){}
+
     protected void mouseOut(){}
+
+    public void translate(Vector2D v, float amount){
+        this.x += (int) (v.x * amount);
+        this.y += (int) (v.y * amount);
+    }
 
     public void handleHover(int mouseX, int mouseY){
         if(!isInside(mouseX, mouseY)) {

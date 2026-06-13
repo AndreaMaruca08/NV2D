@@ -103,6 +103,10 @@ public final class Nv2DApp implements Runnable {
         return swapchain.getHeight();
     }
 
+    public NvCont getCurrentPage() {
+        return rootComponent;
+    }
+
     /**
      *  <h2>To create a new page, use: NvCont.newPage()</h2>
      * @param key key to get or change the page
@@ -219,6 +223,7 @@ public final class Nv2DApp implements Runnable {
     private void handleFps(){
         frameCount++;
         fpsSum += fps;
+        graphic.setRGB(0,0,0);
         graphic.setComponent(rootComponent);
         graphic.drawRect(100, 100, 260, 70);
         if(frameCount % 30 == 0){

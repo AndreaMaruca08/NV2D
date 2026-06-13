@@ -1,11 +1,11 @@
 import nv.core.Nv2DApp;
-import nv.test.PerformanceTest;
+import nv.test.DvdLogoBouncing;
 
 void main() {
-    var app = Nv2DApp.createInstance("TESTING", 2_000_000, 3_000_000);
+    var app = Nv2DApp.createInstance("TESTING");
     app.setShowFPS(true);
 
-    app.addTreeComponent(new PerformanceTest(0, 0, 200, 200));
+    app.getCurrentPage().addChild(new DvdLogoBouncing(0,0));
 
     app.run();
 }

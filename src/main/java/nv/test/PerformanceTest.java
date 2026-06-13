@@ -20,7 +20,7 @@ public class PerformanceTest extends NvComp{
         var h = app.getHeight();
 
         int randomY = (int) (Math.random() * (double)h);
-        addChild(new TestFigure(0, randomY, 200, 200, randomY));
+        addChild(new DvdLogoBouncing(0, randomY));
         rectNumber++;
         if(rectNumber % 1000 == 0){
             System.out.println(rectNumber);
