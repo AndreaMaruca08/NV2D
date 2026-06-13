@@ -103,10 +103,8 @@ public class CommandBuffers {
             LongBuffer offsets = stack.longs(0L);
             vkCmdBindVertexBuffers(commandBuffer, 0, buffers, offsets);
 
-            // 🟥 F1. NUOVO: Bind dell'Index Buffer (usiamo UINT16 perché i dati sono 'short')
-            vkCmdBindIndexBuffer(commandBuffer, indexBufferHandle, 0, VK_INDEX_TYPE_UINT16);
+            vkCmdBindIndexBuffer(commandBuffer, indexBufferHandle, 0, VK_INDEX_TYPE_UINT32);
 
-            // 🟥 F2. MODIFICATO: Usiamo il disegno indicizzato al posto di vkCmdDraw
             vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
 
             // G. End render pass + end command buffer

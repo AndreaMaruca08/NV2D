@@ -50,8 +50,8 @@ public final class Nv2DApp implements Runnable {
     private UpdateCycle updateCycle;
 
     // Capacità massima pre-allocata (aumenta se servi più geometria)
-    private int maxVertices = 16_384; // vertici × 7 float
-    private int maxIndices  = 32_768; // indici short
+    private int maxVertices = 300_000; // vertici × 7 float
+    private int maxIndices  = 550_000; // indici short
 
     // Geometria dinamica
     private DynamicVertexBuffer dynamicVertexBuffer;

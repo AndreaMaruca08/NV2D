@@ -4,6 +4,7 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
+
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 
@@ -21,7 +22,7 @@ public class DynamicIndexBuffer implements AutoCloseable {
     public DynamicIndexBuffer(VkDevice device, VkPhysicalDevice physicalDevice, int maxIndexCount) {
         this.device        = device;
         this.maxIndexCount = maxIndexCount;
-        this.bufferSize    = (long) maxIndexCount * Short.BYTES;
+        this.bufferSize    = (long) maxIndexCount * Integer.BYTES;
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkBufferCreateInfo bufferInfo = VkBufferCreateInfo.calloc(stack)
@@ -66,21 +67,27 @@ public class DynamicIndexBuffer implements AutoCloseable {
 
     /**
      * Carica nuovi indici nella GPU. Chiamabile ogni frame.
-     * @return il numero di indici effettivamente caricati (da passare a vkCmdDrawIndexed)
+     * @return il numero di indici effettivamente caricati, da passare a vkCmdDrawIndexed
      */
-    public int update(short[] indices) {
+    public int update(int[] indices) {
         if (indices.length > maxIndexCount) {
             throw new IllegalArgumentException(
                     "Indici (" + indices.length + ") superano la capacità del buffer (" + maxIndexCount + ")!");
         }
+
         mappedData.clear();
-        mappedData.asShortBuffer().put(indices);
+        mappedData.asIntBuffer().put(indices);
+
         return indices.length;
     }
 
-    public int getMaxIndexCount() { return maxIndexCount; }
+    public int getMaxIndexCount() {
+        return maxIndexCount;
+    }
 
-    public long getHandle() { return buffer; }
+    public long getHandle() {
+        return buffer;
+    }
 
     @Override
     public void close() {
@@ -93,6 +100,7 @@ public class DynamicIndexBuffer implements AutoCloseable {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkPhysicalDeviceMemoryProperties memProperties = VkPhysicalDeviceMemoryProperties.calloc(stack);
             vkGetPhysicalDeviceMemoryProperties(physicalDevice, memProperties);
+
             for (int i = 0; i < memProperties.memoryTypeCount(); i++) {
                 if ((typeFilter & (1 << i)) != 0
                         && (memProperties.memoryTypes(i).propertyFlags() & properties) == properties) {
@@ -100,6 +108,7 @@ public class DynamicIndexBuffer implements AutoCloseable {
                 }
             }
         }
+
         throw new RuntimeException("Tipo di memoria Vulkan non supportato!");
     }
 }

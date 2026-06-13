@@ -20,7 +20,7 @@ public class NvPixelGraphic extends NvGraphic {
                 b2, y,   r, g, b, wu, wv,
                 (b1 + b2)/2f, y + component.getY(),   r, g, b,   wu, wv,
         };
-        short[] triInds = { 0, 1, 2 };
+        int[] triInds = { 0, 1, 2 };
 
         appendGeometry(triVerts, triInds);
     }
@@ -38,7 +38,7 @@ public class NvPixelGraphic extends NvGraphic {
                 x1, y2, r, g, b, wu, wv,
         };
 
-        short[] quadInds = { 0, 1, 2,  2, 3, 0 };
+        int[] quadInds = { 0, 1, 2,  2, 3, 0 };
 
         appendGeometry(quadVerts, quadInds);
     }

@@ -19,7 +19,7 @@ public abstract class NvGraphic {
     protected FontAtlas fontAtlas;
 
     protected float[] vertices;
-    protected short[] indices;
+    protected int[] indices;
 
     protected int vertexFloatCount;
     protected int indexCount;
@@ -32,7 +32,7 @@ public abstract class NvGraphic {
     public NvGraphic() {
         this.component = null;
         this.vertices = new float[1024 * FLOATS_PER_VERTEX];
-        this.indices = new short[1024];
+        this.indices = new int[1024];
         this.fontAtlas = null;
 
         this.vertexFloatCount = 0;
@@ -63,7 +63,7 @@ public abstract class NvGraphic {
         this.component = component;
     }
 
-    protected void appendGeometry(float[] newVertices, short[] newIndices) {
+    protected void appendGeometry(float[] newVertices, int[] newIndices) {
         int vertexOffset = vertexFloatCount / FLOATS_PER_VERTEX;
 
         ensureVertexCapacity(vertexFloatCount + newVertices.length);
@@ -72,7 +72,7 @@ public abstract class NvGraphic {
         System.arraycopy(newVertices, 0, vertices, vertexFloatCount, newVertices.length);
 
         for (int i = 0; i < newIndices.length; i++) {
-            indices[indexCount + i] = (short) (newIndices[i] + vertexOffset);
+            indices[indexCount + i] = newIndices[i] + vertexOffset;
         }
 
         vertexFloatCount += newVertices.length;
@@ -134,7 +134,7 @@ public abstract class NvGraphic {
         return Arrays.copyOf(vertices, vertexFloatCount);
     }
 
-    public short[] getIndices(){
+    public int[] getIndices(){
         return Arrays.copyOf(indices, indexCount);
     }
 
@@ -143,7 +143,7 @@ public abstract class NvGraphic {
     public static Scene generateTextGeometry(String text, float startX, float startY, FontAtlas atlas) {
         int n = text.length();
         float[] vertices = new float[n * 4 * 7]; // 4 vertici × 7 float
-        short[] indices  = new short[n * 6];
+        int[] indices  = new int[n * 6];
         float cursorX = startX;
 
         for (int i = 0; i < n; i++) {

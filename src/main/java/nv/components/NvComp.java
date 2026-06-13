@@ -17,6 +17,7 @@ public abstract class NvComp implements UpdateCycle {
     private final List<NvComp> children;
     protected int x, y, w, h;
     protected boolean isHovered;
+    protected boolean childrenFirst;
 
     public NvComp(int x, int y, int w, int h) {
         children = new ArrayList<>();
@@ -111,8 +112,13 @@ public abstract class NvComp implements UpdateCycle {
         }else{
             mouseOut();
         }
-        drawIntern(g);
-        drawChildren(g);
+        if(childrenFirst){
+            drawIntern(g);
+            drawChildren(g);
+        }else{
+            drawChildren(g);
+            drawIntern(g);
+        }
     }
 
     public void drawChildren(NvGraphic g){
