@@ -1,24 +1,26 @@
-package nv.core.drawing;
+package nv.components;
 
-import nv.core.components.NvComponent;
+import nv.core.Scene;
 import nv.core.data.FontAtlas;
 
 import java.util.Arrays;
 
-public class NvGraphic {
-    private static final int FLOATS_PER_VERTEX = 7;
+public abstract class NvGraphic {
+    protected static final int FLOATS_PER_VERTEX = 7;
 
-    private NvComponent component;
-    private FontAtlas fontAtlas;
+    protected NvComponent component;
+    protected FontAtlas fontAtlas;
 
-    private float[] vertices;
-    private short[] indices;
+    protected float[] vertices;
+    protected short[] indices;
 
-    private int vertexFloatCount;
-    private int indexCount;
+    protected int vertexFloatCount;
+    protected int indexCount;
 
-    private float w, h;
-    private float wu, wv;
+    protected float w, h;
+    protected float wu, wv;
+
+    protected float r, g, b;
 
     public NvGraphic() {
         this.component = null;
@@ -41,11 +43,17 @@ public class NvGraphic {
         this.indexCount = 0;
     }
 
+    protected void setRGB(float r, float g, float b){
+        this.r = r;
+        this.g = g;
+        this.b = b;
+    }
+
     public void setComponent(NvComponent component){
         this.component = component;
     }
 
-    private void appendGeometry(float[] newVertices, short[] newIndices) {
+    protected void appendGeometry(float[] newVertices, short[] newIndices) {
         int vertexOffset = vertexFloatCount / FLOATS_PER_VERTEX;
 
         ensureVertexCapacity(vertexFloatCount + newVertices.length);
@@ -89,38 +97,17 @@ public class NvGraphic {
         indices = Arrays.copyOf(indices, newCapacity);
     }
 
-    public void drawTri(float base1, float base2, float r, float g, float b){
-        short[] triInds = { 0, 1, 2 };
-
-        float b1 = component.getX() + base1;
-        float b2 = component.getX() + base2;
-
-        float[] triVerts = {
-                b1, b2,   r, g, b, wu, wv,
-                b2, b2,   r, g, b,   wu, wv,
-                (b1 + b2)/2f, b1,   r, g, b,   wu, wv,
-        };
-
-        appendGeometry(triVerts, triInds);
+    public abstract void drawTri(float base1, float base2, float y, float r, float g, float b);
+    public void drawTri(float base1, float base2, float y){
+        drawTri(base1, base2, y, r, g, b);
     }
 
-    public void drawRect(float xTopLeftBottomLeft, float xTopRightBottomRight, float yTops, float yBottoms, float r, float g, float b){
-        float[] quadVerts = {
-                xTopLeftBottomLeft,     yTops,    r, g, b, wu, wv,
-                xTopRightBottomRight,   yTops,    r, g, b, wu, wv,
-                xTopRightBottomRight,   yBottoms, r, g, b, wu, wv,
-                xTopLeftBottomLeft,     yBottoms, r, g, b, wu, wv,
-        };
-
-        short[] quadInds = { 0, 1, 2,  2, 3, 0 };
-
-        appendGeometry(quadVerts, quadInds);
+    public abstract void drawRect(float xTopLeftBottomLeft, float xTopRightBottomRight, float yTops, float yBottoms, float r, float g, float b);
+    public void drawRect(float xTopLeftBottomLeft, float xTopRightBottomRight, float yTops, float yBottoms){
+        drawRect(xTopLeftBottomLeft, xTopRightBottomRight, yTops, yBottoms, r, g, b);
     }
 
-    public void drawText(String text, float textX, float textY){
-        Scene textGeo  = generateTextGeometry(text, textX, textY, fontAtlas);
-        appendGeometry(textGeo.vertices(), textGeo.indices());
-    }
+    public abstract void drawText(String text, float textX, float textY);
 
     public float[] getVertices(){
         return Arrays.copyOf(vertices, vertexFloatCount);

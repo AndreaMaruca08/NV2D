@@ -1,4 +1,4 @@
-package nv.core.drawing;
+package nv.core;
 
 public record Scene(
         float[] vertices,

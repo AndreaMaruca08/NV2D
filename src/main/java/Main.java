@@ -1,24 +1,20 @@
 import nv.core.NvApp;
-import nv.core.components.NvComponent;
-import nv.core.drawing.NvGraphic;
+import nv.components.NvComponent;
+import nv.components.NvGraphic;
 
 void main() {
-    var app = NvApp.getInstance();
+    NvApp.createInstance((dt) -> {
 
-    app.addTreeComponent(new NvComponent(200, 200) {
+    });
+
+    NvApp.getInstance().addTreeComponent(new NvComponent(500, 200) {
         @Override
         public void drawIntern(NvGraphic g) {
-            g.drawTri(380, 80, 0.5f, 0.6f, 1.0f);
-            g.drawRect(
-                    400,
-                    500,
-                    100,
-                    200,
-                    0.5f, 0.6f, 0.0f);
-            g.drawText("ciao", 400, 500);
+            g.drawTri(600, 200, 1000, 0, 0, 1);
+            g.drawRect(200, 500, 200, 300, 0, 0, 1);
         }
     });
 
 
-    app.run();
+    NvApp.getInstance().run();
 }

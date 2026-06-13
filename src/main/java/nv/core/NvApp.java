@@ -1,14 +1,14 @@
 package nv.core;
 
-import nv.core.components.NvComponent;
+import nv.components.NvComponent;
 import nv.core.data.DynamicVertexBuffer;
 import nv.core.data.DynamicIndexBuffer;
 import nv.core.data.FontAtlas;
 import nv.core.data.TextureImage;
 import nv.core.data.DescriptorManager;
 
-import nv.core.drawing.NvGraphic;
-import nv.core.drawing.Scene;
+import nv.components.NvGraphic;
+import nv.components.NvPixelGraphic;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.*;
 import org.lwjgl.vulkan.*;
@@ -121,7 +121,7 @@ public class NvApp implements Runnable {
         treeComponent.remove(component);
     }
 
-    private final NvGraphic graphic = new NvGraphic();
+    private final NvGraphic graphic = new NvPixelGraphic();
 
     private Scene calculateScene(){
         final float w = swapchain.getWidth();

@@ -1,6 +1,4 @@
-package nv.core.components;
-
-import nv.core.drawing.NvGraphic;
+package nv.components;
 
 import java.util.ArrayList;
 import java.util.List;
