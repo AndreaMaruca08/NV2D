@@ -5,10 +5,17 @@ import nv.core.data.FontAtlas;
 
 import java.util.Arrays;
 
+/**
+ * <h3>Graphic drawer</h3>
+ * <p>Abstract class used for drawing geometrical figures, writes the vertices and indices in 2 arrays</p>
+ * <h5>Can be extended for specific vertices and indices calculation</h5>
+ * @since 1.0
+ * @author Andrea Maruca
+ */
 public abstract class NvGraphic {
     protected static final int FLOATS_PER_VERTEX = 7;
 
-    protected NvComponent component;
+    protected NvComp component;
     protected FontAtlas fontAtlas;
 
     protected float[] vertices;
@@ -20,7 +27,7 @@ public abstract class NvGraphic {
     protected float w, h;
     protected float wu, wv;
 
-    protected float r, g, b;
+    protected float r=0, g=0, b=0, a=0;
 
     public NvGraphic() {
         this.component = null;
@@ -43,13 +50,16 @@ public abstract class NvGraphic {
         this.indexCount = 0;
     }
 
-    protected void setRGB(float r, float g, float b){
+    public void setRGB(float r, float g, float b){
         this.r = r;
         this.g = g;
         this.b = b;
     }
+    public void setTransparency(float alpha){
+        this.a = alpha;
+    }
 
-    public void setComponent(NvComponent component){
+    public void setComponent(NvComp component){
         this.component = component;
     }
 
@@ -102,12 +112,23 @@ public abstract class NvGraphic {
         drawTri(base1, base2, y, r, g, b);
     }
 
-    public abstract void drawRect(float xTopLeftBottomLeft, float xTopRightBottomRight, float yTops, float yBottoms, float r, float g, float b);
-    public void drawRect(float xTopLeftBottomLeft, float xTopRightBottomRight, float yTops, float yBottoms){
-        drawRect(xTopLeftBottomLeft, xTopRightBottomRight, yTops, yBottoms, r, g, b);
+    public abstract void drawRect(float x, float y, float w, float h,   float r, float g, float b);
+    public void drawRect(float x, float y, float w, float h){
+        drawRect(x, y, w, h, r, g, b);
     }
 
     public abstract void drawText(String text, float textX, float textY);
+
+    public void drawRectBorder(float x, float y, float w, float h, float thickness, float r, float g, float b) {
+        drawRect(x, y, w, thickness, r, g, b);
+        drawRect(x, y + h - thickness, w, thickness, r, g, b);
+        drawRect(x, y, thickness, h, r, g, b);
+        drawRect(x + w - thickness, y, thickness, h, r, g, b);
+    }
+
+    public void drawRectBorder(float x, float y, float w, float h, float thickness) {
+        drawRectBorder(x, y, w, h, thickness, r, g, b);
+    }
 
     public float[] getVertices(){
         return Arrays.copyOf(vertices, vertexFloatCount);

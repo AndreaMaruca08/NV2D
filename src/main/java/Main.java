@@ -1,20 +1,44 @@
-import nv.core.NvApp;
-import nv.components.NvComponent;
+import nv.components.NvComp;
+import nv.components.NvCont;
 import nv.components.NvGraphic;
+import nv.core.Nv2DApp;
 
 void main() {
-    NvApp.createInstance((dt) -> {
+    var app = Nv2DApp.createInstance("TESTING");
 
-    });
+    var home = app.addAndSetPage("homePage", NvCont.newPage(true));
+    var gamePage = app.addPage("gamePage", NvCont.newPage());
 
-    NvApp.getInstance().addTreeComponent(new NvComponent(500, 200) {
+    gamePage.addChild(new NvComp(200,200,200,200) {
         @Override
         public void drawIntern(NvGraphic g) {
-            g.drawTri(600, 200, 1000, 0, 0, 1);
-            g.drawRect(200, 500, 200, 300, 0, 0, 1);
+            g.drawRect(0,0,100,100, 1,0.5f,0);
+
+            g.drawText("HELLO", 0,0);
+        }
+
+        @Override
+        public void update(float dt) {
+
         }
     });
 
 
-    NvApp.getInstance().run();
+    app.setShowFPS(true);
+    home.addChild(new NvComp(200,200,200,200) {
+        @Override
+        public void drawIntern(NvGraphic g) {
+            g.drawRect(0,0,100,100, 1,0.5f,0);
+            g.drawText("Ciao", 0,0);
+
+        }
+
+        @Override
+        public void update(float dt) {
+            app.setCurrentPage("gamePage");
+        }
+    });
+
+
+    app.run();
 }

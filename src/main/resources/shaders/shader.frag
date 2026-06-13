@@ -3,7 +3,7 @@
 layout(binding = 1) uniform sampler2D uTexture;
 
 layout(location = 0) in vec3 fragColor;
-layout(location = 1) in vec2 fragUV;      // nuovo: UV passate dal vertex shader
+layout(location = 1) in vec2 fragUV;
 
 layout(location = 0) out vec4 outColor;
 

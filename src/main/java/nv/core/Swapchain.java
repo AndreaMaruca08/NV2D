@@ -103,7 +103,7 @@ public class Swapchain implements AutoCloseable {
         }
     }
 
-    // Metodi Getter richiesti da nv.core.NvApp e nv.core.GraphicsPipeline
+    // Metodi Getter richiesti da nv.core.Nv2DApp e nv.core.GraphicsPipeline
     public long getHandle() {
         return swapchainHandle;
     }

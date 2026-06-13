@@ -1,6 +1,7 @@
 package nv.core;
 
-import nv.components.NvComponent;
+import nv.components.NvComp;
+import nv.components.NvCont;
 import nv.core.data.DynamicVertexBuffer;
 import nv.core.data.DynamicIndexBuffer;
 import nv.core.data.FontAtlas;
@@ -19,8 +20,8 @@ import java.awt.Dimension;
 import java.awt.Toolkit;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.vulkan.KHRSurface.vkDestroySurfaceKHR;
@@ -28,11 +29,15 @@ import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 /**
- * <h3>Entry point for the NV game engine</h3>
+ * <h3>Entry point for the NV2D game engine</h3>
  * <p>SingleTone class responsible for managing the application's Vulkan resources and rendering pipeline</p>
  * @since 1.0
  */
-public class NvApp implements Runnable {
+public final class Nv2DApp implements Runnable {
+    private static final int MAJOR_VERSION = 0;
+    private static final int MINOR_VERSION = 1;
+    private static final int PATCH = 0;
+    private static final String ENGINE_NAME = "NV2Dlib";
 
     private long window;
     private VkInstance instance;
@@ -71,57 +76,122 @@ public class NvApp implements Runnable {
 
     private boolean framebufferResized = false;
 
-    private double lastFrameTime = 0.0;
-    private float deltaTime = 0.0f;
-
     private static final Dimension SCREEN = Toolkit.getDefaultToolkit().getScreenSize();
 
-    private final List<NvComponent> treeComponent = new ArrayList<>();
+    private final Map<String, NvCont> pages = new HashMap<>(10);
+    private NvCont rootComponent;
 
-    private static NvApp appInstance;
-    public static void invalidate(){
+    private float fps = -1;
+    private boolean showFPS = false;
+
+    public void setShowFPS(boolean shouldShow) {
+        this.showFPS = shouldShow;
+    }
+    public NvCont getPage(String key){
+        return pages.get(key);
+    }
+
+    public Map<String, NvCont> getPages() {
+        return pages;
+    }
+
+    /**
+     *  <h2>To create a new page, use: NvCont.newPage()</h2>
+     * @param key key to get or change the page
+     * @param page page to add
+     */
+    public NvCont addPage(String key, NvCont page){
+        pages.put(key, page);
+        return page;
+    }
+    public NvCont addAndSetPage(String key, NvCont page){
+        pages.put(key, page);
+        this.rootComponent = page;
+        rootComponent.setW(swapchain.getWidth());
+        rootComponent.setH(swapchain.getHeight());
+        return page;
+    }
+
+    public void remove(String key){
+        pages.remove(key);
+    }
+
+    private static Nv2DApp appInstance;
+
+    public void setCurrentPage(String key){
+        rootComponent = pages.get(key);
+        rootComponent.setW(swapchain.getWidth());
+        rootComponent.setH(swapchain.getHeight());
+    }
+
+    public static void invalidateInstance(){
         appInstance = null;
     }
-    public static NvApp getInstance(){
+
+    public static Nv2DApp getInstance(){
         if(appInstance == null)
-            appInstance = new NvApp();
+            appInstance = new Nv2DApp("NV2D game");
         return appInstance;
     }
-    public static NvApp createInstance(int maxVertices, int maxIndices, UpdateCycle updateCycle){
+    public static Nv2DApp createInstance(String name, Dimension windowDimension){
         if(appInstance == null)
-            appInstance = new NvApp(maxVertices, maxIndices, updateCycle);
+            appInstance = new Nv2DApp(name, windowDimension);
         return appInstance;
     }
-    public static NvApp createInstance(UpdateCycle updateCycle){
+    public static Nv2DApp createInstance(String name, int maxVertices, int maxIndices){
         if(appInstance == null)
-            appInstance = new NvApp(updateCycle);
+            appInstance = new Nv2DApp(name, maxVertices, maxIndices, SCREEN);
+        return appInstance;
+    }
+    public static Nv2DApp createInstance(String name){
+        if(appInstance == null)
+            appInstance = new Nv2DApp(name);
         return appInstance;
     }
 
-    private NvApp(int maxVertices, int maxIndices) {
+    private Nv2DApp(String name, int maxVertices, int maxIndices, Dimension windowDim) {
         this.maxVertices = maxVertices;
         this.maxIndices  = maxIndices;
-    }
-    private NvApp(int maxVertices, int maxIndices, UpdateCycle updateCycle) {
-        this.maxVertices = maxVertices;
-        this.maxIndices  = maxIndices;
-        this.updateCycle = updateCycle;
-    }
-    private NvApp(UpdateCycle updateCycle) {
-        this.updateCycle = updateCycle;
-    }
-    private NvApp() {
         this.updateCycle = (_) -> {};
+        initWindow(name, windowDim);
+        initVulkan();
+    }
+    private Nv2DApp(String name) {
+        this.updateCycle = (_) -> {};
+        initWindow(name, SCREEN);
+        initVulkan();
+    }
+    private Nv2DApp(Dimension windowDimension) {
+        this.updateCycle = (_) -> {};
+        initWindow("NV2D game", windowDimension);
+        initVulkan();
+    }
+    private Nv2DApp(String name, Dimension windowDimension) {
+        this.updateCycle = (_) -> {};
+        initWindow(name, windowDimension);
+        initVulkan();
     }
 
-    public void addTreeComponent(NvComponent component){
-        treeComponent.add(component);
+    public void setMainLoop(UpdateCycle updateCycle){
+        this.updateCycle = updateCycle;
     }
-    public void removeComponent(NvComponent component){
-        treeComponent.remove(component);
+
+    /**
+     * Adds a new component to the current root component
+     * @param component
+     */
+    public void addTreeComponent(NvComp component){
+        rootComponent.addChild(component);
+    }
+    public void removeComponent(NvComp component){
+        rootComponent.removeChild(component);
     }
 
     private final NvGraphic graphic = new NvPixelGraphic();
+
+    private int frameCount = 0;
+    private float fpsSum = 0.0F;
+    private float oldFps;
 
     private Scene calculateScene(){
         final float w = swapchain.getWidth();
@@ -130,16 +200,30 @@ public class NvApp implements Runnable {
         final float wv = 8.0f / 512.0f;
 
         graphic.initialize(w, h, wu, wv, fontAtlas);
-        for(NvComponent component : treeComponent){
-            component.draw(graphic);
-        }
+        rootComponent.draw(graphic);
+
+        if(showFPS)
+            handleFps();
+
         return new Scene(graphic.getVertices(), graphic.getIndices());
+    }
+    private void handleFps(){
+        frameCount++;
+        fpsSum += fps;
+        graphic.setComponent(rootComponent);
+        graphic.drawRect(100, 100, 260, 70);
+        if(frameCount % 60 == 0){
+            oldFps = fpsSum / frameCount;
+            frameCount = 0;
+            fpsSum = 0;
+            graphic.drawText(String.format("FPS: %.2f", fps), 110, 110);
+        }else {
+            graphic.drawText(String.format("FPS: %.2f", oldFps), 110, 110);
+        }
     }
 
     @Override
     public void run() {
-        initWindow();
-        initVulkan();
         mainLoop();
         cleanup();
     }
@@ -147,13 +231,13 @@ public class NvApp implements Runnable {
         this.fontAtlas = new FontAtlas(font);
     }
 
-    private void initWindow() {
+    private void initWindow(String name, Dimension windowDimension) {
         if (!glfwInit()) throw new IllegalStateException("Impossibile inizializzare GLFW");
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-        window = glfwCreateWindow(SCREEN.width, SCREEN.height, "NeverNester2Dlib", 0, 0);
+        window = glfwCreateWindow(windowDimension.width, windowDimension.height, name, 0, 0);
         if (window == 0) throw new RuntimeException("Impossibile creare la finestra GLFW");
 
         glfwSetFramebufferSizeCallback(window, (windowHandle, width, height) -> {
@@ -172,6 +256,7 @@ public class NvApp implements Runnable {
             glfwGetFramebufferSize(window, pWidth, pHeight);
             this.swapchain = new Swapchain(device, surface, pWidth.get(0), pHeight.get(0));
         }
+        this.rootComponent = new NvCont(0,0,swapchain.getWidth(), swapchain.getHeight());
 
         createRenderPass();
 
@@ -202,12 +287,6 @@ public class NvApp implements Runnable {
     // -------------------------------------------------------------------------
 
     /**
-     * Genera la geometria (quad per carattere) per una stringa di testo.
-     * Formato vertice: x, y, r, g, b, u, v (7 float per vertice, 4 vertici per carattere).
-     */
-
-
-    /**
      * Pre-alloca i buffer GPU con la capacità massima dichiarata.
      * I dati vengono caricati subito tramite rebuildScene().
      */
@@ -224,7 +303,7 @@ public class NvApp implements Runnable {
      *
      * @param scene la scena da caricare
      */
-    protected final void rebuildScene(Scene scene) {
+    private void rebuildScene(Scene scene) {
         dynamicVertexBuffer.update(scene.vertices());
         totalIndexCount = dynamicIndexBuffer.update(scene.indices());
     }
@@ -257,15 +336,23 @@ public class NvApp implements Runnable {
         }
     }
 
+    private void tickHandler(float dt) {
+        updateCycle.update(dt);
+        rootComponent.tick(dt);
+        if(showFPS){
+            fps = 1.0F / dt;
+        }
+    }
+
     private void mainLoop() {
-        lastFrameTime = glfwGetTime();
+        double lastFrameTime = glfwGetTime();
         while (!glfwWindowShouldClose(window)) {
             double now = glfwGetTime();
-            deltaTime     = (float) (now - lastFrameTime);
+            float deltaTime = (float) (now - lastFrameTime);
             lastFrameTime = now;
             glfwPollEvents();
             drawFrame();
-            updateCycle.update(deltaTime);
+            tickHandler(deltaTime);
         }
         vkDeviceWaitIdle(device);
     }
@@ -362,7 +449,10 @@ public class NvApp implements Runnable {
             glfwGetFramebufferSize(window, pWidth, pHeight);
 
             this.swapchain = new Swapchain(device, surface, pWidth.get(0), pHeight.get(0));
+            this.rootComponent.setW(swapchain.getWidth());
+            this.rootComponent.setH(swapchain.getHeight());
         }
+
 
         createFramebuffers();
 
@@ -403,10 +493,10 @@ public class NvApp implements Runnable {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkApplicationInfo appInfo = VkApplicationInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_APPLICATION_INFO)
-                    .pApplicationName(stack.UTF8("NeverNester2Dlib"))
-                    .applicationVersion(VK_MAKE_VERSION(0, 1, 0))
-                    .pEngineName(stack.UTF8("NeverNester2Dlib"))
-                    .engineVersion(VK_MAKE_VERSION(0, 1, 0))
+                    .pApplicationName(stack.UTF8(ENGINE_NAME))
+                    .applicationVersion(VK_MAKE_VERSION(MAJOR_VERSION, MINOR_VERSION, PATCH))
+                    .pEngineName(stack.UTF8(ENGINE_NAME))
+                    .engineVersion(VK_MAKE_VERSION(MAJOR_VERSION, MINOR_VERSION, PATCH))
                     .apiVersion(VK_API_VERSION_1_0);
 
             PointerBuffer glfwExtensions = GLFWVulkan.glfwGetRequiredInstanceExtensions();

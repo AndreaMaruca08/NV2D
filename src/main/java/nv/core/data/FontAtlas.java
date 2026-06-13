@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class FontAtlas {
-
     public static class Glyph {
         public final float width;
         public final float height;
@@ -43,12 +42,10 @@ public class FontAtlas {
         BufferedImage img = new BufferedImage(imgSize, imgSize, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = img.createGraphics();
 
-        // Setup per un rendering pulito
         g2d.setFont(font);
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-        // !!! NUOVO: Disegnamo un blocco 16x16 di bianco solido in alto a sinistra !!!
         g2d.setColor(Color.WHITE);
         g2d.fillRect(0, 0, 16, 16);
 
