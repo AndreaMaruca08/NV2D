@@ -16,19 +16,20 @@ public abstract class NvComp implements UpdateCycle {
     private NvComp parent;
     private final List<NvComp> children;
     protected int x, y, w, h;
+    protected boolean isHovered;
 
-    public NvComp(NvComp parent, int x, int y, int w, int h) {
+    public NvComp(int x, int y, int w, int h) {
         children = new ArrayList<>();
-        this.parent = parent;
+        this.parent = null;
         this.x = x;
         this.y = y;
         this.w = w;
         this.h = h;
     }
-    public NvComp(int x, int y, int w, int h) {
-        this(null, x, y, w, h);
-    }
 
+    public List<NvComp> getChildren() {
+        return children;
+    }
 
     public NvComp getParent(){
         return parent;
@@ -74,6 +75,19 @@ public abstract class NvComp implements UpdateCycle {
         children.remove(child);
     }
 
+    protected void mouseEnter(){}
+    protected void mouseOut(){}
+
+    public void handleHover(int mouseX, int mouseY){
+        if(!isInside(mouseX, mouseY)) {
+            isHovered = false;
+            return;
+        }
+        for(NvComp child : children)
+            child.handleHover(mouseX, mouseY);
+        isHovered = true;
+    }
+
     public void addChild(NvComp child){
         children.add(child);
         child.setParent(this);
@@ -92,6 +106,11 @@ public abstract class NvComp implements UpdateCycle {
 
     public void draw(NvGraphic g){
         g.setComponent(this);
+        if(isHovered){
+            mouseEnter();
+        }else{
+            mouseOut();
+        }
         drawIntern(g);
         drawChildren(g);
     }
@@ -100,6 +119,13 @@ public abstract class NvComp implements UpdateCycle {
         for (NvComp child : children) {
             child.draw(g);
         }
+    }
+
+    public boolean isInside(int x, int y){
+        return  x >= this.x &&
+                x <= this.x + this.w &&
+                y >= this.y &&
+                y <= this.y + this.h;
     }
 
     public abstract void drawIntern(NvGraphic g);

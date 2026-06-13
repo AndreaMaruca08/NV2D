@@ -1,15 +1,12 @@
 package nv.core;
 
-import nv.components.NvComp;
-import nv.components.NvCont;
+import nv.components.*;
 import nv.core.data.DynamicVertexBuffer;
 import nv.core.data.DynamicIndexBuffer;
 import nv.core.data.FontAtlas;
 import nv.core.data.TextureImage;
 import nv.core.data.DescriptorManager;
 
-import nv.components.NvGraphic;
-import nv.components.NvPixelGraphic;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.*;
 import org.lwjgl.vulkan.*;
@@ -74,6 +71,9 @@ public final class Nv2DApp implements Runnable {
     private long renderFinishedSemaphore;
     private long inFlightFence;
 
+    //Input
+    private GLFWMouseButtonCallback mouseButtonCallback;
+
     private boolean framebufferResized = false;
 
     private static final Dimension SCREEN = Toolkit.getDefaultToolkit().getScreenSize();
@@ -95,6 +95,14 @@ public final class Nv2DApp implements Runnable {
         return pages;
     }
 
+    public int getWidth(){
+        return swapchain.getWidth();
+    }
+
+    public int getHeight(){
+        return swapchain.getHeight();
+    }
+
     /**
      *  <h2>To create a new page, use: NvCont.newPage()</h2>
      * @param key key to get or change the page
@@ -104,6 +112,7 @@ public final class Nv2DApp implements Runnable {
         pages.put(key, page);
         return page;
     }
+
     public NvCont addAndSetPage(String key, NvCont page){
         pages.put(key, page);
         this.rootComponent = page;
@@ -178,7 +187,7 @@ public final class Nv2DApp implements Runnable {
 
     /**
      * Adds a new component to the current root component
-     * @param component
+     * @param component to add
      */
     public void addTreeComponent(NvComp component){
         rootComponent.addChild(component);
@@ -212,7 +221,7 @@ public final class Nv2DApp implements Runnable {
         fpsSum += fps;
         graphic.setComponent(rootComponent);
         graphic.drawRect(100, 100, 260, 70);
-        if(frameCount % 60 == 0){
+        if(frameCount % 30 == 0){
             oldFps = fpsSum / frameCount;
             frameCount = 0;
             fpsSum = 0;
@@ -243,6 +252,29 @@ public final class Nv2DApp implements Runnable {
         glfwSetFramebufferSizeCallback(window, (windowHandle, width, height) -> {
             framebufferResized = true;
         });
+
+        mouseButtonCallback = GLFWMouseButtonCallback.create(inputCallback());
+
+        glfwSetMouseButtonCallback(window, mouseButtonCallback);
+        glfwSetCursorPosCallback(window, (windowHandle, x, y) -> {
+            mouseX = (int) x;
+            mouseY = (int) y;
+            mouseMoved = true;
+        });
+    }
+
+    private GLFWMouseButtonCallbackI inputCallback(){
+        return (windowHandle, button, action, mods) -> {
+            if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+                var correctedCoords = getCorrectedCoords();
+                for (var comp : rootComponent.getChildren()) {
+                    if (comp instanceof Clickable clickable) {
+                        if (comp.isInside(correctedCoords[0], correctedCoords[1])) {
+                            clickable.onClick();
+                        }
+                    }
+                }
+            }};
     }
 
     private void initVulkan() {
@@ -335,13 +367,49 @@ public final class Nv2DApp implements Runnable {
             this.inFlightFence           = pFence.get(0);
         }
     }
+    private int mouseX;
+    private int mouseY;
+    private boolean mouseMoved;
 
     private void tickHandler(float dt) {
         updateCycle.update(dt);
         rootComponent.tick(dt);
+
+        if (mouseMoved) {
+            handleHover();
+            mouseMoved = false;
+        }
+
         if(showFPS){
             fps = 1.0F / dt;
         }
+    }
+
+    private int[] getCorrectedCoords(){
+        double[] x1 = new double[1];
+        double[] y1 = new double[1];
+
+        glfwGetCursorPos(window, x1, y1);
+
+        int[] windowWidth = new int[1];
+        int[] windowHeight = new int[1];
+        int[] framebufferWidth = new int[1];
+        int[] framebufferHeight = new int[1];
+
+        glfwGetWindowSize(window, windowWidth, windowHeight);
+        glfwGetFramebufferSize(window, framebufferWidth, framebufferHeight);
+
+        int convertedMouseX = (int) (x1[0] * framebufferWidth[0] / windowWidth[0]);
+        int convertedMouseY = (int) (y1[0] * framebufferHeight[0] / windowHeight[0]);
+
+        rootComponent.handleHover(convertedMouseX, convertedMouseY);
+
+        return new int[]{convertedMouseX, convertedMouseY};
+    }
+
+    private void handleHover(){
+        var correctedCoords = getCorrectedCoords();
+        rootComponent.handleHover(correctedCoords[0], correctedCoords[1]);
     }
 
     private void mainLoop() {
@@ -652,6 +720,11 @@ public final class Nv2DApp implements Runnable {
     // -------------------------------------------------------------------------
 
     private void cleanup() {
+        if (mouseButtonCallback != null) {
+            mouseButtonCallback.free();
+            mouseButtonCallback = null;
+        }
+
         if (device != null) {
             vkDestroySemaphore(device, imageAvailableSemaphore, null);
             vkDestroySemaphore(device, renderFinishedSemaphore, null);
