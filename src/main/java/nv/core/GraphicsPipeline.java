@@ -46,15 +46,15 @@ public class GraphicsPipeline implements AutoCloseable {
                     .pName(stack.UTF8("main"));
 
 
-            // 1. Vertex Input (8 FLOAT STRIDE: vec2 pos + vec3 color + vec2 UV + float texIndex)
+            // 1. Vertex Input (7 FLOAT STRIDE: vec2 pos + vec3 color + vec2 UV)
             VkVertexInputBindingDescription.Buffer bindingDescription =
                     VkVertexInputBindingDescription.calloc(1, stack);
             bindingDescription.binding(0);
-            bindingDescription.stride(8 * Float.BYTES); // 2 pos + 3 color + 2 uv + 1 texIndex = 8 float
+            bindingDescription.stride(7 * Float.BYTES); // 2 pos + 3 color + 2 uv = 7 float
             bindingDescription.inputRate(VK_VERTEX_INPUT_RATE_VERTEX);
 
             VkVertexInputAttributeDescription.Buffer attributeDescriptions =
-                    VkVertexInputAttributeDescription.calloc(4, stack);
+                    VkVertexInputAttributeDescription.calloc(3, stack);
 
             // location 0: vec2 posizione
             attributeDescriptions.get(0)
@@ -76,13 +76,6 @@ public class GraphicsPipeline implements AutoCloseable {
                     .location(2)
                     .format(VK_FORMAT_R32G32_SFLOAT)
                     .offset(5 * Float.BYTES); // Inizia dopo i 2 float di pos e i 3 di colore
-
-            // location 3: float inTexIndex
-            attributeDescriptions.get(3)
-                    .binding(0)
-                    .location(3)
-                    .format(VK_FORMAT_R32_SFLOAT)
-                    .offset(7 * Float.BYTES); // Inizia dopo i 7 float precedenti
 
             VkPipelineVertexInputStateCreateInfo vertexInputInfo =
                     VkPipelineVertexInputStateCreateInfo.calloc(stack);
