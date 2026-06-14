@@ -22,8 +22,14 @@ public abstract class NvGraphic {
     protected float[] vertices;
     protected int[] indices;
 
+    // Geometria separata per immagini (8-float format)
+    protected float[] imageVertices;
+    protected int[] imageIndices;
+
     protected int vertexFloatCount;
     protected int indexCount;
+    protected int imageVertexFloatCount;
+    protected int imageIndexCount;
 
     protected float w, h;
     protected float wu, wv;
@@ -34,10 +40,14 @@ public abstract class NvGraphic {
         this.component = null;
         this.vertices = new float[1024 * FLOATS_PER_VERTEX];
         this.indices = new int[1024];
+        this.imageVertices = new float[1024 * FLOATS_PER_VERTEX];
+        this.imageIndices = new int[1024];
         this.fontAtlas = null;
 
         this.vertexFloatCount = 0;
         this.indexCount = 0;
+        this.imageVertexFloatCount = 0;
+        this.imageIndexCount = 0;
     }
 
     public void initialize(float w, float h, float wu, float wv, FontAtlas fontAtlas){
@@ -49,6 +59,8 @@ public abstract class NvGraphic {
 
         this.vertexFloatCount = 0;
         this.indexCount = 0;
+        this.imageVertexFloatCount = 0;
+        this.imageIndexCount = 0;
     }
 
     public void setRGB(float r, float g, float b){
@@ -80,6 +92,22 @@ public abstract class NvGraphic {
         indexCount += newIndices.length;
     }
 
+    protected void appendImageGeometry(float[] newVertices, int[] newIndices) {
+        int vertexOffset = imageVertexFloatCount / FLOATS_PER_VERTEX;
+
+        ensureImageVertexCapacity(imageVertexFloatCount + newVertices.length);
+        ensureImageIndexCapacity(imageIndexCount + newIndices.length);
+
+        System.arraycopy(newVertices, 0, imageVertices, imageVertexFloatCount, newVertices.length);
+
+        for (int i = 0; i < newIndices.length; i++) {
+            imageIndices[imageIndexCount + i] = newIndices[i] + vertexOffset;
+        }
+
+        imageVertexFloatCount += newVertices.length;
+        imageIndexCount += newIndices.length;
+    }
+
     private void ensureVertexCapacity(int requiredCapacity) {
         if (requiredCapacity <= vertices.length) {
             return;
@@ -106,6 +134,34 @@ public abstract class NvGraphic {
         }
 
         indices = Arrays.copyOf(indices, newCapacity);
+    }
+
+    private void ensureImageVertexCapacity(int requiredCapacity) {
+        if (requiredCapacity <= imageVertices.length) {
+            return;
+        }
+
+        int newCapacity = imageVertices.length;
+
+        while (newCapacity < requiredCapacity) {
+            newCapacity *= 2;
+        }
+
+        imageVertices = Arrays.copyOf(imageVertices, newCapacity);
+    }
+
+    private void ensureImageIndexCapacity(int requiredCapacity) {
+        if (requiredCapacity <= imageIndices.length) {
+            return;
+        }
+
+        int newCapacity = imageIndices.length;
+
+        while (newCapacity < requiredCapacity) {
+            newCapacity *= 2;
+        }
+
+        imageIndices = Arrays.copyOf(imageIndices, newCapacity);
     }
 
     public abstract void drawTri(float base1, float base2, float y, float r, float g, float b);
@@ -160,6 +216,14 @@ public abstract class NvGraphic {
 
     public int[] getIndices(){
         return Arrays.copyOf(indices, indexCount);
+    }
+
+    public float[] getImageVertices(){
+        return Arrays.copyOf(imageVertices, imageVertexFloatCount);
+    }
+
+    public int[] getImageIndices(){
+        return Arrays.copyOf(imageIndices, imageIndexCount);
     }
 
 

@@ -63,7 +63,7 @@ public class GraphicsPipeline implements AutoCloseable {
                     .format(VK_FORMAT_R32G32_SFLOAT)
                     .offset(0);
 
-            // location 1: vec3 colore (Ritorna a vec3 per combaciare con lo shader SPIR-V)
+            // location 1: vec3 colore
             attributeDescriptions.get(1)
                     .binding(0)
                     .location(1)
@@ -75,14 +75,14 @@ public class GraphicsPipeline implements AutoCloseable {
                     .binding(0)
                     .location(2)
                     .format(VK_FORMAT_R32G32_SFLOAT)
-                    .offset(5 * Float.BYTES); // Inizia dopo i 2 float di pos e i 3 di colore
+                    .offset(5 * Float.BYTES);
 
-            // location 3: float inTexIndex
+            // location 3: float texIndex
             attributeDescriptions.get(3)
                     .binding(0)
                     .location(3)
                     .format(VK_FORMAT_R32_SFLOAT)
-                    .offset(7 * Float.BYTES); // Inizia dopo i 7 float precedenti
+                    .offset(7 * Float.BYTES);
 
             VkPipelineVertexInputStateCreateInfo vertexInputInfo =
                     VkPipelineVertexInputStateCreateInfo.calloc(stack);
@@ -184,7 +184,7 @@ public class GraphicsPipeline implements AutoCloseable {
             pipelineInfo.pRasterizationState(rasterizer);
             pipelineInfo.pMultisampleState(multisampling);
             pipelineInfo.pColorBlendState(colorBlending);
-            pipelineInfo.layout(tempLayout);
+            pipelineInfo.layout(tempLayout);      // vero VkPipelineLayout
             pipelineInfo.renderPass(renderPass);
             pipelineInfo.subpass(0);
 

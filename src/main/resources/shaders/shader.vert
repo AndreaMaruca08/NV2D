@@ -17,5 +17,5 @@ void main() {
     gl_Position  = ubo.ortho * vec4(inPosition, 0.0, 1.0);
     fragColor    = inColor;
     fragUV       = inUV;
-    fragTexIndex = int(inTexIndex);
-}
+    fragTexIndex = int(inTexIndex + 0.5);
+    }

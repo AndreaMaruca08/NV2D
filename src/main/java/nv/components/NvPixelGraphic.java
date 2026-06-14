@@ -15,11 +15,13 @@ public class NvPixelGraphic extends NvGraphic {
     public void drawTri(float base1, float base2, float y, float r, float g, float b){
         float b1 = component.getX() + base1;
         float b2 = component.getX() + base2;
+        float y1 = component.getY() + y;
+        float apexY = y1 - component.getH(); // Apex verso l'alto rispetto alla base
 
         float[] triVerts = {
-                b1, y,   r, g, b, wu, wv, 0f,
-                b2, y,   r, g, b, wu, wv, 0f,
-                (b1 + b2)/2f, y + component.getY(),   r, g, b,   wu, wv, 0f,
+                b1, y1,   r, g, b, wu, wv, 0f,
+                b2, y1,   r, g, b, wu, wv, 0f,
+                (b1 + b2)/2f, apexY,   r, g, b,   wu, wv, 0f,
         };
         int[] triInds = { 0, 1, 2 };
 
@@ -65,16 +67,23 @@ public class NvPixelGraphic extends NvGraphic {
         float y2 = y1 + h;
         
         float texIndex = (float) image.getTextureIndex();
+
+        // Se il colore non è impostato (tutti 0), usiamo bianco per non oscurare l'immagine
+        float dr = r, dg = g, db = b;
+        if (dr == 0 && dg == 0 && db == 0) {
+            dr = 1f; dg = 1f; db = 1f;
+        }
         
+        // 8-float format per immagini: pos(2) + color(3) + UV(2) + texIndex(1)
         float[] quadVerts = {
-                x1, y1, r, g, b, u0, v0, texIndex,
-                x2, y1, r, g, b, u1, v0, texIndex,
-                x2, y2, r, g, b, u1, v1, texIndex,
-                x1, y2, r, g, b, u0, v1, texIndex,
+                x1, y1, dr, dg, db, u0, v0, texIndex,
+                x2, y1, dr, dg, db, u1, v0, texIndex,
+                x2, y2, dr, dg, db, u1, v1, texIndex,
+                x1, y2, dr, dg, db, u0, v1, texIndex,
         };
         
         int[] quadInds = { 0, 1, 2,  2, 3, 0 };
         
-        appendGeometry(quadVerts, quadInds);
+        appendImageGeometry(quadVerts, quadInds);
     }
 }
