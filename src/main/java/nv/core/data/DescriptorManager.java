@@ -7,25 +7,22 @@ import java.nio.LongBuffer;
 import static org.lwjgl.vulkan.VK10.*;
 
 /**
- * Gestisce descriptor sets per UBO e array di texture sampler.
+ * Gestisce descriptor sets per UBO e un array di texture sampler.
  * - binding 0: Uniform Buffer (matrice ortografica) — vertex shader
- * - binding 1: Array di Combined Image Sampler (fino a 8 texture) — fragment shader
+ * - binding 1: Array di 15 Combined Image Samplers — fragment shader
  */
 public class DescriptorManager implements AutoCloseable {
 
-    private static final int MAX_TEXTURES = 8;
-    
     private final VkDevice device;
     private final long descriptorSetLayoutHandle;
     private final long descriptorPoolHandle;
     private final long[] descriptorSetHandles;
-    private final TextureImage[] textures;
+    private final TextureImage[] textures = new TextureImage[15];
 
     public DescriptorManager(VkDevice device, OrthoUBO ubo,
                              TextureImage fontTexture, int imageCount) {
         this.device = device;
         this.descriptorSetHandles = new long[imageCount];
-        this.textures = new TextureImage[MAX_TEXTURES];
         this.textures[0] = fontTexture;
 
         this.descriptorSetLayoutHandle = createDescriptorSetLayout();
@@ -45,11 +42,11 @@ public class DescriptorManager implements AutoCloseable {
                     .descriptorCount(1)
                     .stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
 
-            // binding 1: array di texture sampler — fragment shader usa textures[0..7]
+            // binding 1: array di 15 texture sampler — fragment shader
             bindings.get(1)
                     .binding(1)
                     .descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-                    .descriptorCount(MAX_TEXTURES)
+                    .descriptorCount(15)
                     .stageFlags(VK_SHADER_STAGE_FRAGMENT_BIT);
 
             VkDescriptorSetLayoutCreateInfo layoutInfo =
@@ -75,7 +72,7 @@ public class DescriptorManager implements AutoCloseable {
 
             poolSizes.get(1)
                     .type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-                    .descriptorCount(imageCount * MAX_TEXTURES);
+                    .descriptorCount(imageCount * 15);
 
             VkDescriptorPoolCreateInfo poolInfo = VkDescriptorPoolCreateInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO)
@@ -90,7 +87,8 @@ public class DescriptorManager implements AutoCloseable {
         }
     }
 
-    private void allocateAndUpdateDescriptorSets(OrthoUBO ubo, int imageCount) {
+    private void allocateAndUpdateDescriptorSets(OrthoUBO ubo,
+                                                 int imageCount) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             LongBuffer layouts = stack.mallocLong(imageCount);
             for (int i = 0; i < imageCount; i++) layouts.put(i, descriptorSetLayoutHandle);
@@ -107,62 +105,64 @@ public class DescriptorManager implements AutoCloseable {
 
             for (int i = 0; i < imageCount; i++) {
                 descriptorSetHandles[i] = pSets.get(i);
-
-                // Write 0: UBO
-                VkDescriptorBufferInfo.Buffer bufferInfo =
-                        VkDescriptorBufferInfo.calloc(1, stack)
-                                .buffer(ubo.getBuffer(i))
-                                .offset(0)
-                                .range(OrthoUBO.SIZE_BYTES);
-
-                // Write 1: array di sampler
-                VkDescriptorImageInfo.Buffer imageInfos =
-                        VkDescriptorImageInfo.calloc(MAX_TEXTURES, stack);
-                
-                for (int j = 0; j < MAX_TEXTURES; j++) {
-                    if (textures[j] != null) {
-                        imageInfos.get(j)
-                                .imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-                                .imageView(textures[j].getImageViewHandle())
-                                .sampler(textures[j].getSamplerHandle());
-                    }
-                }
-
-                VkWriteDescriptorSet.Buffer writes = VkWriteDescriptorSet.calloc(2, stack);
-
-                writes.get(0)
-                        .sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET)
-                        .dstSet(descriptorSetHandles[i])
-                        .dstBinding(0)
-                        .descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-                        .descriptorCount(1)
-                        .pBufferInfo(bufferInfo);
-
-                writes.get(1)
-                        .sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET)
-                        .dstSet(descriptorSetHandles[i])
-                        .dstBinding(1)
-                        .descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-                        .descriptorCount(MAX_TEXTURES)
-                        .pImageInfo(imageInfos);
-
-                vkUpdateDescriptorSets(device, writes, null);
+                updateFullDescriptorSet(i, ubo);
             }
         }
     }
 
+    private void updateFullDescriptorSet(int imageIndex, OrthoUBO ubo) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            // Write 0: UBO
+            VkDescriptorBufferInfo.Buffer bufferInfo =
+                    VkDescriptorBufferInfo.calloc(1, stack)
+                            .buffer(ubo.getBuffer(imageIndex))
+                            .offset(0)
+                            .range(OrthoUBO.SIZE_BYTES);
+
+            // Write 1: Texture Array
+            VkDescriptorImageInfo.Buffer imageInfos = VkDescriptorImageInfo.calloc(15, stack);
+            for (int i = 0; i < 15; i++) {
+                TextureImage tex = textures[i] != null ? textures[i] : textures[0];
+                imageInfos.get(i)
+                        .imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+                        .imageView(tex.getImageViewHandle())
+                        .sampler(tex.getSamplerHandle());
+            }
+
+            VkWriteDescriptorSet.Buffer writes = VkWriteDescriptorSet.calloc(2, stack);
+
+            // UBO
+            writes.get(0)
+                    .sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET)
+                    .dstSet(descriptorSetHandles[imageIndex])
+                    .dstBinding(0)
+                    .descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+                    .descriptorCount(1)
+                    .pBufferInfo(bufferInfo);
+
+            // Textures
+            writes.get(1)
+                    .sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET)
+                    .dstSet(descriptorSetHandles[imageIndex])
+                    .dstBinding(1)
+                    .dstArrayElement(0)
+                    .descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+                    .descriptorCount(15)
+                    .pImageInfo(imageInfos);
+
+            vkUpdateDescriptorSets(device, writes, null);
+        }
+    }
+
     /**
-     * Aggiorna il sampler per un indice di texture specifico in tutti i descriptor sets.
-     * Usato quando si carica una nuova immagine durante l'esecuzione.
+     * Aggiorna una texture specifica nell'array per tutti i descriptor sets.
      */
     public synchronized void updateTexture(int textureIndex, TextureImage texture) {
-        if (textureIndex < 0 || textureIndex >= MAX_TEXTURES) {
-            throw new IllegalArgumentException("Indice texture fuori range: " + textureIndex);
-        }
+        if (textureIndex < 0 || textureIndex >= 15) return;
         textures[textureIndex] = texture;
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            VkDescriptorImageInfo.Buffer imageInfos = VkDescriptorImageInfo.calloc(1, stack)
+            VkDescriptorImageInfo.Buffer imageInfo = VkDescriptorImageInfo.calloc(1, stack)
                     .imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
                     .imageView(texture.getImageViewHandle())
                     .sampler(texture.getSamplerHandle());
@@ -173,10 +173,10 @@ public class DescriptorManager implements AutoCloseable {
                         .sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET)
                         .dstSet(descriptorSetHandle)
                         .dstBinding(1)
-                        .dstArrayElement(textureIndex)
+                        .dstArrayElement(textureIndex) // Aggiorna solo lo slot specifico
                         .descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
                         .descriptorCount(1)
-                        .pImageInfo(imageInfos);
+                        .pImageInfo(imageInfo);
 
                 vkUpdateDescriptorSets(device, write, null);
             }
@@ -185,6 +185,7 @@ public class DescriptorManager implements AutoCloseable {
 
     public long getDescriptorSetLayoutHandle() { return descriptorSetLayoutHandle; }
     public long getDescriptorSet(int imageIndex) { return descriptorSetHandles[imageIndex]; }
+    public TextureImage getCurrentTexture() { return textures[0]; }
 
     @Override
     public void close() {

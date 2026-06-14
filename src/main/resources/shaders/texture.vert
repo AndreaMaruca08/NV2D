@@ -18,4 +18,4 @@ void main() {
     fragColor    = inColor;
     fragUV       = inUV;
     fragTexIndex = int(inTexIndex + 0.5);
-    }
+}

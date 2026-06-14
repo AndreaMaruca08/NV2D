@@ -9,13 +9,17 @@ import java.nio.LongBuffer;
 
 import static org.lwjgl.vulkan.VK10.*;
 
-public class GraphicsPipeline implements AutoCloseable {
+/**
+ * Pipeline Vulkan separato SOLO per il rendering delle immagini con texture.
+ * Usa 8-float vertex format: pos(2) + color(3) + UV(2) + texIndex(1)
+ */
+public class TexturePipeline implements AutoCloseable {
 
     private final VkDevice device;
     private final long pipelineLayoutHandle;
     private final long pipelineHandle;
 
-    public GraphicsPipeline(VkDevice device, Swapchain swapchain, long renderPass, long descriptorSetLayout) {
+    public TexturePipeline(VkDevice device, Swapchain swapchain, long renderPass, long descriptorSetLayout) {
         this.device = device;
 
         long tempLayout;
@@ -23,9 +27,9 @@ public class GraphicsPipeline implements AutoCloseable {
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
 
-            // 0. Shader: lettura SPIR‑V e creazione shader modules
-            byte[] vertShaderCode = readShaderFile("/shaders/shader.vert.spv");
-            byte[] fragShaderCode = readShaderFile("/shaders/shader.frag.spv");
+            // 0. Shader: lettura SPIR‑V
+            byte[] vertShaderCode = readShaderFile("/shaders/texture.vert.spv");
+            byte[] fragShaderCode = readShaderFile("/shaders/texture.frag.spv");
 
             long vertShaderModule = createShaderModule(device, vertShaderCode);
             long fragShaderModule = createShaderModule(device, fragShaderCode);
@@ -45,32 +49,31 @@ public class GraphicsPipeline implements AutoCloseable {
                     .module(fragShaderModule)
                     .pName(stack.UTF8("main"));
 
-
             // 1. Vertex Input (8 FLOAT STRIDE: vec2 pos + vec3 color + vec2 UV + float texIndex)
             VkVertexInputBindingDescription.Buffer bindingDescription =
                     VkVertexInputBindingDescription.calloc(1, stack);
             bindingDescription.binding(0);
-            bindingDescription.stride(8 * Float.BYTES); // 2 pos + 3 color + 2 uv + 1 texIndex = 8 float
+            bindingDescription.stride(8 * Float.BYTES);
             bindingDescription.inputRate(VK_VERTEX_INPUT_RATE_VERTEX);
 
             VkVertexInputAttributeDescription.Buffer attributeDescriptions =
                     VkVertexInputAttributeDescription.calloc(4, stack);
 
-            // location 0: vec2 posizione
+            // location 0: vec2 position
             attributeDescriptions.get(0)
                     .binding(0)
                     .location(0)
                     .format(VK_FORMAT_R32G32_SFLOAT)
                     .offset(0);
 
-            // location 1: vec3 colore
+            // location 1: vec3 color
             attributeDescriptions.get(1)
                     .binding(0)
                     .location(1)
                     .format(VK_FORMAT_R32G32B32_SFLOAT)
                     .offset(2 * Float.BYTES);
 
-            // location 2: vec2 inUV
+            // location 2: vec2 UV
             attributeDescriptions.get(2)
                     .binding(0)
                     .location(2)
@@ -134,7 +137,7 @@ public class GraphicsPipeline implements AutoCloseable {
             multisampling.sampleShadingEnable(false);
             multisampling.rasterizationSamples(VK_SAMPLE_COUNT_1_BIT);
 
-            // 6. Color Blending (ATTIVATO PER TRASPARENZA DEL TESTO)
+            // 6. Color Blending (ALPHA BLENDING per le immagini)
             VkPipelineColorBlendAttachmentState.Buffer colorBlendAttachment =
                     VkPipelineColorBlendAttachmentState.calloc(1, stack);
             colorBlendAttachment.colorWriteMask(
@@ -143,7 +146,6 @@ public class GraphicsPipeline implements AutoCloseable {
                             VK_COLOR_COMPONENT_B_BIT |
                             VK_COLOR_COMPONENT_A_BIT
             );
-            // Setup del blending Alpha standard (fondamentale per i Font)
             colorBlendAttachment.blendEnable(true);
             colorBlendAttachment.srcColorBlendFactor(VK_BLEND_FACTOR_SRC_ALPHA);
             colorBlendAttachment.dstColorBlendFactor(VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA);
@@ -163,13 +165,12 @@ public class GraphicsPipeline implements AutoCloseable {
                     VkPipelineLayoutCreateInfo.calloc(stack);
             pipelineLayoutInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
 
-            // colleghiamo il descriptorSetLayout (set = 0, binding = 0 UBO)
             LongBuffer pSetLayouts = stack.longs(descriptorSetLayout);
             pipelineLayoutInfo.pSetLayouts(pSetLayouts);
 
             LongBuffer pPipelineLayout = stack.mallocLong(1);
             if (vkCreatePipelineLayout(device, pipelineLayoutInfo, null, pPipelineLayout) != VK_SUCCESS) {
-                throw new RuntimeException("Impossibile creare il Pipeline Layout");
+                throw new RuntimeException("Impossibile creare il Texture Pipeline Layout");
             }
             tempLayout = pPipelineLayout.get(0);
 
@@ -184,17 +185,16 @@ public class GraphicsPipeline implements AutoCloseable {
             pipelineInfo.pRasterizationState(rasterizer);
             pipelineInfo.pMultisampleState(multisampling);
             pipelineInfo.pColorBlendState(colorBlending);
-            pipelineInfo.layout(tempLayout);      // vero VkPipelineLayout
+            pipelineInfo.layout(tempLayout);
             pipelineInfo.renderPass(renderPass);
             pipelineInfo.subpass(0);
 
             LongBuffer pGraphicsPipeline = stack.mallocLong(1);
             if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, pipelineInfo, null, pGraphicsPipeline) != VK_SUCCESS) {
-                throw new RuntimeException("Impossibile creare la Graphics Pipeline");
+                throw new RuntimeException("Impossibile creare la Texture Graphics Pipeline");
             }
             tempPipeline = pGraphicsPipeline.get(0);
 
-            // shader module non più necessari dopo la creazione della pipeline
             vkDestroyShaderModule(device, vertShaderModule, null);
             vkDestroyShaderModule(device, fragShaderModule, null);
         }
@@ -205,6 +205,10 @@ public class GraphicsPipeline implements AutoCloseable {
 
     public long getPipelineLayoutHandle() {
         return pipelineLayoutHandle;
+    }
+
+    public long getHandle() {
+        return pipelineHandle;
     }
 
     private byte[] readShaderFile(String resourcePath) {
@@ -237,10 +241,6 @@ public class GraphicsPipeline implements AutoCloseable {
 
             return pShaderModule.get(0);
         }
-    }
-
-    public long getHandle() {
-        return pipelineHandle;
     }
 
     @Override

@@ -43,6 +43,7 @@ public final class Nv2DApp implements Runnable {
     private long surface;
     private Swapchain swapchain;
     private GraphicsPipeline pipeline;
+    private TexturePipeline texturePipeline;
     private CommandBuffers commandBuffers;
     private VkPhysicalDevice physicalDevice;
     private VkQueue graphicsQueue;
@@ -54,8 +55,8 @@ public final class Nv2DApp implements Runnable {
     private int maxVertices = 300_000; // vertici × 8 float
     private int maxIndices  = 550_000; // indici short
     
-    // Texture images caricati (massimo 8 per il shader)
-    private static final int MAX_TEXTURES = 8;
+    // Texture images caricati (massimo 15 per il shader)
+    private static final int MAX_TEXTURES = 15;
     private final NvImage[] loadedTextures = new NvImage[MAX_TEXTURES];
     private int textureCount = 1; // indice 0 è riservato al font atlas
 
@@ -90,15 +91,19 @@ public final class Nv2DApp implements Runnable {
     private float fps = -1;
     private boolean showFPS = false;
 
+    private final Map<String, NvImage> images = new HashMap<>(16);
     /**
      * Carica un'immagine da file e la registra nel motore di rendering.
      * Le immagini caricate possono essere disegnate usando {@link NvGraphic#drawImage} e {@link NvGraphic#drawImageRegion}.
-     * 
+     *
      * @param filePath percorso del file immagine (relativo o assoluto)
      * @return NvImage registrato con un indice di texture assegnato
      * @throws RuntimeException se il numero massimo di texture (8) è stato raggiunto o se il file non può essere caricato
      */
-    public synchronized NvImage loadImage(String filePath) {
+    public synchronized NvImage loadImageAbsolute(String filePath) {
+        var cached = images.get(filePath);
+        if(cached != null)
+            return cached;
         if (textureCount >= MAX_TEXTURES) {
             throw new RuntimeException("Limite massimo di texture raggiunto (" + MAX_TEXTURES + ")");
         }
@@ -107,6 +112,7 @@ public final class Nv2DApp implements Runnable {
         loadedTextures[textureCount] = image;
         descriptorManager.updateTexture(textureCount, image.getTextureImage());
         textureCount++;
+        images.put(filePath, image);
         return image;
     }
 
@@ -117,15 +123,19 @@ public final class Nv2DApp implements Runnable {
      * @return NvImage registrato con un indice di texture assegnato
      * @throws RuntimeException se il numero massimo di texture (8) è stato raggiunto o se la risorsa non esiste
      */
-    public synchronized NvImage loadImageFromResource(String resourcePath) {
+    public synchronized NvImage loadImage(String resourcePath) {
+        var cached = images.get(resourcePath);
+        if(cached != null)
+            return cached;
         if (textureCount >= MAX_TEXTURES) {
             throw new RuntimeException("Limite massimo di texture raggiunto (" + MAX_TEXTURES + ")");
         }
-        NvImage image = NvImage.fromResource(device, physicalDevice, graphicsQueue, resourcePath);
+        NvImage image = NvImage.fromResource(device, physicalDevice, graphicsQueue, "/textures/"+resourcePath);
         image.setTextureIndex(textureCount);
         loadedTextures[textureCount] = image;
         descriptorManager.updateTexture(textureCount, image.getTextureImage());
         textureCount++;
+        images.put(resourcePath, image);
         return image;
     }
 
@@ -245,13 +255,17 @@ public final class Nv2DApp implements Runnable {
         rootComponent.removeChild(component);
     }
 
+    private int graphicsIndexCount;
+    private int imageIndexCount;
+    private int imageIndexOffset;
+
     private final NvGraphic graphic = new NvPixelGraphic();
 
     private int frameCount = 0;
     private float fpsSum = 0.0F;
     private float oldFps;
 
-    private Scene calculateScene(){
+    private void rebuildScene() {
         final float w = swapchain.getWidth();
         final float h = swapchain.getHeight();
         final float wu = 8.0f / 512.0f;
@@ -263,7 +277,30 @@ public final class Nv2DApp implements Runnable {
         if(showFPS)
             handleFps();
 
-        return new Scene(graphic.getVertices(), graphic.getIndices());
+        float[] gVerts = graphic.getVertices();
+        int[]   gInds  = graphic.getIndices();
+        float[] iVerts = graphic.getImageVertices();
+        int[]   iInds  = graphic.getImageIndices();
+
+
+        graphicsIndexCount = gInds.length;
+        imageIndexCount    = iInds.length;
+        imageIndexOffset   = graphicsIndexCount;
+
+
+        float[] combinedVerts = new float[gVerts.length + iVerts.length];
+        System.arraycopy(gVerts, 0, combinedVerts, 0, gVerts.length);
+        System.arraycopy(iVerts, 0, combinedVerts, gVerts.length, iVerts.length);
+
+        int[] combinedInds = new int[gInds.length + iInds.length];
+        System.arraycopy(gInds, 0, combinedInds, 0, gInds.length);
+        int vertexOffset = gVerts.length / 8;
+        for (int i = 0; i < iInds.length; i++) {
+            combinedInds[graphicsIndexCount + i] = iInds[i] + vertexOffset;
+        }
+
+        dynamicVertexBuffer.update(combinedVerts);
+        dynamicIndexBuffer.update(combinedInds);
     }
     private void handleFps(){
         frameCount++;
@@ -357,6 +394,11 @@ public final class Nv2DApp implements Runnable {
                 descriptorManager.getDescriptorSetLayoutHandle()
         );
 
+        this.texturePipeline = new TexturePipeline(
+                device, swapchain, renderPass,
+                descriptorManager.getDescriptorSetLayoutHandle()
+        );
+
         createFramebuffers();
         buildCombinedGeometry();
 
@@ -373,21 +415,10 @@ public final class Nv2DApp implements Runnable {
      * I dati vengono caricati subito tramite rebuildScene().
      */
     private void buildCombinedGeometry() {
-        long vertexBufferSize = (long) maxVertices * 7 * Float.BYTES;
+        long vertexBufferSize = (long) maxVertices * 8 * Float.BYTES;
         this.dynamicVertexBuffer = new DynamicVertexBuffer(device, physicalDevice, vertexBufferSize);
         this.dynamicIndexBuffer  = new DynamicIndexBuffer(device, physicalDevice, maxIndices);
-        rebuildScene(calculateScene());
-    }
-
-    /**
-     * Carica una nuova Scene nei buffer GPU.
-     * Sicuro da chiamare ogni frame DOPO vkWaitForFences (GPU idle sul frame corrente).
-     *
-     * @param scene la scena da caricare
-     */
-    private void rebuildScene(Scene scene) {
-        dynamicVertexBuffer.update(scene.vertices());
-        totalIndexCount = dynamicIndexBuffer.update(scene.indices());
+        rebuildScene();
     }
 
     // -------------------------------------------------------------------------
@@ -481,7 +512,7 @@ public final class Nv2DApp implements Runnable {
             vkResetFences(device, inFlightFence);
 
             // GPU idle: sicuro aggiornare i buffer ogni frame
-            rebuildScene(calculateScene());
+            rebuildScene();
 
             IntBuffer pImageIndex = stack.mallocInt(1);
             int acquireResult = vkAcquireNextImageKHR(device, swapchain.getHandle(), Long.MAX_VALUE,
@@ -498,16 +529,20 @@ public final class Nv2DApp implements Runnable {
 
             int imageIndex = pImageIndex.get(0);
 
-            ubo.update(imageIndex, 0f, (float) swapchain.getWidth(), 0f, (float) swapchain.getHeight());
+            ubo.update(imageIndex, 0f, (float) swapchain.getWidth(), (float) swapchain.getHeight(), 0f);
 
-            commandBuffers.record(
+            commandBuffers.recordDual(
                     renderPass,
                     framebuffers[imageIndex],
                     pipeline.getHandle(),
                     pipeline.getPipelineLayoutHandle(),
+                    texturePipeline.getHandle(),
+                    texturePipeline.getPipelineLayoutHandle(),
                     dynamicVertexBuffer.getHandle(),
                     dynamicIndexBuffer.getHandle(),
-                    totalIndexCount,
+                    graphicsIndexCount,
+                    imageIndexCount,
+                    imageIndexOffset,
                     descriptorManager.getDescriptorSet(imageIndex),
                     swapchain.getWidth(),
                     swapchain.getHeight()
@@ -578,14 +613,24 @@ public final class Nv2DApp implements Runnable {
             commandBuffers.free();
         }
 
-        this.commandBuffers = new CommandBuffers(device, pipeline, swapchain);
-        pipeline.close();
-        pipeline = new GraphicsPipeline(
+        if (pipeline != null) pipeline.close();
+        if (texturePipeline != null) texturePipeline.close();
+
+        this.pipeline = new GraphicsPipeline(
                 device,
                 swapchain,
                 renderPass,
                 descriptorManager.getDescriptorSetLayoutHandle()
         );
+
+        this.texturePipeline = new TexturePipeline(
+                device,
+                swapchain,
+                renderPass,
+                descriptorManager.getDescriptorSetLayoutHandle()
+        );
+
+        this.commandBuffers = new CommandBuffers(device, pipeline, swapchain);
     }
 
     private void cleanupSwapchainResources() {
@@ -787,7 +832,7 @@ public final class Nv2DApp implements Runnable {
         if (ubo                 != null) ubo.close();
         if (fontTexture         != null) fontTexture.close();
         if (fontAtlas           != null) fontAtlas.close();
-        
+
         for (int i = 1; i < loadedTextures.length; i++) {
             if (loadedTextures[i] != null) {
                 loadedTextures[i].close();

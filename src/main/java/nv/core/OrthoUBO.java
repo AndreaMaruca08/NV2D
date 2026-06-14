@@ -104,22 +104,22 @@ public class OrthoUBO implements AutoCloseable {
 
     /**
      * Costruisce una matrice di proiezione ortografica 4x4 column-major.
-     * Clip space Vulkan: X in [-1,1], Y in [-1,1], Z in [0,1] (depth range diverso da OpenGL).
+     * Mappa [left, right] -> [-1, 1] e [top, bottom] -> [-1, 1].
+     * In Vulkan NDC: Y=-1 è TOP, Y=1 è BOTTOM.
      */
     private float[] buildOrthoMatrix(float left, float right, float bottom, float top) {
         float near = 0.0f;
         float far  = 1.0f;
 
-        float rml = right - left;   // right minus left
-        float tmb = top   - bottom; // top minus bottom
-        float fmn = far   - near;   // far  minus near
+        float rml = right - left;
+        float bmt = bottom - top; // Bottom minus Top
+        float fmn = far - near;
 
-        // Matrice column-major: [col0_row0, col0_row1, col0_row2, col0_row3, col1_row0, ...]
         return new float[] {
-                2.0f / rml,           0.0f,                 0.0f,          0.0f,  // colonna 0
-                0.0f,                 2.0f / tmb,           0.0f,          0.0f,  // colonna 1
-                0.0f,                 0.0f,                 1.0f / fmn,    0.0f,  // colonna 2
-                -(right + left) / rml, -(top + bottom) / tmb, -near / fmn, 1.0f  // colonna 3
+                2.0f / rml,           0.0f,                 0.0f,          0.0f,
+                0.0f,                 2.0f / bmt,           0.0f,          0.0f,
+                0.0f,                 0.0f,                 1.0f / fmn,    0.0f,
+                -(right + left) / rml, -(bottom + top) / bmt, -near / fmn, 1.0f
         };
     }
 
