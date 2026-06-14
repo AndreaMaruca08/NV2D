@@ -9,6 +9,7 @@ public class ClickTest extends NvComp implements Clickable {
     public ClickTest(int x, int y, int w, int h) {
         super(x, y, w, h);
         r = gr = b = 0;
+
     }
 
     @Override
@@ -28,6 +29,6 @@ public class ClickTest extends NvComp implements Clickable {
 
     @Override
     public void update(float dt) {
-
+        rotate(10*dt, true);
     }
 }

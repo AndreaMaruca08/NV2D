@@ -19,6 +19,7 @@ public abstract class NvComp implements UpdateCycle {
     protected int x, y, w, h;
     protected boolean isHovered;
     protected boolean childrenFirst;
+    protected float rotation = 0;
 
     public NvComp(int x, int y, int w, int h) {
         children = new ArrayList<>();
@@ -113,6 +114,9 @@ public abstract class NvComp implements UpdateCycle {
     }
 
     public void draw(NvGraphic g){
+        int vStart = g.getVertexFloatCount();
+        int iStart = g.getImageVertexFloatCount();
+
         g.setComponent(this);
         if(isHovered){
             mouseEnter();
@@ -126,6 +130,9 @@ public abstract class NvComp implements UpdateCycle {
             drawChildren(g);
             drawIntern(g);
         }
+
+        g.setComponent(this);
+        g.applyTransformsToBatch(vStart, iStart);
     }
 
     public void drawChildren(NvGraphic g){
@@ -142,4 +149,9 @@ public abstract class NvComp implements UpdateCycle {
     }
 
     public abstract void drawIntern(NvGraphic g);
+
+    protected void rotate(float angle, boolean clockwise) {
+        rotation += clockwise ? angle : -angle;
+    }
+
 }

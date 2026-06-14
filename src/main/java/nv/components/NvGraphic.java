@@ -15,7 +15,10 @@ import java.util.Arrays;
  * @author Andrea Maruca
  */
 public abstract class NvGraphic implements AppendableGeometry {
-    protected static final int FLOATS_PER_VERTEX = 8;
+    public static final int FLOATS_PER_VERTEX = 8;
+
+    private float cos;
+    private float sin;
 
     protected NvComp component;
     protected FontAtlas fontAtlas;
@@ -25,6 +28,8 @@ public abstract class NvGraphic implements AppendableGeometry {
 
     protected float[] imageVertices;
     protected int[] imageIndices;
+
+    private float[] transformed;
 
     protected int vertexFloatCount;
     protected int indexCount;
@@ -74,8 +79,42 @@ public abstract class NvGraphic implements AppendableGeometry {
 
     public void setComponent(NvComp component){
         this.component = component;
+        this.cos = (float) Math.cos(component.rotation);
+        this.sin = (float) Math.sin(component.rotation);
     }
 
+    public void applyTransformsToBatch(int vStart, int iStart) {
+        if (component == null || component.rotation == 0) return;
+
+        float cos = (float) Math.cos(component.rotation);
+        float sin = (float) Math.sin(component.rotation);
+
+        for (int i = vStart; i < vertexFloatCount; i += FLOATS_PER_VERTEX) {
+            float lx = vertices[i] - (component.x + component.w/2f);
+            float ly = vertices[i+1] - (component.y + component.h/2f);
+
+            vertices[i]     = (lx * cos - ly * sin) + component.x;
+            vertices[i + 1] = (lx * sin + ly * cos) + component.y;
+        }
+
+        for (int i = iStart; i < imageVertexFloatCount; i += FLOATS_PER_VERTEX) {
+            float lx = imageVertices[i] - component.x;
+            float ly = imageVertices[i + 1] - component.y;
+
+            imageVertices[i]     = (lx * cos - ly * sin) + component.x;
+            imageVertices[i + 1] = (lx * sin + ly * cos) + component.y;
+        }
+    }
+
+    public int getVertexFloatCount() {
+        return vertexFloatCount;
+    }
+
+    public int getImageVertexFloatCount() {
+        return imageVertexFloatCount;
+    }
+
+    @Override
     public void append(float[] newVertices, int[] newIndices) {
         int vertexOffset = vertexFloatCount / FLOATS_PER_VERTEX;
 
@@ -164,6 +203,8 @@ public abstract class NvGraphic implements AppendableGeometry {
         imageIndices = Arrays.copyOf(imageIndices, newCapacity);
     }
 
+    public void drawPentagon(float x, float y){};
+
     public abstract void drawTri(float base1, float base2, float y, float r, float g, float b, AppendableGeometry comp);
 
     public void drawTri(float base1, float base2, float y) {
@@ -178,9 +219,21 @@ public abstract class NvGraphic implements AppendableGeometry {
         drawTri(base1, base2, y, r, g, b, comp);
     }
 
+    public abstract void drawOval(float x, float y, float radius, int accuracy, float r, float g, float b, AppendableGeometry comp);
+    public void drawOval(float x, float y, float radius, int accuracy){
+        drawOval(x, y, radius, accuracy, r, g, b, this);
+    };
+    public void drawOval(float x, float y, float radius, int accuracy, AppendableGeometry comp){
+        drawOval(x, y, radius, accuracy, r, g, b, comp);
+    };
+    public void drawOval(float x, float y, float radius){
+        drawOval(x, y, radius, 16, r, g, b, this);
+    };
+    public void drawOval(float x, float y, float radius, AppendableGeometry comp){
+        drawOval(x, y, radius, 16, r, g, b, comp);
+    };
 
     public abstract void drawRect(float x, float y, float w, float h, float r, float g, float b, AppendableGeometry comp);
-
     public void drawRect(float x, float y, float w, float h) {
         drawRect(x, y, w, h, r, g, b, this);
     }

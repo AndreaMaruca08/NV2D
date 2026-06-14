@@ -1,6 +1,5 @@
 package nv.components;
 
-import nv.components.vectors.Vector2D;
 import nv.core.KeyboardListener;
 import static org.lwjgl.glfw.GLFW.*;
 
@@ -13,7 +12,6 @@ public class NvCharacter extends NvComp implements KeyboardListener {
     protected int leftKey =  GLFW_KEY_A;
     protected int downKey =  GLFW_KEY_S;
     protected int rightKey = GLFW_KEY_D;
-
 
     protected float velocity = 1000f;
 
@@ -45,22 +43,17 @@ public class NvCharacter extends NvComp implements KeyboardListener {
 
     @Override
     public void update(float dt) {
-
         float dx = 0;
         float dy = 0;
 
         if(keys[leftKey])
             dx -= 1;
-
         if(keys[rightKey])
             dx += 1;
-
         if(keys[upKey])
             dy -= 1;
-
         if(keys[downKey])
             dy += 1;
-
 
         if(dx != 0 && dy != 0){
             float length = (float)Math.sqrt(dx * dx + dy * dy);

@@ -285,7 +285,6 @@ public final class Nv2DApp implements Runnable {
         float[] iVerts = graphic.getImageVertices();
         int[]   iInds  = graphic.getImageIndices();
 
-
         graphicsIndexCount = gInds.length;
         imageIndexCount    = iInds.length;
         imageIndexOffset   = graphicsIndexCount;
