@@ -6,6 +6,7 @@ import nv.core.data.DynamicIndexBuffer;
 import nv.core.data.FontAtlas;
 import nv.core.data.TextureImage;
 import nv.core.data.DescriptorManager;
+import nv.core.data.NvImage;
 
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.*;
@@ -50,8 +51,13 @@ public final class Nv2DApp implements Runnable {
     private UpdateCycle updateCycle;
 
     // Capacità massima pre-allocata (aumenta se servi più geometria)
-    private int maxVertices = 300_000; // vertici × 7 float
+    private int maxVertices = 300_000; // vertici × 8 float
     private int maxIndices  = 550_000; // indici short
+    
+    // Texture images caricati (massimo 8 per il shader)
+    private static final int MAX_TEXTURES = 8;
+    private final NvImage[] loadedTextures = new NvImage[MAX_TEXTURES];
+    private int textureCount = 1; // indice 0 è riservato al font atlas
 
     // Geometria dinamica
     private DynamicVertexBuffer dynamicVertexBuffer;
@@ -83,6 +89,45 @@ public final class Nv2DApp implements Runnable {
 
     private float fps = -1;
     private boolean showFPS = false;
+
+    /**
+     * Carica un'immagine da file e la registra nel motore di rendering.
+     * Le immagini caricate possono essere disegnate usando {@link NvGraphic#drawImage} e {@link NvGraphic#drawImageRegion}.
+     * 
+     * @param filePath percorso del file immagine (relativo o assoluto)
+     * @return NvImage registrato con un indice di texture assegnato
+     * @throws RuntimeException se il numero massimo di texture (8) è stato raggiunto o se il file non può essere caricato
+     */
+    public synchronized NvImage loadImage(String filePath) {
+        if (textureCount >= MAX_TEXTURES) {
+            throw new RuntimeException("Limite massimo di texture raggiunto (" + MAX_TEXTURES + ")");
+        }
+        NvImage image = NvImage.fromFile(device, physicalDevice, graphicsQueue, filePath);
+        image.setTextureIndex(textureCount);
+        loadedTextures[textureCount] = image;
+        descriptorManager.updateTexture(textureCount, image.getTextureImage());
+        textureCount++;
+        return image;
+    }
+
+    /**
+     * Carica un'immagine dal classpath e la registra nel motore di rendering.
+     *
+     * @param resourcePath percorso della risorsa nel classpath (es. "/images/sprite.png")
+     * @return NvImage registrato con un indice di texture assegnato
+     * @throws RuntimeException se il numero massimo di texture (8) è stato raggiunto o se la risorsa non esiste
+     */
+    public synchronized NvImage loadImageFromResource(String resourcePath) {
+        if (textureCount >= MAX_TEXTURES) {
+            throw new RuntimeException("Limite massimo di texture raggiunto (" + MAX_TEXTURES + ")");
+        }
+        NvImage image = NvImage.fromResource(device, physicalDevice, graphicsQueue, resourcePath);
+        image.setTextureIndex(textureCount);
+        loadedTextures[textureCount] = image;
+        descriptorManager.updateTexture(textureCount, image.getTextureImage());
+        textureCount++;
+        return image;
+    }
 
     public void setShowFPS(boolean shouldShow) {
         this.showFPS = shouldShow;
@@ -742,6 +787,14 @@ public final class Nv2DApp implements Runnable {
         if (ubo                 != null) ubo.close();
         if (fontTexture         != null) fontTexture.close();
         if (fontAtlas           != null) fontAtlas.close();
+        
+        for (int i = 1; i < loadedTextures.length; i++) {
+            if (loadedTextures[i] != null) {
+                loadedTextures[i].close();
+                loadedTextures[i] = null;
+            }
+        }
+        
         if (pipeline            != null) pipeline.close();
         if (renderPass          != 0)    vkDestroyRenderPass(device, renderPass, null);
         if (dynamicVertexBuffer != null) dynamicVertexBuffer.close();

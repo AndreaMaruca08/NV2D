@@ -2,6 +2,7 @@ package nv.components;
 
 import nv.core.Scene;
 import nv.core.data.FontAtlas;
+import nv.core.data.NvImage;
 
 import java.util.Arrays;
 
@@ -13,7 +14,7 @@ import java.util.Arrays;
  * @author Andrea Maruca
  */
 public abstract class NvGraphic {
-    protected static final int FLOATS_PER_VERTEX = 7;
+    protected static final int FLOATS_PER_VERTEX = 8;
 
     protected NvComp component;
     protected FontAtlas fontAtlas;
@@ -119,6 +120,29 @@ public abstract class NvGraphic {
 
     public abstract void drawText(String text, float textX, float textY);
 
+    /**
+     * Disegna un'immagine intera nel rettangolo specificato.
+     * L'immagine deve essere stata registrata tramite {@code Nv2DApp.loadImage()}.
+     */
+    public abstract void drawImage(NvImage image, float x, float y, float w, float h);
+
+    /**
+     * Disegna una regione di un'immagine (utile per texture atlas).
+     * Le coordinate UV vanno da 0.0 a 1.0 rispetto all'immagine intera.
+     *
+     * @param image  immagine registrata (anche un atlas con più sprite)
+     * @param x      posizione X in coordinate componente
+     * @param y      posizione Y in coordinate componente
+     * @param w      larghezza disegnata sullo schermo
+     * @param h      altezza disegnata sullo schermo
+     * @param u0     UV X sinistra (0.0 = bordo sinistro)
+     * @param v0     UV Y superiore (0.0 = bordo superiore)
+     * @param u1     UV X destra (1.0 = bordo destro)
+     * @param v1     UV Y inferiore (1.0 = bordo inferiore)
+     */
+    public abstract void drawImageRegion(NvImage image, float x, float y, float w, float h,
+                                         float u0, float v0, float u1, float v1);
+
     public void drawRectBorder(float x, float y, float w, float h, float thickness, float r, float g, float b) {
         drawRect(x, y, w, thickness, r, g, b);
         drawRect(x, y + h - thickness, w, thickness, r, g, b);
@@ -142,7 +166,7 @@ public abstract class NvGraphic {
     //LOW LEVEL
     public static Scene generateTextGeometry(String text, float startX, float startY, FontAtlas atlas) {
         int n = text.length();
-        float[] vertices = new float[n * 4 * 7]; // 4 vertici × 7 float
+        float[] vertices = new float[n * 4 * FLOATS_PER_VERTEX]; // 4 vertici × 8 float
         int[] indices  = new int[n * 6];
         float cursorX = startX;
 
@@ -152,23 +176,23 @@ public abstract class NvGraphic {
             float x0 = cursorX,            y0 = startY;
             float x1 = cursorX + g.width,  y1 = startY + g.height;
 
-            int v = i * 4 * 7;
+            int v = i * 4 * FLOATS_PER_VERTEX;
             // top-left
-            vertices[v] = x0; vertices[v +  1] = y0;
-            vertices[v +  2] = 1f; vertices[v +  3] = 1f; vertices[v +  4] = 1f;
-            vertices[v +  5] = g.uMin; vertices[v +  6] = g.vMin;
+            vertices[v     ] = x0;    vertices[v +  1] = y0;
+            vertices[v +  2] = 1f;    vertices[v +  3] = 1f;    vertices[v +  4] = 1f;
+            vertices[v +  5] = g.uMin; vertices[v +  6] = g.vMin; vertices[v +  7] = 0f;
             // top-right
-            vertices[v +  7] = x1; vertices[v +  8] = y0;
-            vertices[v +  9] = 1f; vertices[v + 10] = 1f; vertices[v + 11] = 1f;
-            vertices[v + 12] = g.uMax; vertices[v + 13] = g.vMin;
+            vertices[v +  8] = x1;    vertices[v +  9] = y0;
+            vertices[v + 10] = 1f;    vertices[v + 11] = 1f;    vertices[v + 12] = 1f;
+            vertices[v + 13] = g.uMax; vertices[v + 14] = g.vMin; vertices[v + 15] = 0f;
             // bottom-right
-            vertices[v + 14] = x1; vertices[v + 15] = y1;
-            vertices[v + 16] = 1f; vertices[v + 17] = 1f; vertices[v + 18] = 1f;
-            vertices[v + 19] = g.uMax; vertices[v + 20] = g.vMax;
+            vertices[v + 16] = x1;    vertices[v + 17] = y1;
+            vertices[v + 18] = 1f;    vertices[v + 19] = 1f;    vertices[v + 20] = 1f;
+            vertices[v + 21] = g.uMax; vertices[v + 22] = g.vMax; vertices[v + 23] = 0f;
             // bottom-left
-            vertices[v + 21] = x0; vertices[v + 22] = y1;
-            vertices[v + 23] = 1f; vertices[v + 24] = 1f; vertices[v + 25] = 1f;
-            vertices[v + 26] = g.uMin; vertices[v + 27] = g.vMax;
+            vertices[v + 24] = x0;    vertices[v + 25] = y1;
+            vertices[v + 26] = 1f;    vertices[v + 27] = 1f;    vertices[v + 28] = 1f;
+            vertices[v + 29] = g.uMin; vertices[v + 30] = g.vMax; vertices[v + 31] = 0f;
 
             int idx = i * 6, base = i * 4;
             indices[idx]     = (short)  base;

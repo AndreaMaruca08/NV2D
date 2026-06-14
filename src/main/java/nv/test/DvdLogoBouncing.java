@@ -9,7 +9,7 @@ public class DvdLogoBouncing extends NvComp {
     private float preciseY;
 
     private float velocityX = 1000f;
-    private float velocityY = 800f;
+    private float velocityY = 1000f;
 
     private final Nv2DApp app = Nv2DApp.getInstance();
 
