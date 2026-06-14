@@ -3,6 +3,7 @@ package nv.test;
 import nv.components.NvComp;
 import nv.components.NvGraphic;
 import nv.core.Nv2DApp;
+import nv.core.data.NvImage;
 
 public class DvdLogoBouncing extends NvComp {
     private float preciseX;
@@ -13,16 +14,20 @@ public class DvdLogoBouncing extends NvComp {
 
     private final Nv2DApp app = Nv2DApp.getInstance();
 
+    private NvImage image;
+
     public DvdLogoBouncing(int x, int y) {
         super(x, y, 200, 200);
         this.preciseX = x;
         this.preciseY = y;
+        if(image == null){
+            image = app.loadImageFromResource("/textures/dvdLogo.png");
+        }
     }
 
     @Override
     public void drawIntern(NvGraphic g) {
-        g.drawRect(0, 0, w, h);
-        g.drawText("D V D", w * 0.2f, h * 0.3f);
+        g.drawImage(image, x, y, w, h);
     }
 
     @Override
