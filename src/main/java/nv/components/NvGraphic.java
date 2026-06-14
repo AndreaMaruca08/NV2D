@@ -1,5 +1,6 @@
 package nv.components;
 
+import nv.core.AppendableGeometry;
 import nv.core.Scene;
 import nv.core.data.FontAtlas;
 import nv.core.data.NvImage;
@@ -13,7 +14,7 @@ import java.util.Arrays;
  * @since 1.0
  * @author Andrea Maruca
  */
-public abstract class NvGraphic {
+public abstract class NvGraphic implements AppendableGeometry {
     protected static final int FLOATS_PER_VERTEX = 8;
 
     protected NvComp component;
@@ -22,7 +23,6 @@ public abstract class NvGraphic {
     protected float[] vertices;
     protected int[] indices;
 
-    // Geometria separata per immagini (8-float format)
     protected float[] imageVertices;
     protected int[] imageIndices;
 
@@ -76,7 +76,7 @@ public abstract class NvGraphic {
         this.component = component;
     }
 
-    protected void appendGeometry(float[] newVertices, int[] newIndices) {
+    public void append(float[] newVertices, int[] newIndices) {
         int vertexOffset = vertexFloatCount / FLOATS_PER_VERTEX;
 
         ensureVertexCapacity(vertexFloatCount + newVertices.length);
@@ -164,22 +164,38 @@ public abstract class NvGraphic {
         imageIndices = Arrays.copyOf(imageIndices, newCapacity);
     }
 
-    public abstract void drawTri(float base1, float base2, float y, float r, float g, float b);
-    public void drawTri(float base1, float base2, float y){
-        drawTri(base1, base2, y, r, g, b);
+    public abstract void drawTri(float base1, float base2, float y, float r, float g, float b, AppendableGeometry comp);
+
+    public void drawTri(float base1, float base2, float y) {
+        drawTri(base1, base2, y, r, g, b, this);
     }
 
-    public abstract void drawRect(float x, float y, float w, float h,   float r, float g, float b);
-    public void drawRect(float x, float y, float w, float h){
-        drawRect(x, y, w, h, r, g, b);
+    public void drawTri(float base1, float base2, float y, float r, float g, float b) {
+        drawTri(base1, base2, y, r, g, b, this);
     }
 
-    public abstract void drawText(String text, float textX, float textY);
+    public void drawTri(float base1, float base2, float y, AppendableGeometry comp) {
+        drawTri(base1, base2, y, r, g, b, comp);
+    }
 
-    /**
-     * Disegna un'immagine intera nel rettangolo specificato.
-     * L'immagine deve essere stata registrata tramite {@code Nv2DApp.loadImage()}.
-     */
+
+    public abstract void drawRect(float x, float y, float w, float h, float r, float g, float b, AppendableGeometry comp);
+
+    public void drawRect(float x, float y, float w, float h) {
+        drawRect(x, y, w, h, r, g, b, this);
+    }
+    public void drawRect(float x, float y, float w, float h, float r, float g, float b) {
+        drawRect(x, y, w, h, r, g, b, this);
+    }
+    public void drawRect(float x, float y, float w, float h, AppendableGeometry comp) {
+        drawRect(x, y, w, h, r, g, b, comp);
+    }
+
+    public abstract void drawText(String text, float textX, float textY, AppendableGeometry comp);
+    public void drawText(String text, float textX, float textY) {
+        drawText(text, textX, textY, this);
+    }
+
     public abstract void drawImage(NvImage image, float x, float y, float w, float h);
 
     /**

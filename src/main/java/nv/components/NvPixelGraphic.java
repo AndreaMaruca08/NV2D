@@ -1,5 +1,6 @@
 package nv.components;
 
+import nv.core.AppendableGeometry;
 import nv.core.Scene;
 import nv.core.data.NvImage;
 
@@ -12,11 +13,11 @@ import nv.core.data.NvImage;
  */
 public class NvPixelGraphic extends NvGraphic {
     @Override
-    public void drawTri(float base1, float base2, float y, float r, float g, float b){
-        float b1 = component.getX() + base1;
-        float b2 = component.getX() + base2;
-        float y1 = component.getY() + y;
-        float apexY = y1 - component.getH(); // Apex verso l'alto rispetto alla base
+    public void drawTri(float base1, float base2, float y, float r, float g, float b, AppendableGeometry comp){
+        float b1 = component.x + base1;
+        float b2 = component.x + base2;
+        float y1 = component.y + y;
+        float apexY = y1 - component.h;
 
         float[] triVerts = {
                 b1, y1,   r, g, b, wu, wv, 0f,
@@ -25,12 +26,12 @@ public class NvPixelGraphic extends NvGraphic {
         };
         int[] triInds = { 0, 1, 2 };
 
-        appendGeometry(triVerts, triInds);
+        comp.append(triVerts, triInds);
     }
     @Override
-    public void drawRect(float x, float y, float w, float h, float r, float g, float b){
-        float x1 = component.getX() + x;
-        float y1 = component.getY() + y;
+    public void drawRect(float x, float y, float w, float h, float r, float g, float b, AppendableGeometry comp){
+        float x1 = component.x + x;
+        float y1 = component.y + y;
         float x2 = x1 + w;
         float y2 = y1 + h;
 
@@ -43,14 +44,14 @@ public class NvPixelGraphic extends NvGraphic {
 
         int[] quadInds = { 0, 1, 2,  2, 3, 0 };
 
-        appendGeometry(quadVerts, quadInds);
+        comp.append(quadVerts, quadInds);
     }
     @Override
-    public void drawText(String text, float textX, float textY){
-        float x = component.getX() + textX;
-        float y = component.getY() + textY;
+    public void drawText(String text, float textX, float textY, AppendableGeometry comp){
+        float x = component.x + textX;
+        float y = component.y + textY;
         Scene textGeo  = generateTextGeometry(text, x, y, fontAtlas);
-        appendGeometry(textGeo.vertices(), textGeo.indices());
+        comp.append(textGeo.vertices(), textGeo.indices());
     }
 
     @Override
@@ -61,8 +62,8 @@ public class NvPixelGraphic extends NvGraphic {
     @Override
     public void drawImageRegion(NvImage image, float x, float y, float w, float h,
                                 float u0, float v0, float u1, float v1) {
-        float x1 = component.getX() + x;
-        float y1 = component.getY() + y;
+        float x1 = component.x + x;
+        float y1 = component.y + y;
         float x2 = x1 + w;
         float y2 = y1 + h;
         

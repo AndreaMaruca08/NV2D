@@ -6,8 +6,8 @@ import nv.core.Nv2DApp;
 
 public class PerformanceTest extends NvComp{
     private int rectNumber = 0;
-    public PerformanceTest(int x, int y, int w, int h) {
-        super(x, y, w, h);
+    public PerformanceTest() {
+        super(0,0,0,0);
         childrenFirst = false;
     }
 

@@ -80,6 +80,7 @@ public final class Nv2DApp implements Runnable {
 
     //Input
     private GLFWMouseButtonCallback mouseButtonCallback;
+    private GLFWKeyCallback keyboardCallback;
 
     private boolean framebufferResized = false;
 
@@ -266,12 +267,14 @@ public final class Nv2DApp implements Runnable {
     private float oldFps;
 
     private void rebuildScene() {
+
         final float w = swapchain.getWidth();
         final float h = swapchain.getHeight();
         final float wu = 8.0f / 512.0f;
         final float wv = 8.0f / 512.0f;
 
         graphic.initialize(w, h, wu, wv, fontAtlas);
+
         rootComponent.draw(graphic);
 
         if(showFPS)
@@ -341,13 +344,22 @@ public final class Nv2DApp implements Runnable {
         });
 
         mouseButtonCallback = GLFWMouseButtonCallback.create(inputCallback());
+        keyboardCallback = GLFWKeyCallback.create(keyboardCallBack());
 
+        glfwSetKeyCallback(window, keyboardCallback);
         glfwSetMouseButtonCallback(window, mouseButtonCallback);
+
         glfwSetCursorPosCallback(window, (windowHandle, x, y) -> {
             mouseX = (int) x;
             mouseY = (int) y;
             mouseMoved = true;
         });
+    }
+
+    private KeyboardListener focused;
+
+    public void setKeyboardFocus(KeyboardListener focused) {
+        this.focused = focused;
     }
 
     private GLFWMouseButtonCallbackI inputCallback(){
@@ -361,7 +373,32 @@ public final class Nv2DApp implements Runnable {
                         }
                     }
                 }
-            }};
+            }
+            else if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE){
+                var correctedCoords = getCorrectedCoords();
+                for (var comp : rootComponent.getChildren()) {
+                    if (comp instanceof Clickable clickable) {
+                        if (comp.isInside(correctedCoords[0], correctedCoords[1])) {
+                            clickable.onClickRelease();
+                        }
+                    }
+                }
+            }
+        };
+    }
+    private final boolean[] keys = new boolean[GLFW_KEY_LAST + 1];
+
+    private GLFWKeyCallbackI keyboardCallBack(){
+        return (window, key, scancode, action, mods) -> {
+            if(action == GLFW_PRESS || action == GLFW_REPEAT){
+                keys[key] = true;
+                focused.onKeyPressed(keys, mods);
+            }
+            else if (action == GLFW_RELEASE) {
+                focused.onKeyReleased(keys, mods);
+                keys[key] = false;
+            }
+        };
     }
 
     private void initVulkan() {
@@ -511,7 +548,6 @@ public final class Nv2DApp implements Runnable {
             vkWaitForFences(device, inFlightFence, true, Long.MAX_VALUE);
             vkResetFences(device, inFlightFence);
 
-            // GPU idle: sicuro aggiornare i buffer ogni frame
             rebuildScene();
 
             IntBuffer pImageIndex = stack.mallocInt(1);
@@ -818,6 +854,10 @@ public final class Nv2DApp implements Runnable {
         if (mouseButtonCallback != null) {
             mouseButtonCallback.free();
             mouseButtonCallback = null;
+        }
+        if (keyboardCallback != null) {
+            keyboardCallback.free();
+            keyboardCallback = null;
         }
 
         if (device != null) {

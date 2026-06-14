@@ -1,11 +1,11 @@
 package nv.test;
 
-import nv.components.NvClickable;
+import nv.components.NvComp;
 import nv.components.NvGraphic;
 import nv.core.Nv2DApp;
 import nv.core.data.NvImage;
 
-public class DvdLogoBouncing extends NvClickable {
+public class DvdLogoBouncing extends NvComp {
     private float preciseX;
     private float preciseY;
 
@@ -13,15 +13,13 @@ public class DvdLogoBouncing extends NvClickable {
     private float velocityY = 1000f;
 
     private final Nv2DApp app = Nv2DApp.getInstance();
-    private NvImage image;
+    private final NvImage image;
 
     public DvdLogoBouncing(int x, int y) {
         super(x, y, 200, 200);
         this.preciseX = x;
         this.preciseY = y;
-        if(image == null){
-            image = app.loadImage("dvdLogo.png");
-        }
+        image = app.loadImage("dvdLogo.png");
     }
 
     @Override
@@ -71,10 +69,5 @@ public class DvdLogoBouncing extends NvClickable {
 
         x = Math.round(preciseX);
         y = Math.round(preciseY);
-    }
-
-    @Override
-    public void onClick() {
-
     }
 }
