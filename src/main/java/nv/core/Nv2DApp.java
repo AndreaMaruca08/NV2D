@@ -1,6 +1,9 @@
 package nv.core;
 
 import nv.components.*;
+import nv.core.collision.AABB;
+import nv.core.collision.Collidable;
+import nv.core.collision.CollisionSystem;
 import nv.core.data.DynamicVertexBuffer;
 import nv.core.data.DynamicIndexBuffer;
 import nv.core.data.FontAtlas;
@@ -18,7 +21,9 @@ import java.awt.Dimension;
 import java.awt.Toolkit;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.lwjgl.glfw.GLFW.*;
@@ -50,6 +55,7 @@ public final class Nv2DApp implements Runnable {
     private long renderPass;
     private long[] framebuffers;
     private UpdateCycle updateCycle;
+    private CollisionSystem collisionSystem;
 
     // Capacità massima pre-allocata (aumenta se servi più geometria)
     private int maxVertices = 300_000; // vertici × 8 float
@@ -140,9 +146,18 @@ public final class Nv2DApp implements Runnable {
         return image;
     }
 
+    /**
+     * Standard is AABB
+     * @param collisionSystem new CollisionSystem
+     */
+    public void setCollisionSystem(CollisionSystem collisionSystem) {
+        this.collisionSystem = collisionSystem;
+    }
+
     public void setShowFPS(boolean shouldShow) {
         this.showFPS = shouldShow;
     }
+
     public NvCont getPage(String key){
         return pages.get(key);
     }
@@ -222,23 +237,28 @@ public final class Nv2DApp implements Runnable {
         this.maxVertices = maxVertices;
         this.maxIndices  = maxIndices;
         this.updateCycle = (_) -> {};
+        this.collisionSystem = new AABB();
         initWindow(name, windowDim);
         initVulkan();
+
     }
     private Nv2DApp(String name) {
         this.updateCycle = (_) -> {};
         initWindow(name, SCREEN);
         initVulkan();
+        this.collisionSystem = new AABB();
     }
     private Nv2DApp(Dimension windowDimension) {
         this.updateCycle = (_) -> {};
         initWindow("NV2D game", windowDimension);
         initVulkan();
+        this.collisionSystem = new AABB();
     }
     private Nv2DApp(String name, Dimension windowDimension) {
         this.updateCycle = (_) -> {};
         initWindow(name, windowDimension);
         initVulkan();
+        this.collisionSystem = new AABB();
     }
 
     public void setMainLoop(UpdateCycle updateCycle){
@@ -261,19 +281,28 @@ public final class Nv2DApp implements Runnable {
     private int imageIndexOffset;
 
     private final NvGraphic graphic = new NvPixelGraphic();
+    private final List<NvComp> canCollide = new ArrayList<>(20);
+
+    public void addCanCollide(NvComp component){
+        canCollide.add(component);
+    }
+    public void removeCanCollide(NvComp component){
+        canCollide.remove(component);
+    }
 
     private int frameCount = 0;
     private float fpsSum = 0.0F;
     private float oldFps;
 
     private void rebuildScene() {
-
         final float w = swapchain.getWidth();
         final float h = swapchain.getHeight();
         final float wu = 8.0f / 512.0f;
         final float wv = 8.0f / 512.0f;
 
         graphic.initialize(w, h, wu, wv, fontAtlas);
+
+        handleCollisions();
 
         rootComponent.draw(graphic);
 
@@ -289,7 +318,6 @@ public final class Nv2DApp implements Runnable {
         imageIndexCount    = iInds.length;
         imageIndexOffset   = graphicsIndexCount;
 
-
         float[] combinedVerts = new float[gVerts.length + iVerts.length];
         System.arraycopy(gVerts, 0, combinedVerts, 0, gVerts.length);
         System.arraycopy(iVerts, 0, combinedVerts, gVerts.length, iVerts.length);
@@ -304,6 +332,23 @@ public final class Nv2DApp implements Runnable {
         dynamicVertexBuffer.update(combinedVerts);
         dynamicIndexBuffer.update(combinedInds);
     }
+    private void handleCollisions(){
+        for(int i = 0; i < canCollide.size(); i++){
+            var a = canCollide.get(i);
+            for(int j = 0; j < canCollide.size(); j++){
+                var b = canCollide.get(j);
+                if(i != j && collisionSystem.isColliding(a, b)){
+                    var collided1 = (Collidable) a;
+                    var collided2 = (Collidable) b;
+                    collided1.whenCollide(b);
+                    collided2.whenCollide(a);
+
+                    collisionSystem.resolveCollision(a,b);
+                }
+            }
+        }
+    }
+
     private void handleFps(){
         frameCount++;
         fpsSum += fps;

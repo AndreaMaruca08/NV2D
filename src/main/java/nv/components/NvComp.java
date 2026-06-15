@@ -1,7 +1,12 @@
 package nv.components;
 
 import nv.components.vectors.Vector2D;
+import nv.core.AppendableGeometry;
+import nv.core.Nv2DApp;
+import nv.core.NvGraphic;
 import nv.core.UpdateCycle;
+import nv.core.collision.Collidable;
+import nv.core.collision.CollisionSystem;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,7 +24,9 @@ public abstract class NvComp implements UpdateCycle {
     protected int x, y, w, h;
     protected boolean isHovered;
     protected boolean childrenFirst;
-    protected float rotation = 0;
+    public float rotation = 0;
+    protected int weight = CollisionSystem.NO_WEIGHT;
+    public boolean border = false;
 
     public NvComp(int x, int y, int w, int h) {
         children = new ArrayList<>();
@@ -28,6 +35,10 @@ public abstract class NvComp implements UpdateCycle {
         this.y = y;
         this.w = w;
         this.h = h;
+    }
+
+    public int getWeight() {
+        return weight;
     }
 
     public List<NvComp> getChildren() {
@@ -46,6 +57,10 @@ public abstract class NvComp implements UpdateCycle {
         return x;
     }
 
+    public void setWeight(int weight) {
+        this.weight = weight;
+    }
+
     public int getH() {
         return h;
     }
@@ -60,22 +75,42 @@ public abstract class NvComp implements UpdateCycle {
 
     public void setX(int x) {
         this.x = x;
+        invalidate();
     }
 
     public void setY(int y) {
         this.y = y;
+        invalidate();
     }
 
     public void setH(int h) {
         this.h = h;
+        invalidate();
     }
 
     public void setW(int w) {
         this.w = w;
+        invalidate();
+    }
+
+    public void invalidate() {}
+
+    private Nv2DApp app;
+    public void addChild(NvComp child){
+        if(app == null)
+            app = Nv2DApp.getInstance();
+        children.add(child);
+        child.setParent(this);
+        if(child instanceof Collidable)
+            app.addCanCollide(child);
     }
 
     public void removeChild(NvComp child){
+        if(app == null)
+            app = Nv2DApp.getInstance();
         children.remove(child);
+        if(child instanceof Collidable)
+            app.removeCanCollide(child);
     }
 
     protected void mouseEnter(){}
@@ -85,6 +120,7 @@ public abstract class NvComp implements UpdateCycle {
     public void translate(Vector2D v, float amount){
         this.x += (int) (v.x * amount);
         this.y += (int) (v.y * amount);
+        invalidate();
     }
 
     public void handleHover(int mouseX, int mouseY){
@@ -97,10 +133,6 @@ public abstract class NvComp implements UpdateCycle {
         isHovered = true;
     }
 
-    public void addChild(NvComp child){
-        children.add(child);
-        child.setParent(this);
-    }
 
     public void tick(float dt){
         updateChildren(dt);
@@ -130,7 +162,12 @@ public abstract class NvComp implements UpdateCycle {
             drawChildren(g);
             drawIntern(g);
         }
-
+        if(border){
+            if(this instanceof AppendableGeometry comp){
+                g.drawRect(0,0, w, h, 1,0,0, comp);
+            }
+            g.drawRect(0,0, w, h, 1,0,0);
+        }
         g.setComponent(this);
         g.applyTransformsToBatch(vStart, iStart);
     }
@@ -154,4 +191,8 @@ public abstract class NvComp implements UpdateCycle {
         rotation += clockwise ? angle : -angle;
     }
 
+    @Override
+    public String toString(){
+        return "NvComp: " + this.getClass().getSimpleName() + " x: " + x + " y: " + y + " w: " + w + " h: " + h + " rotation: " + rotation;
+    }
 }

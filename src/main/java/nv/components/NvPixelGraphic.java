@@ -1,6 +1,7 @@
 package nv.components;
 
 import nv.core.AppendableGeometry;
+import nv.core.NvGraphic;
 import nv.core.Scene;
 import nv.core.data.NvImage;
 
@@ -35,8 +36,11 @@ public class NvPixelGraphic extends NvGraphic {
         float[] ovalVerts = new float[(accuracy + 1) * FLOATS_PER_VERTEX];
         int[] ovalInds = new int[accuracy * 3];
 
-        ovalVerts[0] = 0;
-        ovalVerts[1] = 0;
+        x += radius/2;
+        y += radius/2;
+
+        ovalVerts[0] = component.x+x;
+        ovalVerts[1] = component.y+y;
         ovalVerts[2] = r;
         ovalVerts[3] = g;
         ovalVerts[4] = b;
@@ -54,8 +58,8 @@ public class NvPixelGraphic extends NvGraphic {
             float lx = (float)Math.cos(angle) * radius;
             float ly = (float)Math.sin(angle) * radius;
 
-            ovalVerts[off]     = lx;
-            ovalVerts[off + 1] = ly;
+            ovalVerts[off]     = lx + component.x + x;
+            ovalVerts[off + 1] = ly + component.y + y;
             ovalVerts[off + 2] = r;
             ovalVerts[off + 3] = g;
             ovalVerts[off + 4] = b;

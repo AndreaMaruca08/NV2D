@@ -1,5 +1,7 @@
 package nv.components;
 
+import nv.core.NvGraphic;
+
 /**
  * <h3>Empty container</h3>
  * <p>Simple empty component used for storing other components</p>
@@ -32,7 +34,7 @@ public class NvCont extends NvComp {
     @Override
     public void drawIntern(NvGraphic g) {
         if(showBorder){
-            g.drawRectBorder(x, y, w, h, 20, 0.3f, 0.1f, 0.1f);
+            g.drawRectBorder(0, 0, w, h, 20, 0.3f, 0.1f, 0.1f);
         }
     }
 }

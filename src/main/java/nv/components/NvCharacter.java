@@ -1,13 +1,16 @@
 package nv.components;
 
 import nv.core.KeyboardListener;
+import nv.core.NvGraphic;
+import nv.core.collision.Collidable;
+
 import static org.lwjgl.glfw.GLFW.*;
 
 /**
  * <h3>Base for a game character</h3>
  * <p>Character with movements, intended to be extended</p>
  */
-public class NvCharacter extends NvComp implements KeyboardListener {
+public class NvCharacter extends NvComp implements KeyboardListener, Collidable {
     protected int upKey =    GLFW_KEY_W;
     protected int leftKey =  GLFW_KEY_A;
     protected int downKey =  GLFW_KEY_S;
@@ -24,8 +27,8 @@ public class NvCharacter extends NvComp implements KeyboardListener {
 
     @Override
     public void drawIntern(NvGraphic g) {
-        g.drawRect(x, y, w, h);
-        g.drawRect(x, y, w, (float)h/3, 1,0,0);
+        g.drawRect(0, 0, w, h);
+        g.drawRect(0, 0, w, (float)h/3, 1,0,0);
     }
 
 
@@ -61,8 +64,11 @@ public class NvCharacter extends NvComp implements KeyboardListener {
             dy /= length;
         }
 
-
         x += Math.round(dx * velocity * dt);
         y += Math.round(dy * velocity * dt);
+    }
+
+    @Override
+    public void whenCollide(NvComp other) {
     }
 }

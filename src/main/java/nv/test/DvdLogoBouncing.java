@@ -1,7 +1,7 @@
 package nv.test;
 
 import nv.components.NvComp;
-import nv.components.NvGraphic;
+import nv.core.NvGraphic;
 import nv.core.Nv2DApp;
 import nv.core.data.NvImage;
 

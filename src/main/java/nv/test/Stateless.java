@@ -1,6 +1,6 @@
 package nv.test;
 
-import nv.components.NvGraphic;
+import nv.core.NvGraphic;
 import nv.components.NvStateless;
 
 public class Stateless extends NvStateless {

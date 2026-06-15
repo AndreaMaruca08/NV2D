@@ -1,9 +1,11 @@
 package nv.components;
 
 import nv.core.AppendableGeometry;
+import nv.core.NvGraphic;
+import nv.core.collision.CollisionSystem;
 
 import java.util.Arrays;
-import static nv.components.NvGraphic.FLOATS_PER_VERTEX;
+import static nv.core.NvGraphic.FLOATS_PER_VERTEX;
 
 public abstract class NvStateless extends NvComp implements AppendableGeometry {
     private float[] vertices;
@@ -16,6 +18,7 @@ public abstract class NvStateless extends NvComp implements AppendableGeometry {
         super(x, y, w, h);
         this.vertices = new float[1024 * FLOATS_PER_VERTEX];
         this.indices = new int[1024];
+        this.weight = CollisionSystem.MAX_WEIGHT;
     }
     public void invalidate() {
         this.initialized = false;

@@ -1,7 +1,6 @@
-package nv.components;
+package nv.core;
 
-import nv.core.AppendableGeometry;
-import nv.core.Scene;
+import nv.components.NvComp;
 import nv.core.data.FontAtlas;
 import nv.core.data.NvImage;
 
@@ -16,9 +15,6 @@ import java.util.Arrays;
  */
 public abstract class NvGraphic implements AppendableGeometry {
     public static final int FLOATS_PER_VERTEX = 8;
-
-    private float cos;
-    private float sin;
 
     protected NvComp component;
     protected FontAtlas fontAtlas;
@@ -79,8 +75,6 @@ public abstract class NvGraphic implements AppendableGeometry {
 
     public void setComponent(NvComp component){
         this.component = component;
-        this.cos = (float) Math.cos(component.rotation);
-        this.sin = (float) Math.sin(component.rotation);
     }
 
     public void applyTransformsToBatch(int vStart, int iStart) {
@@ -89,20 +83,18 @@ public abstract class NvGraphic implements AppendableGeometry {
         float cos = (float) Math.cos(component.rotation);
         float sin = (float) Math.sin(component.rotation);
 
-        for (int i = vStart; i < vertexFloatCount; i += FLOATS_PER_VERTEX) {
-            float lx = vertices[i] - (component.x + component.w/2f);
-            float ly = vertices[i+1] - (component.y + component.h/2f);
+        rotateVertArray(vStart, cos, sin, vertexFloatCount, vertices);
 
-            vertices[i]     = (lx * cos - ly * sin) + component.x;
-            vertices[i + 1] = (lx * sin + ly * cos) + component.y;
-        }
+        rotateVertArray(iStart, cos, sin, imageVertexFloatCount, imageVertices);
+    }
 
-        for (int i = iStart; i < imageVertexFloatCount; i += FLOATS_PER_VERTEX) {
-            float lx = imageVertices[i] - component.x;
-            float ly = imageVertices[i + 1] - component.y;
+    private void rotateVertArray(int iStart, float cos, float sin, int vertexCount, float[] imageVertices) {
+        for (int i = iStart; i < vertexCount; i += FLOATS_PER_VERTEX) {
+            float lx = vertices[i] - (component.getX() + w+ component.getW()/2f);
+            float ly = vertices[i+1] - (component.getY() + component.getH()/2f);
 
-            imageVertices[i]     = (lx * cos - ly * sin) + component.x;
-            imageVertices[i + 1] = (lx * sin + ly * cos) + component.y;
+            imageVertices[i]     = (lx * cos - ly * sin) + component.getX();
+            imageVertices[i + 1] = (lx * sin + ly * cos) + component.getY();
         }
     }
 
@@ -203,7 +195,32 @@ public abstract class NvGraphic implements AppendableGeometry {
         imageIndices = Arrays.copyOf(imageIndices, newCapacity);
     }
 
-    public void drawPentagon(float x, float y){};
+    public void drawPentagon(float x, float y, float radius, float r, float g, float b, AppendableGeometry comp){
+        drawOval(x, y, radius, 5, r, g, b, comp);
+    };
+    public void drawPentagon(float x, float y, float radius, float r, float g, float b){
+        drawPentagon(x, y, radius, r, g, b, this);
+    };
+    public void drawPentagon(float x, float y, float radius){
+        drawPentagon(x, y, radius, r, g, b, this);
+    };
+    public void drawPentagon(float x, float y, float radius, AppendableGeometry comp){
+        drawPentagon(x, y, radius, r, g, b, comp);
+    };
+
+    public void drawHexagon(float x, float y, float radius, float r, float g, float b, AppendableGeometry comp){
+        drawOval(x, y, radius, 6, r, g, b, comp);
+    };
+    public void drawHexagon(float x, float y, float radius, float r, float g, float b){
+        drawHexagon(x, y, radius, r, g, b, this);
+    };
+    public void drawHexagon(float x, float y, float radius){
+        drawHexagon(x, y, radius, r, g, b, this);
+    };
+    public void drawHexagon(float x, float y, float radius, AppendableGeometry comp){
+        drawHexagon(x, y, radius, r, g, b, comp);
+    };
+
 
     public abstract void drawTri(float base1, float base2, float y, float r, float g, float b, AppendableGeometry comp);
 
@@ -222,6 +239,12 @@ public abstract class NvGraphic implements AppendableGeometry {
     public abstract void drawOval(float x, float y, float radius, int accuracy, float r, float g, float b, AppendableGeometry comp);
     public void drawOval(float x, float y, float radius, int accuracy){
         drawOval(x, y, radius, accuracy, r, g, b, this);
+    };
+    public void drawOval(float x, float y, float radius, float r, float g, float b){
+        drawOval(x, y, radius, 16, r, g, b, this);
+    };
+    public void drawOval(float x, float y, float radius, float r, float g, float b, AppendableGeometry comp){
+        drawOval(x, y, radius, 16, r, g, b, this);
     };
     public void drawOval(float x, float y, float radius, int accuracy, AppendableGeometry comp){
         drawOval(x, y, radius, accuracy, r, g, b, comp);

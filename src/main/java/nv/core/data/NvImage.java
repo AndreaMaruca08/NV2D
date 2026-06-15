@@ -1,5 +1,6 @@
 package nv.core.data;
 
+import nv.core.NvGraphic;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
@@ -16,7 +17,7 @@ import java.nio.ByteBuffer;
  * Supporta immagini singole e texture atlas (specificando le coordinate UV nella chiamata draw).</p>
  *
  * <p>Per disegnare una regione specifica di un texture atlas usare
- * {@link nv.components.NvGraphic#drawImageRegion}.</p>
+ * {@link NvGraphic#drawImageRegion}.</p>
  *
  * @since 1.0
  * @author Andrea Maruca

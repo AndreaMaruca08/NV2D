@@ -1,7 +1,7 @@
 package nv.test;
 
 import nv.components.NvComp;
-import nv.components.NvGraphic;
+import nv.core.NvGraphic;
 import nv.core.Clickable;
 
 public class ClickTest extends NvComp implements Clickable {
@@ -29,6 +29,6 @@ public class ClickTest extends NvComp implements Clickable {
 
     @Override
     public void update(float dt) {
-        rotate(10*dt, true);
+        rotate(5*dt, true);
     }
 }
