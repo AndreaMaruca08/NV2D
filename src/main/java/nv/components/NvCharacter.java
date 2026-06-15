@@ -67,8 +67,4 @@ public class NvCharacter extends NvComp implements KeyboardListener, Collidable 
         x += Math.round(dx * velocity * dt);
         y += Math.round(dy * velocity * dt);
     }
-
-    @Override
-    public void whenCollide(NvComp other) {
-    }
 }

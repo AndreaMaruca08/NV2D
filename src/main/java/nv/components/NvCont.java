@@ -2,6 +2,8 @@ package nv.components;
 
 import nv.core.NvGraphic;
 
+import java.awt.*;
+
 /**
  * <h3>Empty container</h3>
  * <p>Simple empty component used for storing other components</p>
@@ -10,7 +12,7 @@ import nv.core.NvGraphic;
  * @since 1.0
  * @author Andrea Maruca
  */
-public class NvCont extends NvComp {
+public class NvCont extends NvRgbComp {
     private final boolean showBorder;
 
     public NvCont(int x, int y, int w, int h) {
@@ -20,6 +22,15 @@ public class NvCont extends NvComp {
     public NvCont(int x, int y, int w, int h, boolean showBorder) {
         super(x, y, w, h);
         this.showBorder = showBorder;
+        this.r = 1;
+        this.g = 1;
+        this.b = 1;
+    }
+
+    public void setBackground(float r, float g, float b) {
+        this.r = r;
+        this.g = g;
+        this.b = b;
     }
 
     public static NvCont newPage(){

@@ -10,7 +10,5 @@ public class Stateless extends NvStateless {
     @Override
     public void drawIntern(NvGraphic g) {
         g.drawRect(0,0,200,100, this);
-        g.drawRect(500,0,200,100, this);
-        g.drawRect(1000,0,200,100, this);
     }
 }

@@ -2,6 +2,9 @@ package nv.core.collision;
 
 import nv.components.NvComp;
 
+/**
+ * Default collision system for fast but simple collision detection.
+ */
 public class AABB implements CollisionSystem{
 
     @Override

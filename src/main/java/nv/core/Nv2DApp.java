@@ -304,6 +304,14 @@ public final class Nv2DApp implements Runnable {
 
         handleCollisions();
 
+            graphic.setComponent(rootComponent);
+            graphic.drawRect(0, 0,
+                    rootComponent.getW(),
+                    rootComponent.getH(),
+                    rootComponent.getR(),
+                    rootComponent.getG(),
+                    rootComponent.getB());
+
         rootComponent.draw(graphic);
 
         if(showFPS)

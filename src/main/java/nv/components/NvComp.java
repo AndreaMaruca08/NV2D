@@ -37,6 +37,10 @@ public abstract class NvComp implements UpdateCycle {
         this.h = h;
     }
 
+    public boolean isChildrenFirst() {
+        return childrenFirst;
+    }
+
     public int getWeight() {
         return weight;
     }
@@ -71,6 +75,10 @@ public abstract class NvComp implements UpdateCycle {
 
     protected void setParent(NvComp parent){
         this.parent = parent;
+    }
+
+    public void setChildrenFirst(boolean childrenFirst) {
+        this.childrenFirst = childrenFirst;
     }
 
     public void setX(int x) {
@@ -160,9 +168,11 @@ public abstract class NvComp implements UpdateCycle {
             drawChildren(g);
         }else{
             drawChildren(g);
+            g.setComponent(this);
             drawIntern(g);
         }
         if(border){
+            g.setComponent(this);
             if(this instanceof AppendableGeometry comp){
                 g.drawRect(0,0, w, h, 1,0,0, comp);
             }
