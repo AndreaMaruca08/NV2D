@@ -27,6 +27,7 @@ public abstract class NvComp implements UpdateCycle {
     public float rotation = 0;
     protected int weight = CollisionSystem.NO_WEIGHT;
     public boolean border = false;
+    protected boolean isHUD = false;
 
     public NvComp(int x, int y, int w, int h) {
         children = new ArrayList<>();
@@ -35,6 +36,16 @@ public abstract class NvComp implements UpdateCycle {
         this.y = y;
         this.w = w;
         this.h = h;
+    }
+
+    public boolean isHUD() {
+        return isHUD;
+    }
+
+    public void setHUD(boolean HUD) {
+        if(this instanceof Collidable)
+            throw new UnsupportedOperationException("Collidable components cannot be set as HUD");
+        isHUD = HUD;
     }
 
     public boolean isChildrenFirst() {

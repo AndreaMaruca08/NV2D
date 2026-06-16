@@ -1,5 +1,6 @@
 package nv.components;
 
+import nv.components.camera.NvCamera;
 import nv.core.KeyboardListener;
 import nv.core.NvGraphic;
 import nv.core.collision.Collidable;
@@ -16,14 +17,26 @@ public class NvCharacter extends NvComp implements KeyboardListener, Collidable 
     protected int downKey =  GLFW_KEY_S;
     protected int rightKey = GLFW_KEY_D;
 
-    protected float velocity = 1000f;
+    protected final NvCamera camera;
+    protected boolean needCamera;
+
+    protected float velocity = 2000f;
 
     private boolean[] keys = new boolean[GLFW_KEY_LAST];
 
     public NvCharacter(int x, int y, int w, int h) {
         super(x, y, w,h);
+        camera = new NvCamera(x, y, 1);
+        needCamera = false;
     }
 
+    public void setNeedCamera(boolean needCamera) {
+        this.needCamera = needCamera;
+    }
+
+    public NvCamera getCamera() {
+        return camera;
+    }
 
     @Override
     public void drawIntern(NvGraphic g) {
@@ -42,7 +55,6 @@ public class NvCharacter extends NvComp implements KeyboardListener, Collidable 
     public void onKeyReleased(boolean[] key, int mods) {
         this.keys = key;
     }
-
 
     @Override
     public void update(float dt) {
@@ -64,7 +76,13 @@ public class NvCharacter extends NvComp implements KeyboardListener, Collidable 
             dy /= length;
         }
 
-        x += Math.round(dx * velocity * dt);
-        y += Math.round(dy * velocity * dt);
+        int movX = (int) (dx * velocity * dt);
+        int movY = (int) (dy * velocity * dt);
+
+        x += movX;
+        y += movY;
+        if(needCamera){
+            camera.setXYOnCenter(x, y);
+        }
     }
 }

@@ -1,5 +1,7 @@
 package nv.components.vectors;
 
+import nv.components.NvComp;
+
 /**
  * Vectors constants for 16 directions
  */

@@ -54,7 +54,7 @@ public final class Nv2DApp implements Runnable {
     private VkQueue graphicsQueue;
     private long renderPass;
     private long[] framebuffers;
-    private UpdateCycle updateCycle;
+    private UpdateCycle currentCameraUpdateCycle;
     private CollisionSystem collisionSystem;
 
     // Capacità massima pre-allocata (aumenta se servi più geometria)
@@ -236,33 +236,33 @@ public final class Nv2DApp implements Runnable {
     private Nv2DApp(String name, int maxVertices, int maxIndices, Dimension windowDim) {
         this.maxVertices = maxVertices;
         this.maxIndices  = maxIndices;
-        this.updateCycle = (_) -> {};
+        this.currentCameraUpdateCycle = (_) -> {};
         this.collisionSystem = new AABB();
         initWindow(name, windowDim);
         initVulkan();
 
     }
     private Nv2DApp(String name) {
-        this.updateCycle = (_) -> {};
+        this.currentCameraUpdateCycle = (_) -> {};
         initWindow(name, SCREEN);
         initVulkan();
         this.collisionSystem = new AABB();
     }
     private Nv2DApp(Dimension windowDimension) {
-        this.updateCycle = (_) -> {};
+        this.currentCameraUpdateCycle = (_) -> {};
         initWindow("NV2D game", windowDimension);
         initVulkan();
         this.collisionSystem = new AABB();
     }
     private Nv2DApp(String name, Dimension windowDimension) {
-        this.updateCycle = (_) -> {};
+        this.currentCameraUpdateCycle = (_) -> {};
         initWindow(name, windowDimension);
         initVulkan();
         this.collisionSystem = new AABB();
     }
 
-    public void setMainLoop(UpdateCycle updateCycle){
-        this.updateCycle = updateCycle;
+    public void setCurrentCameraUpdateCycle(UpdateCycle updateCycle){
+        this.currentCameraUpdateCycle = updateCycle;
     }
 
     /**
@@ -294,6 +294,31 @@ public final class Nv2DApp implements Runnable {
     private float fpsSum = 0.0F;
     private float oldFps;
 
+    private final NvComp fpsDisplay = new NvComp(100,100,200,50){
+
+        @Override
+        public void update(float dt) {
+            frameCount++;
+            fpsSum += fps;
+            if(frameCount % 60 == 0){
+                oldFps = fpsSum / frameCount;
+                frameCount = 0;
+                fpsSum = 0;
+            }
+        }
+        @Override
+        public void drawIntern(NvGraphic g) {
+            setHUD(true);
+            graphic.setRGB(0,0,0);
+            graphic.drawRect(0, 0, 260, 70);
+            if(frameCount % 60 == 0){
+                graphic.drawText(String.format("FPS: %.2f", fps), 0, 0);
+            }else {
+                graphic.drawText(String.format("FPS: %.2f", oldFps), 0, 0);
+            }
+        }
+    };
+
     private void rebuildScene() {
         final float w = swapchain.getWidth();
         final float h = swapchain.getHeight();
@@ -304,8 +329,8 @@ public final class Nv2DApp implements Runnable {
 
         handleCollisions();
 
-            graphic.setComponent(rootComponent);
-            graphic.drawRect(0, 0,
+        graphic.setComponent(rootComponent);
+        graphic.drawRect(NvGraphic.camera.x, NvGraphic.camera.y,
                     rootComponent.getW(),
                     rootComponent.getH(),
                     rootComponent.getR(),
@@ -315,7 +340,7 @@ public final class Nv2DApp implements Runnable {
         rootComponent.draw(graphic);
 
         if(showFPS)
-            handleFps();
+            fpsDisplay.draw(graphic);
 
         float[] gVerts = graphic.getVertices();
         int[]   gInds  = graphic.getIndices();
@@ -354,22 +379,6 @@ public final class Nv2DApp implements Runnable {
                     collisionSystem.resolveCollision(a,b);
                 }
             }
-        }
-    }
-
-    private void handleFps(){
-        frameCount++;
-        fpsSum += fps;
-        graphic.setRGB(0,0,0);
-        graphic.setComponent(rootComponent);
-        graphic.drawRect(100, 100, 260, 70);
-        if(frameCount % 30 == 0){
-            oldFps = fpsSum / frameCount;
-            frameCount = 0;
-            fpsSum = 0;
-            graphic.drawText(String.format("FPS: %.2f", fps), 110, 110);
-        }else {
-            graphic.drawText(String.format("FPS: %.2f", oldFps), 110, 110);
         }
     }
 
@@ -542,7 +551,7 @@ public final class Nv2DApp implements Runnable {
     private boolean mouseMoved;
 
     private void tickHandler(float dt) {
-        updateCycle.update(dt);
+        currentCameraUpdateCycle.update(dt);
         rootComponent.tick(dt);
 
         if (mouseMoved) {
@@ -589,8 +598,8 @@ public final class Nv2DApp implements Runnable {
             float deltaTime = (float) (now - lastFrameTime);
             lastFrameTime = now;
             glfwPollEvents();
-            drawFrame();
             tickHandler(deltaTime);
+            drawFrame();
         }
         vkDeviceWaitIdle(device);
     }

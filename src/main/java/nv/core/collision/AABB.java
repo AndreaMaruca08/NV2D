@@ -34,7 +34,6 @@ public class AABB implements CollisionSystem{
         int wA = a.getWeight();
         int wB = b.getWeight();
 
-        // Se entrambi sono statici (peso massimo), non risolviamo nulla
         if (wA == Integer.MAX_VALUE && wB == Integer.MAX_VALUE) return;
 
         float ratioA, ratioB;

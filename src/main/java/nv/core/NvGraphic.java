@@ -1,5 +1,6 @@
 package nv.core;
 
+import nv.components.camera.NvCamera;
 import nv.components.NvComp;
 import nv.core.data.FontAtlas;
 import nv.core.data.NvImage;
@@ -25,8 +26,6 @@ public abstract class NvGraphic implements AppendableGeometry {
     protected float[] imageVertices;
     protected int[] imageIndices;
 
-    private float[] transformed;
-
     protected int vertexFloatCount;
     protected int indexCount;
     protected int imageVertexFloatCount;
@@ -36,6 +35,11 @@ public abstract class NvGraphic implements AppendableGeometry {
     protected float wu, wv;
 
     protected float r=0, g=0, b=0, a=0;
+
+    protected static NvCamera camera = new NvCamera(0,0,0);
+    public static void setCurrentCamera(NvCamera camera){
+        NvGraphic.camera = camera;
+    }
 
     public NvGraphic() {
         this.component = null;
@@ -242,6 +246,8 @@ public abstract class NvGraphic implements AppendableGeometry {
     };
     public void drawOval(float x, float y, float radius, float r, float g, float b){
         drawOval(x, y, radius, 16, r, g, b, this);
+    };    public void drawOval(float x, float y, float radius, int accuracy, float r, float g, float b){
+        drawOval(x, y, radius, accuracy, r, g, b, this);
     };
     public void drawOval(float x, float y, float radius, float r, float g, float b, AppendableGeometry comp){
         drawOval(x, y, radius, 16, r, g, b, this);
