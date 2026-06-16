@@ -7,7 +7,7 @@ import nv.core.NvGraphic;
 public class PerformanceTest extends NvComp{
     private int rectNumber = 0;
     public PerformanceTest() {
-        super(0,0,0,0);
+        super(500,500,1000,1000);
         childrenFirst = false;
     }
 

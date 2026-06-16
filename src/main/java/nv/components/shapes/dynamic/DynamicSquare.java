@@ -1,6 +1,5 @@
 package nv.components.shapes.dynamic;
 
-import nv.components.NvComp;
 import nv.components.NvRgbComp;
 import nv.core.NvGraphic;
 import nv.core.collision.Collidable;
@@ -23,11 +22,6 @@ public class DynamicSquare extends NvRgbComp implements Collidable {
 
     @Override
     public void update(float dt) {
-
-    }
-
-    @Override
-    public void whenCollide(NvComp other) {
 
     }
 }

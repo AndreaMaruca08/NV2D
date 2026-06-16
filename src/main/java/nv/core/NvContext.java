@@ -305,7 +305,10 @@ public final class NvContext implements Runnable {
     private int imageIndexOffset;
 
     private final NvGraphic graphic = new NvPixelGraphic();
-    private final List<NvComp> canCollide = new ArrayList<>(20);
+        private final List<NvComp> canCollide = new ArrayList<>(20);
+
+    private final Map<Long, List<NvComp>> spatialGrid = new HashMap<>();
+    private static final int COLLISION_CELL_SIZE = 250;
 
     public void addCanCollide(NvComp component){
         canCollide.add(component);
@@ -386,28 +389,49 @@ public final class NvContext implements Runnable {
         dynamicVertexBuffer.update(combinedVerts);
         dynamicIndexBuffer.update(combinedInds);
     }
-    private void handleCollisions(){
-        for(int i = 0; i < canCollide.size(); i++){
-            var a = canCollide.get(i);
-            for(int j = 0; j < canCollide.size(); j++){
-                var b = canCollide.get(j);
-                if(i != j && collisionSystem.isColliding(a, b)){
-                    var collided1 = (Collidable) a;
-                    var collided2 = (Collidable) b;
-                    collided1.whenCollide(b);
-                    collided2.whenCollide(a);
+    private void handleCollisions() {
+        spatialGrid.clear();
+        int size = canCollide.size();
 
-                    collisionSystem.resolveCollision(a,b);
+        for (int i = 0; i < size; i++) {
+            NvComp comp = canCollide.get(i);
+            int cellX = comp.getX() / COLLISION_CELL_SIZE;
+            int cellY = comp.getY() / COLLISION_CELL_SIZE;
+            
+            int endX = (comp.getX() + comp.getW()) / COLLISION_CELL_SIZE;
+            int endY = (comp.getY() + comp.getH()) / COLLISION_CELL_SIZE;
+
+            for (int x = cellX; x <= endX; x++) {
+                for (int y = cellY; y <= endY; y++) {
+                    long key = ((long) x << 32) | (y & 0xFFFFFFFFL);
+                    spatialGrid.computeIfAbsent(key, k -> new ArrayList<>()).add(comp);
+                }
+            }
+        }
+
+        for (List<NvComp> cellContent : spatialGrid.values()) {
+            int cellSize = cellContent.size();
+            if (cellSize < 2) continue;
+            
+            for (int i = 0; i < cellSize; i++) {
+                NvComp a = cellContent.get(i);
+                for (int j = i + 1; j < cellSize; j++) {
+                    NvComp b = cellContent.get(j);
+                    if (collisionSystem.isColliding(a, b)) {
+                        ((Collidable) a).whenCollide(b);
+                        ((Collidable) b).whenCollide(a);
+                        collisionSystem.resolveCollision(a, b);
+                    }
                 }
             }
         }
     }
-
     @Override
     public void run() {
         mainLoop();
         cleanup();
     }
+
     public void changeFont(Font font){
         this.fontAtlas = new FontAtlas(font);
     }
@@ -451,6 +475,7 @@ public final class NvContext implements Runnable {
                 if (child instanceof Clickable clickable) {
                     if (press) clickable.onClick();
                     else clickable.onClickRelease();
+                    return;
                 }
                 handleMouseClick(child, x, y, press);
             }

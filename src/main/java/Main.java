@@ -4,31 +4,37 @@ import nv.components.NvCont;
 import nv.components.shapes.dynamic.DynamicSquare;
 import nv.core.NvContext;
 import nv.core.NvGraphic;
-import nv.core.collision.CollisionSystem;
-import nv.test.BigOvalTest;
 
 void main() {
-    var context = NvContext.createInstance("aa");
+    var context = NvContext.createInstance("TEST");
 
     context.setShowFPS(true);
-    context.setVsync(true);
+    context.setVsync(false);
 
     var page = context.addAndSetPage("NewPage", NvCont.newPage());
     page.setChildrenFirst(true);
     page.setBackground(1,0.5f,0.5f);
 
     NvCharacter character = new NvCharacter(1000,500, 100, 300);
+    NvGraphic.setCurrentCamera(character.getCamera());
     character.setNeedCamera(true);
+
+    for(int i = 1; i < 50; i++){
+        for(int j =1 ; j < 50; j++){
+            var c = new DynamicSquare(i*20,100 * j,15,15);
+            c.setRgb(0,0,0);
+            page.addChild(c);
+        }
+    }
+
+    var a = new DynamicSquare(100,100,10000,50);
+    a.setWeight(40);
+    a.setRgb(0,1,0);
+    page.addChild(a);
+
     character.setWeight(100);
     context.setKeyboardFocus(character);
-    NvGraphic.setCurrentCamera(character.getCamera());
 
-    var sq = new DynamicSquare(0,0, 10000, 50);
-    var circ = new BigOvalTest(0,0, 100);
-    sq.setWeight(CollisionSystem.MAX_WEIGHT);
-
-    page.addChild(sq);
-    page.addChild(circ);
     page.addChild(character);
 
     context.run();
