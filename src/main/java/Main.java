@@ -12,7 +12,6 @@ void main() {
     var context = NvContext.createInstance("TEST");
 
     context.setShowFPS(true);
-    context.setVsync(false);
 
     var page = context.addAndSetPage("NewPage", NvCont.newPage());
     page.setBackground(1,0.5f,0.5f);

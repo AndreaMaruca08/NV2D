@@ -273,6 +273,17 @@ public abstract class NvGraphic implements AppendableGeometry {
         drawRect(x, y, w, h, r, g, b, comp);
     }
 
+    public abstract void drawRoundRect(float x, float y, float w, float h, float radius, float r, float g, float b, AppendableGeometry comp);
+    public void drawRoundRect(float x, float y, float w, float h, float radius) {
+        drawRoundRect(x, y, w, h, radius, r, g, b, this);
+    }
+    public void drawRoundRect(float x, float y, float w, float h, float radius, float r, float g, float b) {
+        drawRoundRect(x, y, w, h, radius, r, g, b, this);
+    }
+    public void drawRoundRect(float x, float y, float w, float h, float radius, AppendableGeometry comp) {
+        drawRoundRect(x, y, w, h, radius, r, g, b, comp);
+    }
+
     public abstract void drawText(String text, float textX, float textY, AppendableGeometry comp);
     public void drawText(String text, float textX, float textY) {
         drawText(text, textX, textY, this);

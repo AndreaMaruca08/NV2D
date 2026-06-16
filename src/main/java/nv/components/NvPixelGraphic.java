@@ -122,6 +122,106 @@ public class NvPixelGraphic extends NvGraphic {
     }
 
     @Override
+    public void drawRoundRect(float x, float y, float w, float h, float radius, float r, float g, float b, AppendableGeometry comp) {
+        int segments = 8;
+        
+        float x1 = tx(component.x + x);
+        float y1 = ty(component.y + y);
+        float x2 = tx(component.x + x + w);
+        float y2 = ty(component.y + y + h);
+        float rScaled = radius * camera.zoom;
+
+        float maxR = Math.min(w, h) / 2f * camera.zoom;
+        if (rScaled > maxR) rScaled = maxR;
+
+        int numVerts = 4 + 4 * (segments + 1);
+        float[] verts = new float[numVerts * FLOATS_PER_VERTEX];
+        
+        float[][] corners = {
+            {x1 + rScaled, y1 + rScaled}, // Top-Left
+            {x2 - rScaled, y1 + rScaled}, // Top-Right
+            {x2 - rScaled, y2 - rScaled}, // Bottom-Right
+            {x1 + rScaled, y2 - rScaled}  // Bottom-Left
+        };
+
+        int numIndices = 30 + 12 * segments;
+        int[] inds = new int[numIndices];
+
+        int vIdx = 0;
+        float[] inner = {
+            x1 + rScaled, y1 + rScaled,
+            x2 - rScaled, y1 + rScaled,
+            x2 - rScaled, y2 - rScaled,
+            x1 + rScaled, y2 - rScaled
+        };
+        
+        for(int i=0; i<4; i++) {
+            int off = vIdx * 8;
+            verts[off] = inner[i*2];
+            verts[off + 1] = inner[i*2+1];
+            verts[off + 2] = r;
+            verts[off + 3] = g;
+            verts[off + 4] = b;
+            verts[off + 5] = wu;
+            verts[off + 6] = wv;
+            verts[off + 7] = a;
+            vIdx++;
+        }
+
+        int iIdx = 0;
+        inds[iIdx++] = 0; inds[iIdx++] = 1; inds[iIdx++] = 2;
+        inds[iIdx++] = 2; inds[iIdx++] = 3; inds[iIdx++] = 0;
+
+        for(int c=0; c<4; c++) {
+            float startAngle = (float) (Math.PI + c * Math.PI/2);
+            int cornerCenterIdx = c;
+
+            for(int s=0; s<=segments; s++) {
+                float angle = startAngle + (float)(s * (Math.PI/2) / segments);
+                int off = vIdx * 8;
+                verts[off]     = corners[c][0] + (float)Math.cos(angle) * rScaled;
+                verts[off + 1] = corners[c][1] + (float)Math.sin(angle) * rScaled;
+                verts[off + 2] = r;
+                verts[off + 3] = g;
+                verts[off + 4] = b;
+                verts[off + 5] = wu;
+                verts[off + 6] = wv;
+                verts[off + 7] = a;
+                
+                if(s > 0) {
+                    inds[iIdx++] = cornerCenterIdx;
+                    inds[iIdx++] = vIdx - 1;
+                    inds[iIdx++] = vIdx;
+                }
+                vIdx++;
+            }
+        }
+        
+        // Side rectangles
+        int a0_end = 4 + segments;
+        int a1_start = 4 + segments + 1;
+        inds[iIdx++] = 0; inds[iIdx++] = 1; inds[iIdx++] = a1_start;
+        inds[iIdx++] = a1_start; inds[iIdx++] = a0_end; inds[iIdx++] = 0;
+        
+        int a1_end = 4 + 2*segments + 1;
+        int a2_start = 4 + 2*segments + 2;
+        inds[iIdx++] = 1; inds[iIdx++] = 2; inds[iIdx++] = a2_start;
+        inds[iIdx++] = a2_start; inds[iIdx++] = a1_end; inds[iIdx++] = 1;
+
+        int a2_end = 4 + 3*segments + 2;
+        int a3_start = 4 + 3*segments + 3;
+        inds[iIdx++] = 2; inds[iIdx++] = 3; inds[iIdx++] = a3_start;
+        inds[iIdx++] = a3_start; inds[iIdx++] = a2_end; inds[iIdx++] = 2;
+
+        int a3_end = 4 + 4*segments + 3;
+        int a0_start = 4;
+        inds[iIdx++] = 3; inds[iIdx++] = 0; inds[iIdx++] = a0_start;
+        inds[iIdx++] = a0_start; inds[iIdx++] = a3_end; inds[iIdx++] = 3;
+
+        comp.append(verts, inds);
+    }
+
+    @Override
     public void drawText(String text, float textX, float textY,
                          AppendableGeometry comp) {
 

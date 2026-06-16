@@ -41,8 +41,8 @@ public class NvCharacter extends NvComp implements KeyboardListener, Collidable 
 
     @Override
     public void drawIntern(NvGraphic g) {
-        g.drawRect(0, 0, w, h);
-        g.drawRect(0, 0, w, (float)h/3, 1,0,0);
+        g.drawRoundRect(0, 0, w, h, 40);
+        g.drawRoundRect(0, 0, w, (float)h/3, 40,1,0,0);
     }
 
 

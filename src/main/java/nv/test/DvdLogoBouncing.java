@@ -54,7 +54,6 @@ public class DvdLogoBouncing extends NvComp {
             }
         }
 
-        // Calcoliamo i limiti visibili reali nel mondo (tenendo conto dello zoom)
         float zoom = Math.max(camera.zoom, 0.0001f);
         float viewW = app.getWidth() / zoom;
         float viewH = app.getHeight() / zoom;
