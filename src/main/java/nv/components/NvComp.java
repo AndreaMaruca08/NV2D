@@ -2,7 +2,7 @@ package nv.components;
 
 import nv.components.vectors.Vector2D;
 import nv.core.AppendableGeometry;
-import nv.core.Nv2DApp;
+import nv.core.NvContext;
 import nv.core.NvGraphic;
 import nv.core.UpdateCycle;
 import nv.core.collision.Collidable;
@@ -114,10 +114,10 @@ public abstract class NvComp implements UpdateCycle {
 
     public void invalidate() {}
 
-    private Nv2DApp app;
+    private NvContext app;
     public void addChild(NvComp child){
         if(app == null)
-            app = Nv2DApp.getInstance();
+            app = NvContext.getInstance();
         children.add(child);
         child.setParent(this);
         if(child instanceof Collidable)
@@ -126,7 +126,7 @@ public abstract class NvComp implements UpdateCycle {
 
     public void removeChild(NvComp child){
         if(app == null)
-            app = Nv2DApp.getInstance();
+            app = NvContext.getInstance();
         children.remove(child);
         if(child instanceof Collidable)
             app.removeCanCollide(child);

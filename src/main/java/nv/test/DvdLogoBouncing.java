@@ -1,8 +1,8 @@
 package nv.test;
 
 import nv.components.NvComp;
+import nv.core.NvContext;
 import nv.core.NvGraphic;
-import nv.core.Nv2DApp;
 import nv.core.data.NvImage;
 
 public class DvdLogoBouncing extends NvComp {
@@ -12,7 +12,7 @@ public class DvdLogoBouncing extends NvComp {
     private float velocityX = 1000f;
     private float velocityY = 1000f;
 
-    private final Nv2DApp app = Nv2DApp.getInstance();
+    private final NvContext app = NvContext.getInstance();
     private final NvImage image;
 
     public DvdLogoBouncing(int x, int y) {

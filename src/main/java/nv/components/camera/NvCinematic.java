@@ -1,11 +1,8 @@
 package nv.components.camera;
 
-import nv.core.Nv2DApp;
+import nv.core.NvContext;
 import nv.core.NvGraphic;
 import nv.core.UpdateCycle;
-
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 
 /**
  * Represents a cinematic camera that can be used to create smooth transitions between different camera positions and zoom levels.
@@ -23,8 +20,8 @@ public abstract class NvCinematic extends NvCamera implements UpdateCycle {
         yStart = y;
         initialZoom = zoom/10;
         this.loop = loop;
-        this.duration = Duration.ofMillis(msDuration).get(ChronoUnit.SECONDS);
-        initialDuration = Duration.ofMillis(msDuration).get(ChronoUnit.SECONDS);
+        this.duration = (float) (msDuration/1000);
+        initialDuration = (float) (msDuration/1000);
     }
     public NvCinematic(int x, int y, float zoom, long msDuration) {
         this(x, y, zoom, msDuration, false);
@@ -37,8 +34,8 @@ public abstract class NvCinematic extends NvCamera implements UpdateCycle {
         if(!started){
             NvGraphic.setCurrentCamera(this);
             started = true;
-            app = Nv2DApp.getInstance();
-            app.setCurrentCameraUpdateCycle(this);
+            context = NvContext.getInstance();
+            context.setCurrentCameraUpdateCycle(this);
         }
     }
 

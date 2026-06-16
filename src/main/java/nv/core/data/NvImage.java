@@ -88,10 +88,10 @@ public class NvImage implements AutoCloseable {
         return buf;
     }
 
-    /** Indice del texture slot assegnato da {@code Nv2DApp.loadImage()}. -1 se non ancora registrata. */
+    /** Indice del texture slot assegnato da {@code NvContext.loadImage()}. -1 se non ancora registrata. */
     public int getTextureIndex() { return textureIndex; }
 
-    /** Usato internamente da {@code Nv2DApp} per assegnare il texture slot. */
+    /** Usato internamente da {@code NvContext} per assegnare il texture slot. */
     public void setTextureIndex(int index) { this.textureIndex = index; }
 
     public int getWidth()  { return width; }

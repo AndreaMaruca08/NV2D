@@ -1,6 +1,7 @@
 package nv.core;
 
 import nv.components.*;
+import nv.components.camera.NvCamera;
 import nv.core.collision.AABB;
 import nv.core.collision.Collidable;
 import nv.core.collision.CollisionSystem;
@@ -26,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static nv.core.NvGraphic.camera;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.vulkan.KHRSurface.vkDestroySurfaceKHR;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
@@ -36,9 +38,9 @@ import static org.lwjgl.vulkan.VK10.*;
  * <p>SingleTone class responsible for managing the application's Vulkan resources and rendering pipeline</p>
  * @since 1.0
  */
-public final class Nv2DApp implements Runnable {
-    private static final int MAJOR_VERSION = 0;
-    private static final int MINOR_VERSION = 1;
+public final class NvContext implements Runnable {
+    private static final int MAJOR_VERSION = 1;
+    private static final int MINOR_VERSION = 0;
     private static final int PATCH = 0;
     private static final String ENGINE_NAME = "NV2Dlib";
 
@@ -64,7 +66,7 @@ public final class Nv2DApp implements Runnable {
     // Texture images caricati (massimo 15 per il shader)
     private static final int MAX_TEXTURES = 15;
     private final NvImage[] loadedTextures = new NvImage[MAX_TEXTURES];
-    private int textureCount = 1; // indice 0 è riservato al font atlas
+    private int textureCount = 1;
 
     // Geometria dinamica
     private DynamicVertexBuffer dynamicVertexBuffer;
@@ -93,10 +95,17 @@ public final class Nv2DApp implements Runnable {
     private static final Dimension SCREEN = Toolkit.getDefaultToolkit().getScreenSize();
 
     private final Map<String, NvCont> pages = new HashMap<>(10);
+
+    private final List<UpdateCycle> updatables = new ArrayList<>(10);
+
     private NvCont rootComponent;
 
     private float fps = -1;
     private boolean showFPS = false;
+
+    public void setCurrentCameraUpdateCycle(UpdateCycle updateCycle){
+        currentCameraUpdateCycle = updateCycle;
+    }
 
     private final Map<String, NvImage> images = new HashMap<>(16);
     /**
@@ -200,7 +209,7 @@ public final class Nv2DApp implements Runnable {
         pages.remove(key);
     }
 
-    private static Nv2DApp appInstance;
+    private static NvContext appInstance;
 
     public void setCurrentPage(String key){
         rootComponent = pages.get(key);
@@ -212,28 +221,28 @@ public final class Nv2DApp implements Runnable {
         appInstance = null;
     }
 
-    public static Nv2DApp getInstance(){
+    public static NvContext getInstance(){
         if(appInstance == null)
-            appInstance = new Nv2DApp("NV2D game");
+            appInstance = new NvContext("NV2D game");
         return appInstance;
     }
-    public static Nv2DApp createInstance(String name, Dimension windowDimension){
+    public static NvContext createInstance(String name, Dimension windowDimension){
         if(appInstance == null)
-            appInstance = new Nv2DApp(name, windowDimension);
+            appInstance = new NvContext(name, windowDimension);
         return appInstance;
     }
-    public static Nv2DApp createInstance(String name, int maxVertices, int maxIndices){
+    public static NvContext createInstance(String name, int maxVertices, int maxIndices){
         if(appInstance == null)
-            appInstance = new Nv2DApp(name, maxVertices, maxIndices, SCREEN);
+            appInstance = new NvContext(name, maxVertices, maxIndices, SCREEN);
         return appInstance;
     }
-    public static Nv2DApp createInstance(String name){
+    public static NvContext createInstance(String name){
         if(appInstance == null)
-            appInstance = new Nv2DApp(name);
+            appInstance = new NvContext(name);
         return appInstance;
     }
 
-    private Nv2DApp(String name, int maxVertices, int maxIndices, Dimension windowDim) {
+    private NvContext(String name, int maxVertices, int maxIndices, Dimension windowDim) {
         this.maxVertices = maxVertices;
         this.maxIndices  = maxIndices;
         this.currentCameraUpdateCycle = (_) -> {};
@@ -242,27 +251,30 @@ public final class Nv2DApp implements Runnable {
         initVulkan();
 
     }
-    private Nv2DApp(String name) {
+    private NvContext(String name) {
         this.currentCameraUpdateCycle = (_) -> {};
         initWindow(name, SCREEN);
         initVulkan();
         this.collisionSystem = new AABB();
     }
-    private Nv2DApp(Dimension windowDimension) {
+    private NvContext(Dimension windowDimension) {
         this.currentCameraUpdateCycle = (_) -> {};
         initWindow("NV2D game", windowDimension);
         initVulkan();
         this.collisionSystem = new AABB();
     }
-    private Nv2DApp(String name, Dimension windowDimension) {
+    private NvContext(String name, Dimension windowDimension) {
         this.currentCameraUpdateCycle = (_) -> {};
         initWindow(name, windowDimension);
         initVulkan();
         this.collisionSystem = new AABB();
     }
 
-    public void setCurrentCameraUpdateCycle(UpdateCycle updateCycle){
-        this.currentCameraUpdateCycle = updateCycle;
+    public void addUpdatable(UpdateCycle updateCycle){
+        updatables.add(updateCycle);
+    }
+    public void removeUpdatable(UpdateCycle updateCycle){
+        updatables.remove(updateCycle);
     }
 
     /**
@@ -330,7 +342,7 @@ public final class Nv2DApp implements Runnable {
         handleCollisions();
 
         graphic.setComponent(rootComponent);
-        graphic.drawRect(NvGraphic.camera.x, NvGraphic.camera.y,
+        graphic.drawRect(camera.x, camera.y,
                     rootComponent.getW(),
                     rootComponent.getH(),
                     rootComponent.getR(),
@@ -553,6 +565,10 @@ public final class Nv2DApp implements Runnable {
     private void tickHandler(float dt) {
         currentCameraUpdateCycle.update(dt);
         rootComponent.tick(dt);
+
+        for(UpdateCycle updateCycle : updatables){
+            updateCycle.update(dt);
+        }
 
         if (mouseMoved) {
             handleHover();
@@ -953,4 +969,6 @@ public final class Nv2DApp implements Runnable {
         glfwDestroyWindow(window);
         glfwTerminate();
     }
+
+
 }

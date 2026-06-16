@@ -1,8 +1,8 @@
 package nv.test;
 
 import nv.components.NvComp;
+import nv.core.NvContext;
 import nv.core.NvGraphic;
-import nv.core.Nv2DApp;
 
 public class PerformanceTest extends NvComp{
     private int rectNumber = 0;
@@ -16,7 +16,7 @@ public class PerformanceTest extends NvComp{
 
     @Override
     public void update(float dt) {
-        var app = Nv2DApp.getInstance();
+        var app = NvContext.getInstance();
         var h = app.getHeight();
 
         int randomY = (int) (Math.random() * (double)h);

@@ -32,6 +32,7 @@ public class NvCharacter extends NvComp implements KeyboardListener, Collidable 
 
     public void setNeedCamera(boolean needCamera) {
         this.needCamera = needCamera;
+
     }
 
     public NvCamera getCamera() {
