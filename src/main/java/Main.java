@@ -2,12 +2,12 @@ import nv.components.NvCharacter;
 import nv.components.NvCont;
 
 import nv.components.NvTimer;
-import nv.components.camera.NvCinematic;
 import nv.components.shapes.dynamic.DynamicSquare;
 import nv.components.shapes.dynamic.DynamicTriangle;
 import nv.core.NvContext;
 import nv.core.NvGraphic;
 import nv.core.collision.CollisionSystem;
+import nv.test.ClickTest;
 
 void main() {
     var context = NvContext.createInstance("TESTING");
@@ -29,11 +29,7 @@ void main() {
 
     var tri = new DynamicTriangle(1000,1000, 100, 50);
 
-    NvTimer timer = new NvTimer(50);
-    timer.setOnFinished(() -> {
-    });
-    timer.start();
-    context.addUpdatable(timer);
+    context.setFpsLimit(500);
 
     page.addChild(tri);
     page.addChild(sq);

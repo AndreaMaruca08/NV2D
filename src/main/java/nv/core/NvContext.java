@@ -1,7 +1,6 @@
 package nv.core;
 
 import nv.components.*;
-import nv.components.camera.NvCamera;
 import nv.core.collision.AABB;
 import nv.core.collision.Collidable;
 import nv.core.collision.CollisionSystem;
@@ -96,12 +95,17 @@ public final class NvContext implements Runnable {
 
     private final Map<String, NvCont> pages = new HashMap<>(10);
 
-    private final List<UpdateCycle> updatables = new ArrayList<>(10);
+    private final List<UpdateCycle> updatable = new ArrayList<>(10);
 
     private NvCont rootComponent;
 
     private float fps = -1;
     private boolean showFPS = false;
+    private int targetFps = -1;
+
+    public void setFpsLimit(int fps) {
+        this.targetFps = fps;
+    }
 
     public void setCurrentCameraUpdateCycle(UpdateCycle updateCycle){
         currentCameraUpdateCycle = updateCycle;
@@ -271,10 +275,10 @@ public final class NvContext implements Runnable {
     }
 
     public void addUpdatable(UpdateCycle updateCycle){
-        updatables.add(updateCycle);
+        updatable.add(updateCycle);
     }
     public void removeUpdatable(UpdateCycle updateCycle){
-        updatables.remove(updateCycle);
+        updatable.remove(updateCycle);
     }
 
     /**
@@ -306,28 +310,29 @@ public final class NvContext implements Runnable {
     private float fpsSum = 0.0F;
     private float oldFps;
 
-    private final NvComp fpsDisplay = new NvComp(100,100,200,50){
+    private final NvComp fpsDisplay = new NvComp(10,10,260,70){
+        private String displayString = "FPS: TO CALC";
+        private int localFrameCount = 0;
+        private float localFpsSum = 0;
 
         @Override
         public void update(float dt) {
-            frameCount++;
-            fpsSum += fps;
-            if(frameCount % 60 == 0){
-                oldFps = fpsSum / frameCount;
-                frameCount = 0;
-                fpsSum = 0;
+            localFrameCount++;
+            if (dt > 0) localFpsSum += (1.0f / dt);
+            if(localFrameCount >= 30){
+                float averageFps = localFpsSum / localFrameCount;
+                displayString = String.format("FPS: %.2f", averageFps);
+                localFrameCount = 0;
+                localFpsSum = 0;
             }
         }
         @Override
         public void drawIntern(NvGraphic g) {
             setHUD(true);
-            graphic.setRGB(0,0,0);
-            graphic.drawRect(0, 0, 260, 70);
-            if(frameCount % 60 == 0){
-                graphic.drawText(String.format("FPS: %.2f", fps), 0, 0);
-            }else {
-                graphic.drawText(String.format("FPS: %.2f", oldFps), 0, 0);
-            }
+            g.setRGB(0,0,0);
+            g.drawRect(0, 0, 260, 70);
+            g.setRGB(1,1,1);
+            g.drawText(displayString, 10, 10);
         }
     };
 
@@ -427,6 +432,7 @@ public final class NvContext implements Runnable {
             mouseY = (int) y;
             mouseMoved = true;
         });
+        addUpdatable(fpsDisplay);
     }
 
     private KeyboardListener focused;
@@ -435,27 +441,23 @@ public final class NvContext implements Runnable {
         this.focused = focused;
     }
 
+    private void handleMouseClick(NvComp parent, int x, int y, boolean press) {
+        for (NvComp child : parent.getChildren()) {
+            if (child.isInside(x, y)) {
+                if (child instanceof Clickable clickable) {
+                    if (press) clickable.onClick();
+                    else clickable.onClickRelease();
+                }
+                handleMouseClick(child, x, y, press);
+            }
+        }
+    }
+
     private GLFWMouseButtonCallbackI inputCallback(){
         return (windowHandle, button, action, mods) -> {
-            if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+            if (button == GLFW_MOUSE_BUTTON_LEFT) {
                 var correctedCoords = getCorrectedCoords();
-                for (var comp : rootComponent.getChildren()) {
-                    if (comp instanceof Clickable clickable) {
-                        if (comp.isInside(correctedCoords[0], correctedCoords[1])) {
-                            clickable.onClick();
-                        }
-                    }
-                }
-            }
-            else if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE){
-                var correctedCoords = getCorrectedCoords();
-                for (var comp : rootComponent.getChildren()) {
-                    if (comp instanceof Clickable clickable) {
-                        if (comp.isInside(correctedCoords[0], correctedCoords[1])) {
-                            clickable.onClickRelease();
-                        }
-                    }
-                }
+                handleMouseClick(rootComponent, correctedCoords[0], correctedCoords[1], action == GLFW_PRESS);
             }
         };
     }
@@ -566,7 +568,7 @@ public final class NvContext implements Runnable {
         currentCameraUpdateCycle.update(dt);
         rootComponent.tick(dt);
 
-        for(UpdateCycle updateCycle : updatables){
+        for(UpdateCycle updateCycle : updatable){
             updateCycle.update(dt);
         }
 
@@ -575,7 +577,7 @@ public final class NvContext implements Runnable {
             mouseMoved = false;
         }
 
-        if(showFPS){
+        if (dt > 0) {
             fps = 1.0F / dt;
         }
     }
@@ -610,9 +612,23 @@ public final class NvContext implements Runnable {
     private void mainLoop() {
         double lastFrameTime = glfwGetTime();
         while (!glfwWindowShouldClose(window)) {
+            if (targetFps > 0) {
+                double targetFrameTime = 1.0 / targetFps;
+                while (glfwGetTime() < lastFrameTime + targetFrameTime) {
+                    double remaining = (lastFrameTime + targetFrameTime) - glfwGetTime();
+                    if (remaining > 0.002) {
+                        try {
+                            Thread.sleep(1);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }
+                }
+            }
             double now = glfwGetTime();
             float deltaTime = (float) (now - lastFrameTime);
             lastFrameTime = now;
+
             glfwPollEvents();
             tickHandler(deltaTime);
             drawFrame();

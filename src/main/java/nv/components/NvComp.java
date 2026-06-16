@@ -200,10 +200,12 @@ public abstract class NvComp implements UpdateCycle {
     }
 
     public boolean isInside(int x, int y){
-        return  x >= this.x &&
-                x <= this.x + this.w &&
-                y >= this.y &&
-                y <= this.y + this.h;
+        float shiftedX = NvGraphic.camera.x + x;
+        float shiftedY = NvGraphic.camera.y + y;
+        return  shiftedX >= this.x &&
+                shiftedX <= this.x + this.w &&
+                shiftedY >= this.y &&
+                shiftedY <= this.y + this.h;
     }
 
     public abstract void drawIntern(NvGraphic g);

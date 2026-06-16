@@ -33,7 +33,7 @@ public class Swapchain implements AutoCloseable {
             createInfo.sType(VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
             createInfo.surface(surfaceHandle);
 
-            createInfo.minImageCount(2); // Double Buffering
+            createInfo.minImageCount(3); // Triple Buffering
             createInfo.imageFormat(imageFormat);
             createInfo.imageColorSpace(VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
 
@@ -45,7 +45,7 @@ public class Swapchain implements AutoCloseable {
             createInfo.imageSharingMode(VK_SHARING_MODE_EXCLUSIVE);
             createInfo.preTransform(VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR);
             createInfo.compositeAlpha(VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR);
-            createInfo.presentMode(VK_PRESENT_MODE_FIFO_KHR); // V-Sync
+            createInfo.presentMode(VK_PRESENT_MODE_IMMEDIATE_KHR); // Unlocked if available, otherwise would fallback
             createInfo.clipped(true);
 
             LongBuffer pSwapchain = stack.mallocLong(1);
