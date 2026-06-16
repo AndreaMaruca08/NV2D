@@ -20,7 +20,7 @@ public class CommandBuffers {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO)
-                    .queueFamilyIndex(0) // assumi queue family grafica = 0 (come nel tuo codice)
+                    .queueFamilyIndex(0)
                     .flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
             LongBuffer pCommandPool = stack.mallocLong(1);
@@ -43,7 +43,7 @@ public class CommandBuffers {
         }
     }
 
-    public void record(long renderPass,
+    public void record(float[] bgColor, long renderPass,
                        long framebuffer,
                        long pipelineHandle,
                        long pipelineLayoutHandle,
@@ -54,8 +54,6 @@ public class CommandBuffers {
                        int width, int height) {
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
-
-            // A. Begin del command buffer
             VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO)
                     .flags(0);
@@ -65,13 +63,12 @@ public class CommandBuffers {
                 throw new RuntimeException("vkBeginCommandBuffer fallita: " + err);
             }
 
-            // B. Clear color (sfondo) + begin render pass
             VkClearValue.Buffer clearValues = VkClearValue.calloc(1, stack);
             clearValues.color()
-                    .float32(0, 0.1f)  // R
-                    .float32(1, 0.1f)  // G
-                    .float32(2, 0.1f)  // B
-                    .float32(3, 1.0f); // A
+                    .float32(0, bgColor[0])
+                    .float32(1, bgColor[1])
+                    .float32(2, bgColor[2])
+                    .float32(3, bgColor[3]);
 
             VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO)
@@ -84,10 +81,23 @@ public class CommandBuffers {
 
             vkCmdBeginRenderPass(commandBuffer, renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-            // C. Bind pipeline grafica
+            // Set Dynamic Viewport and Scissor
+            VkViewport.Buffer viewport = VkViewport.calloc(1, stack);
+            viewport.x(0.0f);
+            viewport.y(0.0f);
+            viewport.width((float) width);
+            viewport.height((float) height);
+            viewport.minDepth(0.0f);
+            viewport.maxDepth(1.0f);
+            vkCmdSetViewport(commandBuffer, 0, viewport);
+
+            VkRect2D.Buffer scissor = VkRect2D.calloc(1, stack);
+            scissor.offset().set(0, 0);
+            scissor.extent().set(width, height);
+            vkCmdSetScissor(commandBuffer, 0, scissor);
+
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineHandle);
 
-            // D. Bind descriptor set (UBO ortografico: set = 0)
             LongBuffer pDescriptorSets = stack.longs(descriptorSet);
             vkCmdBindDescriptorSets(
                     commandBuffer,
@@ -98,16 +108,12 @@ public class CommandBuffers {
                     null
             );
 
-            // E. Bind vertex buffer
             LongBuffer buffers = stack.longs(vertexBufferHandle);
             LongBuffer offsets = stack.longs(0L);
             vkCmdBindVertexBuffers(commandBuffer, 0, buffers, offsets);
-
             vkCmdBindIndexBuffer(commandBuffer, indexBufferHandle, 0, VK_INDEX_TYPE_UINT32);
-
             vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
 
-            // G. End render pass + end command buffer
             vkCmdEndRenderPass(commandBuffer);
 
             err = vkEndCommandBuffer(commandBuffer);
@@ -117,11 +123,7 @@ public class CommandBuffers {
         }
     }
 
-    /**
-     * Renderizza in due pass: prima shapes/testi con GraphicsPipeline, poi immagini con TexturePipeline.
-     * Consente al sistema di immagini di essere completamente indipendente dal rendering normale.
-     */
-    public void recordDual(long renderPass,
+    public void recordDual(float[] bgColor, long renderPass,
                            long framebuffer,
                            long graphicsPipelineHandle,
                            long graphicsPipelineLayoutHandle,
@@ -136,8 +138,6 @@ public class CommandBuffers {
                            int width, int height) {
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
-
-            // A. Begin del command buffer
             VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO)
                     .flags(0);
@@ -147,13 +147,12 @@ public class CommandBuffers {
                 throw new RuntimeException("vkBeginCommandBuffer fallita: " + err);
             }
 
-            // B. Clear color (sfondo) + begin render pass
             VkClearValue.Buffer clearValues = VkClearValue.calloc(1, stack);
             clearValues.color()
-                    .float32(0, 0.1f)  // R
-                    .float32(1, 0.1f)  // G
-                    .float32(2, 0.1f)  // B
-                    .float32(3, 1.0f); // A
+                    .float32(0, bgColor[0])
+                    .float32(1, bgColor[1])
+                    .float32(2, bgColor[2])
+                    .float32(3, bgColor[3]);
 
             VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO)
@@ -166,43 +165,43 @@ public class CommandBuffers {
 
             vkCmdBeginRenderPass(commandBuffer, renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+            // Set Dynamic Viewport and Scissor
+            VkViewport.Buffer viewport = VkViewport.calloc(1, stack);
+            viewport.x(0.0f);
+            viewport.y(0.0f);
+            viewport.width((float) width);
+            viewport.height((float) height);
+            viewport.minDepth(0.0f);
+            viewport.maxDepth(1.0f);
+            vkCmdSetViewport(commandBuffer, 0, viewport);
+
+            VkRect2D.Buffer scissor = VkRect2D.calloc(1, stack);
+            scissor.offset().set(0, 0);
+            scissor.extent().set(width, height);
+            vkCmdSetScissor(commandBuffer, 0, scissor);
+
             LongBuffer pDescriptorSets = stack.longs(descriptorSet);
             LongBuffer buffers = stack.longs(vertexBufferHandle);
             LongBuffer offsets = stack.longs(0L);
 
-            if (imageIndexCount > 0) {
-                // PASS 1: Renderizza immagini con TexturePipeline (8-float format)
-                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, texturePipelineHandle);
-                vkCmdBindDescriptorSets(
-                        commandBuffer,
-                        VK_PIPELINE_BIND_POINT_GRAPHICS,
-                        texturePipelineLayoutHandle,
-                        0,
-                        pDescriptorSets,
-                        null
-                );
-                vkCmdBindVertexBuffers(commandBuffer, 0, buffers, offsets);
-                vkCmdBindIndexBuffer(commandBuffer, indexBufferHandle, 0, VK_INDEX_TYPE_UINT32);
-                vkCmdDrawIndexed(commandBuffer, imageIndexCount, 1, imageIndexOffset, 0, 0);
-            }
-
+            // PASS 1: Geometria (Sotto)
             if (graphicsIndexCount > 0) {
-                // PASS 2: Renderizza shapes e testi con GraphicsPipeline (7-float format)
                 vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineHandle);
-                vkCmdBindDescriptorSets(
-                        commandBuffer,
-                        VK_PIPELINE_BIND_POINT_GRAPHICS,
-                        graphicsPipelineLayoutHandle,
-                        0,
-                        pDescriptorSets,
-                        null
-                );
+                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayoutHandle, 0, pDescriptorSets, null);
                 vkCmdBindVertexBuffers(commandBuffer, 0, buffers, offsets);
                 vkCmdBindIndexBuffer(commandBuffer, indexBufferHandle, 0, VK_INDEX_TYPE_UINT32);
                 vkCmdDrawIndexed(commandBuffer, graphicsIndexCount, 1, 0, 0, 0);
             }
 
-            // G. End render pass + end command buffer
+            // PASS 2: Immagini (Sopra)
+            if (imageIndexCount > 0) {
+                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, texturePipelineHandle);
+                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, texturePipelineLayoutHandle, 0, pDescriptorSets, null);
+                vkCmdBindVertexBuffers(commandBuffer, 0, buffers, offsets);
+                vkCmdBindIndexBuffer(commandBuffer, indexBufferHandle, 0, VK_INDEX_TYPE_UINT32);
+                vkCmdDrawIndexed(commandBuffer, imageIndexCount, 1, imageIndexOffset, 0, 0);
+            }
+
             vkCmdEndRenderPass(commandBuffer);
 
             err = vkEndCommandBuffer(commandBuffer);

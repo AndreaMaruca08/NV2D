@@ -1,10 +1,12 @@
 import nv.components.NvCharacter;
 import nv.components.NvCont;
 
+import nv.components.shapes.dynamic.DynamicCircle;
 import nv.components.shapes.dynamic.DynamicSquare;
 import nv.core.NvContext;
 import nv.core.NvGraphic;
 import nv.test.ClickTest;
+import nv.test.DvdLogoBouncing;
 
 void main() {
     var context = NvContext.createInstance("TEST");
@@ -13,7 +15,6 @@ void main() {
     context.setVsync(false);
 
     var page = context.addAndSetPage("NewPage", NvCont.newPage());
-    page.setChildrenFirst(true);
     page.setBackground(1,0.5f,0.5f);
 
     NvCharacter character = new NvCharacter(1000,500, 100, 300);
@@ -25,7 +26,7 @@ void main() {
 
     for(int i = 1; i < 50; i++){
         for(int j =1 ; j < 50; j++){
-            var c = new DynamicSquare(i*20,100 * j,15,15);
+            var c = new DynamicCircle(i*20,100 * j,15);
             c.setRgb(0,0,0);
             page.addChild(c);
         }
@@ -36,6 +37,9 @@ void main() {
     a.setRgb(0,1,0);
     page.addChild(a);
 
+    var dvd = new DvdLogoBouncing(300,300);
+
+    page.addChild(dvd);
     page.addChild(click);
     character.setWeight(100);
     context.setKeyboardFocus(character);

@@ -3,7 +3,10 @@ package nv.test;
 import nv.components.NvComp;
 import nv.core.NvContext;
 import nv.core.NvGraphic;
+import nv.core.collision.Collidable;
 import nv.core.data.NvImage;
+
+import static nv.core.NvGraphic.camera;
 
 public class DvdLogoBouncing extends NvComp {
     private float preciseX;
@@ -34,7 +37,7 @@ public class DvdLogoBouncing extends NvComp {
         preciseX += velocityX * dt;
         preciseY += velocityY * dt;
 
-        int amount = (int) (500 * dt);
+        int amount = (int) (1000 * dt);
         if(isGettingBigger){
             x -= amount;
             w += amount;
@@ -51,19 +54,31 @@ public class DvdLogoBouncing extends NvComp {
             }
         }
 
-        if (preciseX <= 0) {
-            preciseX = 0;
+        // Calcoliamo i limiti visibili reali nel mondo (tenendo conto dello zoom)
+        float zoom = Math.max(camera.zoom, 0.0001f);
+        float viewW = app.getWidth() / zoom;
+        float viewH = app.getHeight() / zoom;
+        
+        float minX = camera.x;
+        float maxX = camera.x + viewW;
+        float minY = camera.y;
+        float maxY = camera.y + viewH;
+
+        // Rimbalzo X
+        if (preciseX <= minX) {
+            preciseX = minX;
             velocityX = Math.abs(velocityX);
-        } else if (preciseX + w >= app.getWidth()) {
-            preciseX = app.getWidth() - w;
+        } else if (preciseX + w >= maxX) {
+            preciseX = maxX - w;
             velocityX = -Math.abs(velocityX);
         }
 
-        if (preciseY <= 0) {
-            preciseY = 0;
+        // Rimbalzo Y
+        if (preciseY <= minY) {
+            preciseY = minY;
             velocityY = Math.abs(velocityY);
-        } else if (preciseY + h >= app.getHeight()) {
-            preciseY = app.getHeight() - h;
+        } else if (preciseY + h >= maxY) {
+            preciseY = maxY - h;
             velocityY = -Math.abs(velocityY);
         }
 

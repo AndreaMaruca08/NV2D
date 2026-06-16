@@ -4,6 +4,8 @@ import nv.core.NvGraphic;
 
 import java.awt.*;
 
+import static nv.core.NvGraphic.camera;
+
 /**
  * <h3>Empty container</h3>
  * <p>Simple empty component used for storing other components</p>
@@ -47,5 +49,7 @@ public class NvCont extends NvRgbComp {
         if(showBorder){
             g.drawRectBorder(0, 0, w, h, 20, 0.3f, 0.1f, 0.1f);
         }
+
+        g.drawRect(camera.x, camera.y, w, h, r, this.g, b);
     }
 }

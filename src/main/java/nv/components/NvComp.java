@@ -116,22 +116,22 @@ public abstract class NvComp implements UpdateCycle {
 
     public void invalidate() {}
 
-    private NvContext app;
+    private NvContext context;
     public void addChild(NvComp child){
-        if(app == null)
-            app = NvContext.getInstance();
+        if(context == null)
+            context = NvContext.getInstance();
         children.add(child);
         child.setParent(this);
         if(child instanceof Collidable)
-            app.addCanCollide(child);
+            context.addCanCollide(child);
     }
 
     public void removeChild(NvComp child){
-        if(app == null)
-            app = NvContext.getInstance();
+        if(context == null)
+            context = NvContext.getInstance();
         children.remove(child);
         if(child instanceof Collidable)
-            app.removeCanCollide(child);
+            context.removeCanCollide(child);
     }
 
     protected void mouseEnter(){}
@@ -176,7 +176,7 @@ public abstract class NvComp implements UpdateCycle {
         }else{
             mouseOut();
         }
-        if(childrenFirst){
+        if(!childrenFirst){
             drawIntern(g);
             drawChildren(g);
         }else{
@@ -218,24 +218,33 @@ public abstract class NvComp implements UpdateCycle {
     }
 
     public void destroy(){
-        if(app == null)
-            app = NvContext.getInstance();
+        if(context == null)
+            context = NvContext.getInstance();
         for (NvComp child : children) {
             child.destroy();
             if(child instanceof Collidable) {
-                app.removeCanCollide(child);
+                context.removeCanCollide(child);
             }
         }
         if(getParent() != null) {
             getParent().children.remove(this);
         }
         if(this instanceof Collidable){
-            app.removeCanCollide(this);
+            context.removeCanCollide(this);
         }
+        whenDestroyed();
+    }
+
+    /**
+     * For custom behavior when destroyed
+     */
+    protected void whenDestroyed(){
+
     }
 
     @Override
     public String toString(){
         return "NvComp: " + this.getClass().getSimpleName() + " x: " + x + " y: " + y + " w: " + w + " h: " + h + " rotation: " + rotation;
     }
+
 }

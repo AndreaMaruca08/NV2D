@@ -102,10 +102,17 @@ public final class NvContext implements Runnable {
     private boolean showFPS = false;
     private int targetFps = -1;
     private boolean vsync = true;
+    private float[] backgroundColor = {0.1f, 0.1f, 0.1f, 1.0f};
 
     public static final int UNLIMITED = -1;
     public void setFpsLimit(int fps) {
         this.targetFps = fps;
+    }
+
+        public void setBackgroundColor(float r, float g, float b) {
+        this.backgroundColor[0] = r;
+        this.backgroundColor[1] = g;
+        this.backgroundColor[2] = b;
     }
 
     public void setVsync(boolean enabled) {
@@ -318,7 +325,7 @@ public final class NvContext implements Runnable {
     }
 
     private final NvComp fpsDisplay = new NvComp(10,10,260,70){
-        private String displayString = "FPS: TO CALC";
+        private String displayString = "FPS: NONE";
         private int localFrameCount = 0;
         private float localFpsSum = 0;
 
@@ -352,14 +359,6 @@ public final class NvContext implements Runnable {
         graphic.initialize(w, h, wu, wv, fontAtlas);
 
         handleCollisions();
-
-        graphic.setComponent(rootComponent);
-        graphic.drawRect(camera.x, camera.y,
-                    rootComponent.getW(),
-                    rootComponent.getH(),
-                    rootComponent.getR(),
-                    rootComponent.getG(),
-                    rootComponent.getB());
 
         rootComponent.draw(graphic);
 
@@ -463,7 +462,7 @@ public final class NvContext implements Runnable {
         addUpdatable(fpsDisplay);
     }
 
-    private KeyboardListener focused;
+    private KeyboardListener focused = new EmptyKeyboardListener();
 
     public void setKeyboardFocus(KeyboardListener focused) {
         this.focused = focused;
@@ -483,7 +482,7 @@ public final class NvContext implements Runnable {
     }
 
     private GLFWMouseButtonCallbackI inputCallback(){
-        return (windowHandle, button, action, mods) -> {
+        return (_, button, action, mods) -> {
             if (button == GLFW_MOUSE_BUTTON_LEFT) {
                 var correctedCoords = getCorrectedCoords();
                 handleMouseClick(rootComponent, correctedCoords[0], correctedCoords[1], action == GLFW_PRESS);
@@ -493,7 +492,7 @@ public final class NvContext implements Runnable {
     private final boolean[] keys = new boolean[GLFW_KEY_LAST + 1];
 
     private GLFWKeyCallbackI keyboardCallBack(){
-        return (window, key, scancode, action, mods) -> {
+        return (_, key, _, action, mods) -> {
             if(action == GLFW_PRESS || action == GLFW_REPEAT){
                 keys[key] = true;
                 focused.onKeyPressed(keys, mods);
@@ -514,9 +513,13 @@ public final class NvContext implements Runnable {
             IntBuffer pWidth  = stack.mallocInt(1);
             IntBuffer pHeight = stack.mallocInt(1);
             glfwGetFramebufferSize(window, pWidth, pHeight);
-            this.swapchain = new Swapchain(device, surface, pWidth.get(0), pHeight.get(0), vsync);
+            int fbW = pWidth.get(0);
+            int fbH = pHeight.get(0);
+            
+
+            this.swapchain = new Swapchain(device, surface, fbW, fbH, vsync);
+            this.rootComponent = new NvCont(0, 0, fbW, fbH);
         }
-        this.rootComponent = new NvCont(0,0,swapchain.getWidth(), swapchain.getHeight());
 
         createRenderPass();
 
@@ -677,7 +680,7 @@ public final class NvContext implements Runnable {
 
             ubo.update(imageIndex, 0f, (float) swapchain.getWidth(), (float) swapchain.getHeight(), 0f);
 
-            commandBuffers.recordDual(
+            commandBuffers.recordDual(backgroundColor,
                     renderPass,
                     framebuffers[imageIndex],
                     pipeline.getHandle(),
@@ -747,7 +750,9 @@ public final class NvContext implements Runnable {
 
             glfwGetFramebufferSize(window, pWidth, pHeight);
 
-            this.swapchain = new Swapchain(device, surface, pWidth.get(0), pHeight.get(0), vsync);
+            int fbW = pWidth.get(0);
+            int fbH = pHeight.get(0);
+            this.swapchain = new Swapchain(device, surface, fbW, fbH, vsync);
             this.rootComponent.setW(swapchain.getWidth());
             this.rootComponent.setH(swapchain.getHeight());
         }

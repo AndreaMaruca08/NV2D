@@ -113,8 +113,15 @@ public class GraphicsPipeline implements AutoCloseable {
             VkPipelineViewportStateCreateInfo viewportState =
                     VkPipelineViewportStateCreateInfo.calloc(stack);
             viewportState.sType(VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO);
-            viewportState.pViewports(viewport);
-            viewportState.pScissors(scissor);
+            viewportState.viewportCount(1);
+            viewportState.pViewports(null); // Ignored when dynamic
+            viewportState.scissorCount(1);
+            viewportState.pScissors(null); // Ignored when dynamic
+
+            VkPipelineDynamicStateCreateInfo dynamicState =
+                    VkPipelineDynamicStateCreateInfo.calloc(stack);
+            dynamicState.sType(VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
+            dynamicState.pDynamicStates(stack.ints(VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR));
 
             // 4. Rasterizer
             VkPipelineRasterizationStateCreateInfo rasterizer =
@@ -184,6 +191,7 @@ public class GraphicsPipeline implements AutoCloseable {
             pipelineInfo.pRasterizationState(rasterizer);
             pipelineInfo.pMultisampleState(multisampling);
             pipelineInfo.pColorBlendState(colorBlending);
+            pipelineInfo.pDynamicState(dynamicState);
             pipelineInfo.layout(tempLayout);      // vero VkPipelineLayout
             pipelineInfo.renderPass(renderPass);
             pipelineInfo.subpass(0);
