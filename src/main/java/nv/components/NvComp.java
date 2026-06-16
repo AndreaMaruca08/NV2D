@@ -217,6 +217,23 @@ public abstract class NvComp implements UpdateCycle {
         rotation += clockwise ? angle : -angle;
     }
 
+    public void destroy(){
+        if(app == null)
+            app = NvContext.getInstance();
+        for (NvComp child : children) {
+            child.destroy();
+            if(child instanceof Collidable) {
+                app.removeCanCollide(child);
+            }
+        }
+        if(getParent() != null) {
+            getParent().children.remove(this);
+        }
+        if(this instanceof Collidable){
+            app.removeCanCollide(this);
+        }
+    }
+
     @Override
     public String toString(){
         return "NvComp: " + this.getClass().getSimpleName() + " x: " + x + " y: " + y + " w: " + w + " h: " + h + " rotation: " + rotation;

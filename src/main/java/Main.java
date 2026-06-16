@@ -4,6 +4,7 @@ import nv.components.NvCont;
 import nv.components.shapes.dynamic.DynamicSquare;
 import nv.core.NvContext;
 import nv.core.NvGraphic;
+import nv.test.ClickTest;
 
 void main() {
     var context = NvContext.createInstance("TEST");
@@ -19,6 +20,9 @@ void main() {
     NvGraphic.setCurrentCamera(character.getCamera());
     character.setNeedCamera(true);
 
+    var click = new ClickTest(0, 1000, 500, 100);
+    click.setWeight(2);
+
     for(int i = 1; i < 50; i++){
         for(int j =1 ; j < 50; j++){
             var c = new DynamicSquare(i*20,100 * j,15,15);
@@ -32,6 +36,7 @@ void main() {
     a.setRgb(0,1,0);
     page.addChild(a);
 
+    page.addChild(click);
     character.setWeight(100);
     context.setKeyboardFocus(character);
 

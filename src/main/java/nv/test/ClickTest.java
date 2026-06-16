@@ -20,7 +20,6 @@ public class ClickTest extends NvComp implements Clickable, Collidable {
     @Override
     public void onClick() {
         r = 1;
-
     }
 
     @Override
@@ -30,5 +29,10 @@ public class ClickTest extends NvComp implements Clickable, Collidable {
 
     @Override
     public void update(float dt) {
+        if(isHovered){
+            gr = 1;
+        }else{
+            gr = 0;
+        }
     }
 }

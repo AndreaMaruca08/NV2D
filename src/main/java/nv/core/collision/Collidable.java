@@ -4,6 +4,8 @@ import nv.components.NvComp;
 
 /**
  * Represents a game object that can collide with other objects.
+ * @author Andrea Maruca
+ * @since 1.0
  */
 public interface Collidable {
     default void whenCollide(NvComp other){}
