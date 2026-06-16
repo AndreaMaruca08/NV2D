@@ -20,7 +20,7 @@ public class Swapchain implements AutoCloseable {
     private final int imageFormat;
     private final long[] imageViews;
 
-    public Swapchain(VkDevice device, long surfaceHandle, int width, int height) {
+    public Swapchain(VkDevice device, long surfaceHandle, int width, int height, boolean vsync) {
         this.device = device;
         this.width = width;
         this.height = height;
@@ -45,7 +45,7 @@ public class Swapchain implements AutoCloseable {
             createInfo.imageSharingMode(VK_SHARING_MODE_EXCLUSIVE);
             createInfo.preTransform(VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR);
             createInfo.compositeAlpha(VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR);
-            createInfo.presentMode(VK_PRESENT_MODE_IMMEDIATE_KHR); // Unlocked if available, otherwise would fallback
+            createInfo.presentMode(vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR); // Unlocked if available, otherwise would fallback
             createInfo.clipped(true);
 
             LongBuffer pSwapchain = stack.mallocLong(1);

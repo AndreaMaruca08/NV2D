@@ -58,9 +58,8 @@ public final class NvContext implements Runnable {
     private UpdateCycle currentCameraUpdateCycle;
     private CollisionSystem collisionSystem;
 
-    // Capacità massima pre-allocata (aumenta se servi più geometria)
-    private int maxVertices = 300_000; // vertici × 8 float
-    private int maxIndices  = 550_000; // indici short
+    private int maxVertices = 500_000; // vertici × 8 float
+    private int maxIndices  = 850_000; // indici short
     
     // Texture images caricati (massimo 15 per il shader)
     private static final int MAX_TEXTURES = 15;
@@ -102,9 +101,18 @@ public final class NvContext implements Runnable {
     private float fps = -1;
     private boolean showFPS = false;
     private int targetFps = -1;
+    private boolean vsync = true;
 
+    public static final int UNLIMITED = -1;
     public void setFpsLimit(int fps) {
         this.targetFps = fps;
+    }
+
+    public void setVsync(boolean enabled) {
+        if (this.vsync != enabled) {
+            this.vsync = enabled;
+            this.framebufferResized = true; // Trigger swapchain recreation
+        }
     }
 
     public void setCurrentCameraUpdateCycle(UpdateCycle updateCycle){
@@ -306,10 +314,6 @@ public final class NvContext implements Runnable {
         canCollide.remove(component);
     }
 
-    private int frameCount = 0;
-    private float fpsSum = 0.0F;
-    private float oldFps;
-
     private final NvComp fpsDisplay = new NvComp(10,10,260,70){
         private String displayString = "FPS: TO CALC";
         private int localFrameCount = 0;
@@ -485,7 +489,7 @@ public final class NvContext implements Runnable {
             IntBuffer pWidth  = stack.mallocInt(1);
             IntBuffer pHeight = stack.mallocInt(1);
             glfwGetFramebufferSize(window, pWidth, pHeight);
-            this.swapchain = new Swapchain(device, surface, pWidth.get(0), pHeight.get(0));
+            this.swapchain = new Swapchain(device, surface, pWidth.get(0), pHeight.get(0), vsync);
         }
         this.rootComponent = new NvCont(0,0,swapchain.getWidth(), swapchain.getHeight());
 
@@ -612,19 +616,7 @@ public final class NvContext implements Runnable {
     private void mainLoop() {
         double lastFrameTime = glfwGetTime();
         while (!glfwWindowShouldClose(window)) {
-            if (targetFps > 0) {
-                double targetFrameTime = 1.0 / targetFps;
-                while (glfwGetTime() < lastFrameTime + targetFrameTime) {
-                    double remaining = (lastFrameTime + targetFrameTime) - glfwGetTime();
-                    if (remaining > 0.002) {
-                        try {
-                            Thread.sleep(1);
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                        }
-                    }
-                }
-            }
+
             double now = glfwGetTime();
             float deltaTime = (float) (now - lastFrameTime);
             lastFrameTime = now;
@@ -730,7 +722,7 @@ public final class NvContext implements Runnable {
 
             glfwGetFramebufferSize(window, pWidth, pHeight);
 
-            this.swapchain = new Swapchain(device, surface, pWidth.get(0), pHeight.get(0));
+            this.swapchain = new Swapchain(device, surface, pWidth.get(0), pHeight.get(0), vsync);
             this.rootComponent.setW(swapchain.getWidth());
             this.rootComponent.setH(swapchain.getHeight());
         }

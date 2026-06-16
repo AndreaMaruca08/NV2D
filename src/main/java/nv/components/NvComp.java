@@ -11,6 +11,8 @@ import nv.core.collision.CollisionSystem;
 import java.util.ArrayList;
 import java.util.List;
 
+import static nv.core.NvGraphic.camera;
+
 /**
  * <h3>Root of the component tree</h3>
  * <p>Base class for all components in the component tree, by updating or drawing a component you draw every child with it</p>
@@ -195,13 +197,14 @@ public abstract class NvComp implements UpdateCycle {
 
     public void drawChildren(NvGraphic g){
         for (NvComp child : children) {
-            child.draw(g);
+            if(camera.isComponentInRendering(child))
+                child.draw(g);
         }
     }
 
     public boolean isInside(int x, int y){
-        float shiftedX = NvGraphic.camera.x + x;
-        float shiftedY = NvGraphic.camera.y + y;
+        float shiftedX = camera.x + x;
+        float shiftedY = camera.y + y;
         return  shiftedX >= this.x &&
                 shiftedX <= this.x + this.w &&
                 shiftedY >= this.y &&

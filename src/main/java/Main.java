@@ -1,18 +1,17 @@
 import nv.components.NvCharacter;
 import nv.components.NvCont;
 
-import nv.components.NvTimer;
 import nv.components.shapes.dynamic.DynamicSquare;
-import nv.components.shapes.dynamic.DynamicTriangle;
 import nv.core.NvContext;
 import nv.core.NvGraphic;
 import nv.core.collision.CollisionSystem;
-import nv.test.ClickTest;
+import nv.test.BigOvalTest;
 
 void main() {
-    var context = NvContext.createInstance("TESTING");
+    var context = NvContext.createInstance("aa");
 
     context.setShowFPS(true);
+    context.setVsync(true);
 
     var page = context.addAndSetPage("NewPage", NvCont.newPage());
     page.setChildrenFirst(true);
@@ -25,14 +24,11 @@ void main() {
     NvGraphic.setCurrentCamera(character.getCamera());
 
     var sq = new DynamicSquare(0,0, 10000, 50);
+    var circ = new BigOvalTest(0,0, 100);
     sq.setWeight(CollisionSystem.MAX_WEIGHT);
 
-    var tri = new DynamicTriangle(1000,1000, 100, 50);
-
-    context.setFpsLimit(500);
-
-    page.addChild(tri);
     page.addChild(sq);
+    page.addChild(circ);
     page.addChild(character);
 
     context.run();
