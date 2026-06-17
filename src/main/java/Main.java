@@ -7,6 +7,7 @@ import nv.core.NvContext;
 import nv.core.NvGraphic;
 import nv.test.ClickTest;
 import nv.test.DvdLogoBouncing;
+import nv.test.FlagDisplay;
 
 void main() {
     var context = NvContext.createInstance("TEST");
@@ -37,8 +38,12 @@ void main() {
     page.addChild(a);
 
     var dvd = new DvdLogoBouncing(300,300);
+    
+    // Add FlagDisplay at a visible position
+    var flags = new FlagDisplay(500, 300);
 
     page.addChild(dvd);
+    page.addChild(flags);
     page.addChild(click);
     character.setWeight(100);
     context.setKeyboardFocus(character);

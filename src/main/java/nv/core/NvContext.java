@@ -1,6 +1,8 @@
 package nv.core;
 
 import nv.components.*;
+import nv.core.assets.AssetsManager;
+import nv.core.assets.AtlasConverter;
 import nv.core.collision.AABB;
 import nv.core.collision.Collidable;
 import nv.core.collision.CollisionSystem;
@@ -19,6 +21,7 @@ import org.lwjgl.system.MemoryStack;
 import java.awt.Font;
 import java.awt.Dimension;
 import java.awt.Toolkit;
+import java.io.IOException;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
@@ -65,6 +68,13 @@ public final class NvContext implements Runnable {
     private static final int MAX_TEXTURES = 15;
     private final NvImage[] loadedTextures = new NvImage[MAX_TEXTURES];
     private int textureCount = 1;
+
+    public synchronized int getNextTextureSlot() {
+        if (textureCount >= MAX_TEXTURES) {
+            throw new RuntimeException("Limite massimo di texture raggiunto (" + MAX_TEXTURES + ")");
+        }
+        return textureCount++;
+    }
 
     // Geometria dinamica
     private DynamicVertexBuffer dynamicVertexBuffer;
@@ -133,43 +143,43 @@ public final class NvContext implements Runnable {
      *
      * @param filePath percorso del file immagine (relativo o assoluto)
      * @return NvImage registrato con un indice di texture assegnato
-     * @throws RuntimeException se il numero massimo di texture (8) è stato raggiunto o se il file non può essere caricato
+     * @throws RuntimeException se il numero massimo di texture (15) è stato raggiunto o se il file non può essere caricato
      */
     public synchronized NvImage loadImageAbsolute(String filePath) {
         var cached = images.get(filePath);
         if(cached != null)
             return cached;
-        if (textureCount >= MAX_TEXTURES) {
-            throw new RuntimeException("Limite massimo di texture raggiunto (" + MAX_TEXTURES + ")");
-        }
+
+        int slot = getNextTextureSlot();
         NvImage image = NvImage.fromFile(device, physicalDevice, graphicsQueue, filePath);
-        image.setTextureIndex(textureCount);
-        loadedTextures[textureCount] = image;
-        descriptorManager.updateTexture(textureCount, image.getTextureImage());
-        textureCount++;
+        image.setTextureIndex(slot);
+        loadedTextures[slot] = image;
+        descriptorManager.updateTexture(slot, image.getTextureImage());
+        
         images.put(filePath, image);
         return image;
     }
+
+
 
     /**
      * Carica un'immagine dal classpath e la registra nel motore di rendering.
      *
      * @param resourcePath percorso della risorsa nel classpath (es. "/images/sprite.png")
      * @return NvImage registrato con un indice di texture assegnato
-     * @throws RuntimeException se il numero massimo di texture (8) è stato raggiunto o se la risorsa non esiste
+     * @throws RuntimeException se il numero massimo di texture (15) è stato raggiunto o se la risorsa non esiste
      */
     public synchronized NvImage loadImage(String resourcePath) {
         var cached = images.get(resourcePath);
         if(cached != null)
             return cached;
-        if (textureCount >= MAX_TEXTURES) {
-            throw new RuntimeException("Limite massimo di texture raggiunto (" + MAX_TEXTURES + ")");
-        }
+
+        int slot = getNextTextureSlot();
         NvImage image = NvImage.fromResource(device, physicalDevice, graphicsQueue, "/textures/"+resourcePath);
-        image.setTextureIndex(textureCount);
-        loadedTextures[textureCount] = image;
-        descriptorManager.updateTexture(textureCount, image.getTextureImage());
-        textureCount++;
+        image.setTextureIndex(slot);
+        loadedTextures[slot] = image;
+        descriptorManager.updateTexture(slot, image.getTextureImage());
+        
         images.put(resourcePath, image);
         return image;
     }
@@ -548,8 +558,19 @@ public final class NvContext implements Runnable {
 
         this.commandBuffers = new CommandBuffers(device, pipeline, swapchain);
         createSyncObjects();
-    }
 
+        assets = new AssetsManager(
+                device,
+                physicalDevice,
+                graphicsQueue,
+                (slot, texture) -> descriptorManager.updateTexture(slot, texture)
+        );
+    }
+    private AssetsManager assets;
+
+    public AssetsManager assets() {
+        return assets;
+    }
     // -------------------------------------------------------------------------
     // Scena demo: quadrato, triangolo e testo centrato
     // -------------------------------------------------------------------------
