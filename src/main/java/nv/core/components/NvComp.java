@@ -10,6 +10,8 @@ import nv.core.collision.CollisionSystem;
 import nv.core.graphic.NvGraphic;
 import nv.core.input.ClickSystem;
 import nv.core.input.Clickable;
+import nv.core.input.HoverSystem;
+import nv.core.input.Hoverable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +20,7 @@ import static nv.core.graphic.NvGraphic.camera;
 
 /**
  * <h3>Root of the component tree</h3>
- * <p>Base class for all readycomponents in the component tree, by updating or drawing a component you draw every child with it</p>
+ * <p>Base class for all components in the component tree, by updating or drawing a component you draw every child with it</p>
  *
  * @since 1.0
  * @author Andrea Maruca
@@ -131,6 +133,8 @@ public abstract class NvComp implements UpdateCycle {
             CollisionManager.addCanCollide(child);
         if(child instanceof Clickable)
             ClickSystem.addClickable(child);
+        if(child instanceof Hoverable)
+            HoverSystem.addHoverable(child);
     }
 
     public void removeChild(NvComp child){
@@ -141,6 +145,8 @@ public abstract class NvComp implements UpdateCycle {
             CollisionManager.removeCanCollide(child);
         if(child instanceof Clickable)
             ClickSystem.removeClickable(child);
+        if(child instanceof Hoverable)
+            HoverSystem.removeHoverable(child);
     }
 
     protected void mouseEnter(){}
@@ -231,12 +237,6 @@ public abstract class NvComp implements UpdateCycle {
             context = NvContext.getInstance();
         for (NvComp child : children) {
             child.destroy();
-            if(child instanceof Collidable) {
-                CollisionManager.removeCanCollide(child);
-            }
-            if(child instanceof Clickable) {
-                ClickSystem.removeClickable(child);
-            }
         }
         if(getParent() != null) {
             getParent().children.remove(this);
@@ -247,6 +247,8 @@ public abstract class NvComp implements UpdateCycle {
         if(this instanceof Clickable) {
             ClickSystem.removeClickable(this);
         }
+        if(this instanceof Hoverable)
+            HoverSystem.removeHoverable(this);
         whenDestroyed();
     }
 

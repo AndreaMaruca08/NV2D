@@ -1,5 +1,6 @@
 package nv.core.components;
 
+import nv.core.annotations.EngineCore;
 import nv.core.annotations.ReadyComponent;
 import nv.core.graphic.NvGraphic;
 
@@ -13,7 +14,7 @@ import static nv.core.graphic.NvGraphic.camera;
  * @since 1.0
  * @author Andrea Maruca
  */
-@ReadyComponent
+@EngineCore
 @SuppressWarnings("unused")
 public class NvCont extends NvRgbComp {
     private final boolean showBorder;

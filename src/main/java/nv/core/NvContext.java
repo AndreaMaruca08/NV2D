@@ -543,8 +543,9 @@ public final class NvContext implements Runnable {
             lastFrameTime = now;
 
             glfwPollEvents();
-            tickHandler(deltaTime);
             drawFrame();
+            tickHandler(deltaTime);
+
         }
         vkDeviceWaitIdle(device);
     }

@@ -1,5 +1,6 @@
 package nv.core.components;
 
+import nv.core.annotations.EngineCore;
 import nv.core.annotations.ReadyComponent;
 
 /**
@@ -7,7 +8,7 @@ import nv.core.annotations.ReadyComponent;
  * @since 1.0
  * @author Andrea Maruca
  */
-@ReadyComponent
+@EngineCore
 @SuppressWarnings("unused")
 public abstract class NvRgbComp extends NvComp {
     protected float r=0, g=0, b=0;

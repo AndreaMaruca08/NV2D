@@ -4,8 +4,9 @@ import nv.core.collision.Collidable;
 import nv.core.components.NvComp;
 import nv.core.graphic.NvGraphic;
 import nv.core.input.Clickable;
+import nv.core.input.Hoverable;
 
-public class ClickTest extends NvComp implements Clickable, Collidable {
+public class ClickTest extends NvComp implements Clickable, Collidable, Hoverable {
     float r,gr,b;
     public ClickTest(int x, int y, int w, int h) {
         super(x, y, w, h);
