@@ -1,9 +1,9 @@
 package nv.test;
 
-import nv.components.NvComp;
 import nv.core.NvContext;
-import nv.core.NvGraphic;
 import nv.core.assets.AtlasConverter;
+import nv.core.components.NvComp;
+import nv.core.graphic.NvGraphic;
 
 import java.util.ArrayList;
 import java.util.List;

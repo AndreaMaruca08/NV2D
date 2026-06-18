@@ -1,12 +1,15 @@
-package nv.components;
+package nv.core.components;
 
 import nv.core.AppendableGeometry;
-import nv.core.NvGraphic;
+import nv.core.annotations.EngineCore;
 import nv.core.collision.CollisionSystem;
+import nv.core.graphic.NvGraphic;
 
 import java.util.Arrays;
-import static nv.core.NvGraphic.FLOATS_PER_VERTEX;
+import static nv.core.graphic.NvGraphic.FLOATS_PER_VERTEX;
 
+@EngineCore
+@SuppressWarnings("unused")
 public abstract class NvStateless extends NvComp implements AppendableGeometry {
     private float[] vertices;
     private int[] indices;

@@ -1,8 +1,10 @@
 package nv.core.data;
 
-import nv.core.NvGraphic;
+import nv.core.annotations.EngineCore;
 import org.lwjgl.system.MemoryUtil;
-import org.lwjgl.vulkan.*;
+import org.lwjgl.vulkan.VkDevice;
+import org.lwjgl.vulkan.VkPhysicalDevice;
+import org.lwjgl.vulkan.VkQueue;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -12,10 +14,14 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 /**
- * Immagine GPU (Vulkan).
- * Supporta texture singole e texture atlas (buffer già pronto CPU-side).
+ * GPU image (Vulkan).
+ * Supports both atlas textures and single images
+ * @since 1.0
+ * @author Andrea Maruca
  */
-public class NvImage implements AutoCloseable {
+@EngineCore
+@SuppressWarnings("unused")
+public final class NvImage implements AutoCloseable {
 
     private final TextureImage textureImage;
     private final int width;

@@ -1,12 +1,14 @@
 package nv.core.collision;
 
-import nv.components.NvComp;
+import nv.core.annotations.EngineCore;
+import nv.core.components.NvComp;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@EngineCore
 @SuppressWarnings("unused")
 public final class CollisionManager {
     private CollisionManager(){}

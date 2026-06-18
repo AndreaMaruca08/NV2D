@@ -1,19 +1,20 @@
-package nv.components;
+package nv.core.components;
 
-import nv.core.NvGraphic;
+import nv.core.annotations.ReadyComponent;
+import nv.core.graphic.NvGraphic;
 
-import java.awt.*;
-
-import static nv.core.NvGraphic.camera;
+import static nv.core.graphic.NvGraphic.camera;
 
 /**
  * <h3>Empty container</h3>
- * <p>Simple empty component used for storing other components</p>
+ * <p>Simple empty component used for storing other readycomponents</p>
  * <p>Can also represent a page using .newPage()</p>
  *
  * @since 1.0
  * @author Andrea Maruca
  */
+@ReadyComponent
+@SuppressWarnings("unused")
 public class NvCont extends NvRgbComp {
     private final boolean showBorder;
 

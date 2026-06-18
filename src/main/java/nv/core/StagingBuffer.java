@@ -1,27 +1,24 @@
 package nv.core;
 
+import nv.core.annotations.EngineCore;
 import nv.core.data.VulkanMemory;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
-import org.lwjgl.vulkan.*;
+import org.lwjgl.vulkan.VkDevice;
+import org.lwjgl.vulkan.VkPhysicalDevice;
+
 import java.nio.ByteBuffer;
 
 import static org.lwjgl.vulkan.VK10.*;
 
 /**
- * Buffer temporaneo CPU-visible usato per trasferire dati dalla RAM alla VRAM.
- *
- * Vulkan non permette scrittura diretta su VkImage ottimizzate per la GPU
- * (DEVICE_LOCAL). Il pattern corretto è:
- * <p>
- *   RAM (Java byte[])
- *     → StagingBuffer (HOST_VISIBLE, HOST_COHERENT)
- *       → vkCmdCopyBufferToImage (comando GPU)
- *         → VkImage (DEVICE_LOCAL, solo GPU)
- * </p>
- * Questo oggetto viene creato, usato per la copia, poi subito distrutto.
+ * <p>Buffer used to transfer data from RAM to VRAM</p>
+ * @since 1.0
+ * @author Andrea Maruca
  */
-public class StagingBuffer implements AutoCloseable {
+@EngineCore
+@SuppressWarnings("unused")
+public final class StagingBuffer implements AutoCloseable {
 
     private final VkDevice device;
     private final long bufferHandle;

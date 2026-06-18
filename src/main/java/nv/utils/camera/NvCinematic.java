@@ -1,12 +1,18 @@
-package nv.components.camera;
+package nv.utils.camera;
 
 import nv.core.NvContext;
-import nv.core.NvGraphic;
 import nv.core.UpdateCycle;
+import nv.core.annotations.ReadyComponent;
+import nv.core.camera.NvCamera;
+import nv.core.graphic.NvGraphic;
 
 /**
  * Represents a cinematic camera that can be used to create smooth transitions between different camera positions and zoom levels.
+ * @since 1.0
+ * @author Andrea Maruca
  */
+@ReadyComponent
+@SuppressWarnings("unused")
 public abstract class NvCinematic extends NvCamera implements UpdateCycle {
     protected boolean started = false;
     protected int xStart, yStart;

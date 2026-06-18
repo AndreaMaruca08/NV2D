@@ -1,7 +1,7 @@
 package nv.test;
 
-import nv.core.NvGraphic;
-import nv.components.NvStateless;
+import nv.core.components.NvStateless;
+import nv.core.graphic.NvGraphic;
 
 public class Stateless extends NvStateless {
     public Stateless(int x, int y, int w, int h) {

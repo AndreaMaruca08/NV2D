@@ -1,16 +1,17 @@
-package nv.components;
+package nv.utils;
 
 import nv.core.NvContext;
 import nv.core.UpdateCycle;
-
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
+import nv.core.annotations.ReadyComponent;
 
 /**
  * A timer that can be used to track time or execute actions after a certain amount of time.
+ * <p>Shouldn't be modified, extend if needed</p>
  * @since 1.0
  * @author Andrea Maruca
  */
+@ReadyComponent
+@SuppressWarnings("unused")
 public class NvTimer implements UpdateCycle {
     private float remaining;
     private float fullRemaining;

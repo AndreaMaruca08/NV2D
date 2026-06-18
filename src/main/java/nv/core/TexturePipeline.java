@@ -1,19 +1,24 @@
 package nv.core;
 
+import nv.core.annotations.EngineCore;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
-import java.io.InputStream;
+
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 
 import static org.lwjgl.vulkan.VK10.*;
 
 /**
- * Pipeline Vulkan separato SOLO per il rendering delle immagini con texture.
- * Usa 8-float vertex format: pos(2) + color(3) + UV(2) + texIndex(1)
+ * <p>Vulkan texture pipeline</p>
+ * @since 1.0
+ * @author Andrea Maruca
  */
-public class TexturePipeline implements AutoCloseable {
+@EngineCore
+@SuppressWarnings("unused")
+public final class TexturePipeline implements AutoCloseable {
 
     private final VkDevice device;
     private final long pipelineLayoutHandle;

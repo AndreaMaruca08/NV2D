@@ -1,15 +1,23 @@
 package nv.core;
 
+import nv.core.annotations.EngineCore;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
-import java.io.InputStream;
+
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 
 import static org.lwjgl.vulkan.VK10.*;
 
-public class GraphicsPipeline implements AutoCloseable {
+/**
+ * @since 1.0
+ * @author Andrea Maruca
+ */
+@EngineCore
+@SuppressWarnings("unused")
+public final class GraphicsPipeline implements AutoCloseable {
 
     private final VkDevice device;
     private final long pipelineLayoutHandle;
@@ -23,7 +31,6 @@ public class GraphicsPipeline implements AutoCloseable {
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
 
-            // 0. Shader: lettura SPIR‑V e creazione shader modules
             byte[] vertShaderCode = readShaderFile("/shaders/shader.vert.spv");
             byte[] fragShaderCode = readShaderFile("/shaders/shader.frag.spv");
 

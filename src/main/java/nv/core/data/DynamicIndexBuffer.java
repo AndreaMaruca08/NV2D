@@ -1,5 +1,6 @@
 package nv.core.data;
 
+import nv.core.annotations.EngineCore;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -10,7 +11,9 @@ import java.nio.LongBuffer;
 
 import static org.lwjgl.vulkan.VK10.*;
 
-public class DynamicIndexBuffer implements AutoCloseable {
+@EngineCore
+@SuppressWarnings("unused")
+public final class DynamicIndexBuffer implements AutoCloseable {
 
     private final VkDevice device;
     private final long buffer;

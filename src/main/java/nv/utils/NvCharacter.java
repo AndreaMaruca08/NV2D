@@ -1,16 +1,21 @@
-package nv.components;
+package nv.utils;
 
-import nv.components.camera.NvCamera;
-import nv.core.input.KeyboardListener;
-import nv.core.NvGraphic;
+import nv.core.annotations.ReadyComponent;
+import nv.core.camera.NvCamera;
 import nv.core.collision.Collidable;
+import nv.core.components.NvComp;
+import nv.core.graphic.NvGraphic;
+import nv.core.input.KeyboardListener;
 
 import static org.lwjgl.glfw.GLFW.*;
 
 /**
  * <h3>Base for a game character</h3>
  * <p>Character with movements, intended to be extended</p>
+ * @since 1.0
+ * @author Andrea Maruca
  */
+@ReadyComponent
 public class NvCharacter extends NvComp implements KeyboardListener, Collidable {
     protected int upKey =    GLFW_KEY_W;
     protected int leftKey =  GLFW_KEY_A;
@@ -20,14 +25,15 @@ public class NvCharacter extends NvComp implements KeyboardListener, Collidable 
     protected final NvCamera camera;
     protected boolean needCamera;
 
-    protected float velocity = 2000f;
+    protected float velocity;
 
     private boolean[] keys = new boolean[GLFW_KEY_LAST];
 
-    public NvCharacter(int x, int y, int w, int h) {
+    public NvCharacter(int x, int y, int w, int h, float velocity) {
         super(x, y, w,h);
         camera = new NvCamera(x, y, 1);
         needCamera = false;
+        this.velocity = velocity;
     }
 
     public void setNeedCamera(boolean needCamera) {

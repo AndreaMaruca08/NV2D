@@ -1,15 +1,19 @@
 package nv.core.data;
 
+import nv.core.annotations.EngineCore;
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
+
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 
 import static org.lwjgl.vulkan.VK10.*;
 
-public class DynamicVertexBuffer implements AutoCloseable {
+@EngineCore
+@SuppressWarnings("unused")
+public final class DynamicVertexBuffer implements AutoCloseable {
 
     private final VkDevice device;
     private final long buffer;

@@ -1,14 +1,16 @@
-package nv.components;
+package nv.core.graphic;
 
 import nv.core.AppendableGeometry;
-import nv.core.NvGraphic;
 import nv.core.Scene;
+import nv.core.annotations.DefaultChose;
 import nv.core.data.NvImage;
 
 /**
  * concrete implementation of NvGraphic
  * that specializes in rendering geometric shapes and text as direct pixel graphics.
  */
+@DefaultChose
+@SuppressWarnings("unused")
 public class NvPixelGraphic extends NvGraphic {
 
     private float tx(float worldX) {
@@ -28,10 +30,10 @@ public class NvPixelGraphic extends NvGraphic {
                         float r, float g, float b,
                         AppendableGeometry comp) {
 
-        float x1 = tx(component.x + base1);
-        float x2 = tx(component.x + base2);
-        float y1 = ty(component.y + y);
-        float apexY = ty(component.y + y - component.h);
+        float x1 = tx(component.getX() + base1);
+        float x2 = tx(component.getX() + base2);
+        float y1 = ty(component.getY() + y);
+        float apexY = ty(component.getY() + y - component.getH());
 
         float[] triVerts = {
                 x1, y1, r, g, b, wu, wv, 0f,
@@ -54,8 +56,8 @@ public class NvPixelGraphic extends NvGraphic {
         x += radius/2;
         y += radius/2;
 
-        float cx = tx(component.x + x);
-        float cy = ty(component.y + y);
+        float cx = tx(component.getX() + x);
+        float cy = ty(component.getY() + y);
 
         float rScaled = radius * camera.zoom;
 
@@ -105,10 +107,10 @@ public class NvPixelGraphic extends NvGraphic {
                          float r, float g, float b,
                          AppendableGeometry comp) {
 
-        float x1 = tx(component.x + x);
-        float y1 = ty(component.y + y);
-        float x2 = tx(component.x + x + w);
-        float y2 = ty(component.y + y + h);
+        float x1 = tx(component.getX() + x);
+        float y1 = ty(component.getY() + y);
+        float x2 = tx(component.getX() + x + w);
+        float y2 = ty(component.getY() + y + h);
 
         float[] quadVerts = {
                 x1, y1, r, g, b, wu, wv, a,
@@ -125,10 +127,10 @@ public class NvPixelGraphic extends NvGraphic {
     public void drawRoundRect(float x, float y, float w, float h, float radius, float r, float g, float b, AppendableGeometry comp) {
         int segments = 8;
         
-        float x1 = tx(component.x + x);
-        float y1 = ty(component.y + y);
-        float x2 = tx(component.x + x + w);
-        float y2 = ty(component.y + y + h);
+        float x1 = tx(component.getX() + x);
+        float y1 = ty(component.getY() + y);
+        float x2 = tx(component.getX() + x + w);
+        float y2 = ty(component.getY() + y + h);
         float rScaled = radius * camera.zoom;
 
         float maxR = Math.min(w, h) / 2f * camera.zoom;
@@ -225,8 +227,8 @@ public class NvPixelGraphic extends NvGraphic {
     public void drawText(String text, float textX, float textY,
                          AppendableGeometry comp) {
 
-        float x = tx(component.x + textX);
-        float y = ty(component.y + textY);
+        float x = tx(component.getX() + textX);
+        float y = ty(component.getY() + textY);
 
         Scene textGeo = generateTextGeometry(text, x, y, fontAtlas);
         comp.append(textGeo.vertices(), textGeo.indices());
@@ -242,10 +244,10 @@ public class NvPixelGraphic extends NvGraphic {
                                 float x, float y, float w, float h,
                                 float u0, float v0, float u1, float v1) {
 
-        float x1 = tx(component.x + x);
-        float y1 = ty(component.y + y);
-        float x2 = tx(component.x + x + w);
-        float y2 = ty(component.y + y + h);
+        float x1 = tx(component.getX() + x);
+        float y1 = ty(component.getY() + y);
+        float x2 = tx(component.getX() + x + w);
+        float y2 = ty(component.getY() + y + h);
 
         float texIndex = (float) image.getTextureIndex();
 

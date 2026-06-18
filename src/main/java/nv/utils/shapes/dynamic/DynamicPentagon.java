@@ -1,8 +1,9 @@
-package nv.components.shapes.dynamic;
+package nv.utils.shapes.dynamic;
 
-import nv.components.NvRgbComp;
-import nv.core.NvGraphic;
+import nv.core.annotations.ReadyComponent;
 import nv.core.collision.Collidable;
+import nv.core.graphic.NvGraphic;
+import nv.core.components.NvRgbComp;
 
 /**
  * Simple pentagon with collision
@@ -10,6 +11,8 @@ import nv.core.collision.Collidable;
  * @since 1.0
  * @author Andrea Maruca
  */
+@ReadyComponent
+@SuppressWarnings("unused")
 public class DynamicPentagon extends NvRgbComp implements Collidable {
     public DynamicPentagon(int x, int y, int radius) {
         super(x, y, radius, radius);

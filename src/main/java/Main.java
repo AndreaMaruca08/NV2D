@@ -1,10 +1,11 @@
-import nv.components.NvCharacter;
-import nv.components.NvCont;
+import nv.utils.NvCharacter;
+import nv.core.components.NvCont;
 
-import nv.components.shapes.dynamic.DynamicCircle;
-import nv.components.shapes.dynamic.DynamicSquare;
+import nv.utils.shapes.dynamic.DynamicCircle;
+import nv.utils.shapes.dynamic.DynamicSquare;
 import nv.core.NvContext;
-import nv.core.NvGraphic;
+import nv.core.graphic.NvGraphic;
+import nv.core.input.KeyboardSystem;
 import nv.test.ClickTest;
 import nv.test.DvdLogoBouncing;
 import nv.test.FlagDisplay;
@@ -17,7 +18,7 @@ void main() {
     var page = context.addAndSetPage("NewPage", NvCont.newPage());
     page.setBackground(1,0.5f,0.5f);
 
-    NvCharacter character = new NvCharacter(1000,500, 100, 300);
+    NvCharacter character = new NvCharacter(1000,500, 100, 300, 3000);
     NvGraphic.setCurrentCamera(character.getCamera());
     character.setNeedCamera(true);
 
@@ -46,7 +47,7 @@ void main() {
     page.addChild(flags);
     page.addChild(click);
     character.setWeight(100);
-    context.setKeyboardFocus(character);
+    KeyboardSystem.setKeyboardFocus(character);
 
     page.addChild(character);
 

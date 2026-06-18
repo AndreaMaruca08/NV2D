@@ -1,5 +1,6 @@
 package nv.core.data;
 
+import nv.core.annotations.EngineCore;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -8,9 +9,11 @@ import java.nio.LongBuffer;
 import static org.lwjgl.vulkan.VK10.*;
 
 /**
- * Utility statica per operazioni di memoria Vulkan condivise tra tutti i buffer.
- * Evita la duplicazione di findMemoryType in VertexBuffer, IndexBuffer, OrthoUBO, ecc.
+ * @since 1.0
+ * @author Andrea Maruca
  */
+@EngineCore
+@SuppressWarnings("unused")
 public final class VulkanMemory {
 
     private VulkanMemory() {}

@@ -1,11 +1,19 @@
 package nv.core.data;
 
+import nv.core.annotations.EngineCore;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 import java.nio.LongBuffer;
 import static org.lwjgl.vulkan.VK10.*;
 
-public class TextureImage implements AutoCloseable {
+/**
+ * GPU texture image (Vulkan)
+ * @since 1.0
+ * @author Andrea Maruca
+ */
+@EngineCore
+@SuppressWarnings("unused")
+public final class TextureImage implements AutoCloseable {
 
     private final VkDevice device;
     private final long imageHandle;

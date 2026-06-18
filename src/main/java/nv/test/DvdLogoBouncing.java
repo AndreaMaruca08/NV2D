@@ -1,11 +1,11 @@
 package nv.test;
 
-import nv.components.NvComp;
 import nv.core.NvContext;
-import nv.core.NvGraphic;
 import nv.core.assets.AtlasConverter;
+import nv.core.components.NvComp;
+import nv.core.graphic.NvGraphic;
 
-import static nv.core.NvGraphic.camera;
+import static nv.core.graphic.NvGraphic.camera;
 
 public class DvdLogoBouncing extends NvComp {
 

@@ -1,7 +1,11 @@
 package nv.core;
 
+import nv.core.annotations.EngineCore;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.*;
+import org.lwjgl.vulkan.VkDevice;
+import org.lwjgl.vulkan.VkImageViewCreateInfo;
+import org.lwjgl.vulkan.VkSwapchainCreateInfoKHR;
+
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 
@@ -9,7 +13,14 @@ import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
-public class Swapchain implements AutoCloseable {
+/**
+ * <p>Represents a GPU swapchain with images and image views</p>
+ * @since 1.0
+ * @author Andrea Maruca
+ */
+@EngineCore
+@SuppressWarnings("unused")
+public final class Swapchain implements AutoCloseable {
 
     private final VkDevice device;
     private final long swapchainHandle;

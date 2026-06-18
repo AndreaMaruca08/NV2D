@@ -1,6 +1,7 @@
 package nv.core.assets;
 
 import nv.core.NvContext;
+import nv.core.annotations.EngineCore;
 import nv.core.data.NvImage;
 import nv.core.data.TextureImage;
 import org.lwjgl.vulkan.VkDevice;
@@ -10,8 +11,9 @@ import org.lwjgl.vulkan.VkQueue;
 import java.util.HashMap;
 import java.util.Map;
 
+@EngineCore
 @SuppressWarnings("unused")
-public class AssetsManager {
+public final class AssetsManager {
 
     private final VkDevice device;
     private final VkPhysicalDevice physicalDevice;

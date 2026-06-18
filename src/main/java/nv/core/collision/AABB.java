@@ -1,11 +1,13 @@
 package nv.core.collision;
 
-import nv.components.NvComp;
+import nv.core.annotations.DefaultChose;
+import nv.core.components.NvComp;
 
 /**
  * Default collision system for fast but simple collision detection.
  */
-public class AABB implements CollisionSystem{
+@DefaultChose
+public final class AABB implements CollisionSystem{
 
     @Override
     public boolean isColliding(NvComp a, NvComp b) {

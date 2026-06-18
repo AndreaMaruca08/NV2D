@@ -1,8 +1,8 @@
 package nv.test;
 
-import nv.components.NvComp;
 import nv.core.NvContext;
-import nv.core.NvGraphic;
+import nv.core.components.NvComp;
+import nv.core.graphic.NvGraphic;
 
 public class PerformanceTest extends NvComp{
     private int rectNumber = 0;

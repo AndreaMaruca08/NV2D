@@ -1,9 +1,10 @@
-package nv.components.shapes.dynamic;
+package nv.utils.shapes.dynamic;
 
-import nv.components.NvComp;
-import nv.components.NvRgbComp;
-import nv.core.NvGraphic;
+import nv.core.annotations.ReadyComponent;
 import nv.core.collision.Collidable;
+import nv.core.components.NvComp;
+import nv.core.graphic.NvGraphic;
+import nv.core.components.NvRgbComp;
 
 /**
  * Simple circle with collision
@@ -11,6 +12,8 @@ import nv.core.collision.Collidable;
  * @since 1.0
  * @author Andrea Maruca
  */
+@ReadyComponent
+@SuppressWarnings("unused")
 public class DynamicCircle extends NvRgbComp implements Collidable {
     public DynamicCircle(int x, int y, int radius) {
         super(x, y, radius, radius);

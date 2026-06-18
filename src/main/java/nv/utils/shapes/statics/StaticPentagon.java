@@ -1,9 +1,10 @@
-package nv.components.shapes.statics;
+package nv.utils.shapes.statics;
 
-import nv.components.NvComp;
-import nv.core.NvGraphic;
-import nv.components.NvStateless;
+import nv.core.annotations.ReadyComponent;
 import nv.core.collision.Collidable;
+import nv.core.components.NvComp;
+import nv.core.components.NvStateless;
+import nv.core.graphic.NvGraphic;
 
 /**
  * Simple Static pentagon with collision
@@ -12,6 +13,8 @@ import nv.core.collision.Collidable;
  * @since 1.0
  * @author Andrea Maruca
  */
+@ReadyComponent
+@SuppressWarnings("unused")
 public class StaticPentagon extends NvStateless implements Collidable {
     private float r=0, g=0, b=0;
     private final float radius;

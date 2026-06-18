@@ -1,6 +1,15 @@
-package nv.components;
+package nv.core.components;
 
-public abstract class NvRgbComp extends NvComp{
+import nv.core.annotations.ReadyComponent;
+
+/**
+ * <p>Ready component with rgb variables ready with getters and setters</p>
+ * @since 1.0
+ * @author Andrea Maruca
+ */
+@ReadyComponent
+@SuppressWarnings("unused")
+public abstract class NvRgbComp extends NvComp {
     protected float r=0, g=0, b=0;
     public NvRgbComp(int x, int y, int w, int h) {
         super(x, y, w, h);

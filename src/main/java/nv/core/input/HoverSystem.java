@@ -1,7 +1,14 @@
 package nv.core.input;
 
-import nv.components.NvComp;
+import nv.core.annotations.EngineCore;
+import nv.core.components.NvComp;
 
+/**
+ * <p>Handles Hovering on readycomponents</p>
+ * @since 1.0
+ * @author Andrea Maruca
+ */
+@EngineCore
 @SuppressWarnings("unused")
 public final class HoverSystem {
     private HoverSystem(){}

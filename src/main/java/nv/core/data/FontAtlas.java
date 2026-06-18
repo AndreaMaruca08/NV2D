@@ -1,5 +1,6 @@
 package nv.core.data;
 
+import nv.core.annotations.EngineCore;
 import org.lwjgl.system.MemoryUtil;
 
 import java.awt.*;
@@ -8,7 +9,9 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
-public class FontAtlas {
+@EngineCore
+@SuppressWarnings("unused")
+public final class FontAtlas {
     public static class Glyph {
         public final float width;
         public final float height;

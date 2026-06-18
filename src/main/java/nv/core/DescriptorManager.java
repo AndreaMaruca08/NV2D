@@ -1,20 +1,18 @@
 package nv.core;
 
+import nv.core.annotations.EngineCore;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 import java.nio.LongBuffer;
 import static org.lwjgl.vulkan.VK10.*;
 
 /**
- * Gestisce il Descriptor Set Layout, il Descriptor Pool e i Descriptor Sets.
- * I descriptor sets sono il meccanismo con cui Vulkan lega i buffer agli shader.
- *
- * Architettura:
- *   Layout   → "firma" di cosa si aspetta lo shader (binding 0 = uniform buffer)
- *   Pool     → memoria da cui allocare i descriptor sets
- *   Sets     → istanze concrete, una per immagine swapchain
+ * @since 1.0
+ * @author Andrea Maruca
  */
-public class DescriptorManager implements AutoCloseable {
+@EngineCore
+@SuppressWarnings("unused")
+public final class DescriptorManager implements AutoCloseable {
 
     private final VkDevice device;
     private final long descriptorSetLayoutHandle;

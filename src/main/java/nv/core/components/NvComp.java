@@ -1,28 +1,29 @@
-package nv.components;
+package nv.core.components;
 
-import nv.components.vectors.Vector2D;
 import nv.core.AppendableGeometry;
 import nv.core.NvContext;
-import nv.core.NvGraphic;
 import nv.core.UpdateCycle;
+import nv.core.annotations.EngineCore;
 import nv.core.collision.Collidable;
 import nv.core.collision.CollisionManager;
 import nv.core.collision.CollisionSystem;
+import nv.core.graphic.NvGraphic;
 import nv.core.input.ClickSystem;
 import nv.core.input.Clickable;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static nv.core.NvGraphic.camera;
+import static nv.core.graphic.NvGraphic.camera;
 
 /**
  * <h3>Root of the component tree</h3>
- * <p>Base class for all components in the component tree, by updating or drawing a component you draw every child with it</p>
+ * <p>Base class for all readycomponents in the component tree, by updating or drawing a component you draw every child with it</p>
  *
  * @since 1.0
  * @author Andrea Maruca
  */
+@EngineCore
 @SuppressWarnings("unused")
 public abstract class NvComp implements UpdateCycle {
     private NvComp parent;
@@ -50,7 +51,7 @@ public abstract class NvComp implements UpdateCycle {
 
     public void setHUD(boolean HUD) {
         if(this instanceof Collidable)
-            throw new UnsupportedOperationException("Collidable components cannot be set as HUD");
+            throw new UnsupportedOperationException("Collidable readycomponents cannot be set as HUD");
         isHUD = HUD;
     }
 

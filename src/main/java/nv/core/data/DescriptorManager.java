@@ -1,17 +1,19 @@
 package nv.core.data;
 
 import nv.core.OrthoUBO;
+import nv.core.annotations.EngineCore;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 import java.nio.LongBuffer;
 import static org.lwjgl.vulkan.VK10.*;
 
 /**
- * Gestisce descriptor sets per UBO e un array di texture sampler.
- * - binding 0: Uniform Buffer (matrice ortografica) — vertex shader
- * - binding 1: Array di 15 Combined Image Samplers — fragment shader
+ * @since 1.0
+ * @author Andrea Maruca
  */
-public class DescriptorManager implements AutoCloseable {
+@EngineCore
+@SuppressWarnings("unused")
+public final class DescriptorManager implements AutoCloseable {
 
     private final VkDevice device;
     private final long descriptorSetLayoutHandle;

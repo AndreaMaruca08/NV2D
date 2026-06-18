@@ -9,6 +9,10 @@ public final class KeyboardSystem {
     private KeyboardSystem() {}
     public static KeyboardListener focused = new EmptyKeyboardListener();
 
+    public static void setKeyboardFocus(KeyboardListener focused){
+        KeyboardSystem.focused = focused;
+    }
+
     private static final boolean[] keys = new boolean[GLFW_KEY_LAST + 1];
 
     public static GLFWKeyCallbackI keyboardCallBack(){

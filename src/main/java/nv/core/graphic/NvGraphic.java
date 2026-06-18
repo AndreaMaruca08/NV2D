@@ -1,7 +1,10 @@
-package nv.core;
+package nv.core.graphic;
 
-import nv.components.camera.NvCamera;
-import nv.components.NvComp;
+import nv.core.AppendableGeometry;
+import nv.core.Scene;
+import nv.core.annotations.EngineCore;
+import nv.core.camera.NvCamera;
+import nv.core.components.NvComp;
 import nv.core.data.FontAtlas;
 import nv.core.data.NvImage;
 
@@ -14,6 +17,8 @@ import java.util.Arrays;
  * @since 1.0
  * @author Andrea Maruca
  */
+@EngineCore
+@SuppressWarnings("unused")
 public abstract class NvGraphic implements AppendableGeometry {
     public static final int FLOATS_PER_VERTEX = 8;
 

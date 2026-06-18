@@ -1,10 +1,14 @@
-package nv.components.vectors;
+package nv.core.components;
 
-import nv.components.NvComp;
+import nv.core.annotations.ReadyComponent;
 
 /**
  * Vectors constants for 16 directions
+ * @since 1.0
+ * @author Andrea Maruca
  */
+@ReadyComponent
+@SuppressWarnings("unused")
 public enum Vector2D {
 
     UP(0f, -1f),

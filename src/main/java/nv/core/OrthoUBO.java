@@ -1,15 +1,18 @@
 package nv.core;
 
+import nv.core.annotations.EngineCore;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 import java.nio.LongBuffer;
 import static org.lwjgl.vulkan.VK10.*;
 
 /**
- * Gestisce un Uniform Buffer Object contenente la matrice di proiezione ortografica.
- * Alloca un buffer per ogni immagine della swapchain per evitare race conditions GPU/CPU.
+ * @since 1.0
+ * @author Andrea Maruca
  */
-public class OrthoUBO implements AutoCloseable {
+@EngineCore
+@SuppressWarnings("unused")
+public final class OrthoUBO implements AutoCloseable {
 
     // Dimensione del payload: mat4 = 16 float = 64 byte
     public static final int SIZE_BYTES = 16 * Float.BYTES;

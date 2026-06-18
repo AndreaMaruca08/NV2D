@@ -1,5 +1,6 @@
 package nv.core;
 
+import nv.core.annotations.EngineCore;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -7,8 +8,13 @@ import org.lwjgl.vulkan.*;
 import java.nio.LongBuffer;
 
 import static org.lwjgl.vulkan.VK10.*;
-
-public class CommandBuffers {
+/**
+ * @since 1.0
+ * @author Andrea Maruca
+ */
+@EngineCore
+@SuppressWarnings("unused")
+public final class CommandBuffers {
 
     private final VkDevice device;
     private final long commandPoolHandle;

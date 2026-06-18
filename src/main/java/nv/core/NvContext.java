@@ -1,27 +1,26 @@
 package nv.core;
 
-import nv.components.*;
+import nv.core.annotations.EngineCore;
 import nv.core.assets.AssetsManager;
 import nv.core.collision.CollisionManager;
-import nv.core.data.DynamicVertexBuffer;
-import nv.core.data.DynamicIndexBuffer;
-import nv.core.data.FontAtlas;
-import nv.core.data.TextureImage;
+import nv.core.components.NvComp;
+import nv.core.components.NvCont;
+import nv.core.data.*;
 import nv.core.data.DescriptorManager;
-import nv.core.data.NvImage;
-
+import nv.core.graphic.NvGraphic;
+import nv.core.graphic.NvPixelGraphic;
 import nv.core.input.ClickSystem;
 import nv.core.input.HoverSystem;
 import nv.core.input.KeyboardListener;
 import nv.core.input.KeyboardSystem;
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.glfw.*;
-import org.lwjgl.vulkan.*;
+import org.lwjgl.glfw.GLFWKeyCallback;
+import org.lwjgl.glfw.GLFWMouseButtonCallback;
+import org.lwjgl.glfw.GLFWVulkan;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.*;
 
-import java.awt.Font;
-import java.awt.Dimension;
-import java.awt.Toolkit;
+import java.awt.*;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
@@ -38,7 +37,9 @@ import static org.lwjgl.vulkan.VK10.*;
  * <h3>Entry point for the NV2D game engine</h3>
  * <p>SingleTone class responsible for managing the application's Vulkan resources and rendering pipeline</p>
  * @since 1.0
+ * @author Andrea Maruca
  */
+@EngineCore
 @SuppressWarnings("unused")
 public final class NvContext implements Runnable {
     private static final int MAJOR_VERSION = 1;
@@ -107,11 +108,11 @@ public final class NvContext implements Runnable {
 
     public static NvCont rootComponent;
 
-    private float fps = -1;
+    public float fps = -1;
     private boolean showFPS = false;
-    private int targetFps = -1;
+    public int targetFps = -1;
     private boolean vsync = true;
-    private float[] backgroundColor = {0.1f, 0.1f, 0.1f, 1.0f};
+    private final float[] backgroundColor = {0.1f, 0.1f, 0.1f, 1.0f};
 
     public static final int UNLIMITED = -1;
     public void setFpsLimit(int fps) {
@@ -176,7 +177,7 @@ public final class NvContext implements Runnable {
         image.setTextureIndex(slot);
         loadedTextures[slot] = image;
         descriptorManager.updateTexture(slot, image.getTextureImage());
-        
+
         images.put(resourcePath, image);
         return image;
     }
@@ -218,7 +219,7 @@ public final class NvContext implements Runnable {
 
     public NvCont addAndSetPage(String key, NvCont page){
         pages.put(key, page);
-        this.rootComponent = page;
+        rootComponent = page;
         rootComponent.setW(swapchain.getWidth());
         rootComponent.setH(swapchain.getHeight());
         return page;
@@ -435,7 +436,7 @@ public final class NvContext implements Runnable {
             
 
             this.swapchain = new Swapchain(device, surface, fbW, fbH, vsync);
-            this.rootComponent = new NvCont(0, 0, fbW, fbH);
+            rootComponent = new NvCont(0, 0, fbW, fbH);
         }
 
         createRenderPass();
@@ -478,24 +479,13 @@ public final class NvContext implements Runnable {
     public AssetsManager assets() {
         return assets;
     }
-    // -------------------------------------------------------------------------
-    // Scena demo: quadrato, triangolo e testo centrato
-    // -------------------------------------------------------------------------
 
-    /**
-     * Pre-alloca i buffer GPU con la capacità massima dichiarata.
-     * I dati vengono caricati subito tramite rebuildScene().
-     */
     private void buildCombinedGeometry() {
         long vertexBufferSize = (long) maxVertices * 8 * Float.BYTES;
         this.dynamicVertexBuffer = new DynamicVertexBuffer(device, physicalDevice, vertexBufferSize);
         this.dynamicIndexBuffer  = new DynamicIndexBuffer(device, physicalDevice, maxIndices);
         rebuildScene();
     }
-
-    // -------------------------------------------------------------------------
-    // Sincronizzazione, loop principale e frame rendering
-    // -------------------------------------------------------------------------
 
     private void createSyncObjects() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -656,8 +646,8 @@ public final class NvContext implements Runnable {
             int fbW = pWidth.get(0);
             int fbH = pHeight.get(0);
             this.swapchain = new Swapchain(device, surface, fbW, fbH, vsync);
-            this.rootComponent.setW(swapchain.getWidth());
-            this.rootComponent.setH(swapchain.getHeight());
+            rootComponent.setW(swapchain.getWidth());
+            rootComponent.setH(swapchain.getHeight());
         }
 
 
@@ -863,10 +853,6 @@ public final class NvContext implements Runnable {
             }
         }
     }
-
-    // -------------------------------------------------------------------------
-    // Cleanup
-    // -------------------------------------------------------------------------
 
     private void cleanup() {
         if (mouseButtonCallback != null) {

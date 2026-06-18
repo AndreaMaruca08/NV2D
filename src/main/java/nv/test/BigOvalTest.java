@@ -1,9 +1,8 @@
 package nv.test;
 
-import nv.components.NvComp;
-import nv.components.NvRgbComp;
-import nv.core.NvGraphic;
 import nv.core.collision.Collidable;
+import nv.core.graphic.NvGraphic;
+import nv.core.components.NvRgbComp;
 
 public class BigOvalTest extends NvRgbComp implements Collidable {
     public BigOvalTest(int x, int y, int w) {

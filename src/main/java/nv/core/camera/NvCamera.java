@@ -1,17 +1,20 @@
-package nv.components.camera;
+package nv.core.camera;
 
-import nv.components.NvCharacter;
-import nv.components.NvComp;
-import nv.components.vectors.Vector2D;
 import nv.core.NvContext;
-
-import static nv.core.NvGraphic.camera;
+import nv.core.annotations.EngineCore;
+import nv.core.components.NvComp;
+import nv.core.graphic.NvGraphic;
+import nv.core.components.Vector2D;
 
 /**
  * Represents a camera that can be used to control the view of a 2D game.
  * <p>Using the translation methods, you can move the camera position and zoom level.</p>
- * <p>To set the current camera you need to call {@link nv.core.NvGraphic#setCurrentCamera(NvCamera)}.</p>
+ * <p>To set the current camera you need to call {@link NvGraphic#setCurrentCamera(NvCamera)}.</p>
+ * @since 1.0
+ * @author Andrea Maruca
  */
+@EngineCore
+@SuppressWarnings("unused")
 public class NvCamera {
     public float x;
     public float y;

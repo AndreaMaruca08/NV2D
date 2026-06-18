@@ -1,7 +1,7 @@
 package nv.test;
 
-import nv.components.NvComp;
-import nv.core.NvGraphic;
+import nv.core.components.NvComp;
+import nv.core.graphic.NvGraphic;
 
 public class AtlasTest extends NvComp {
     public AtlasTest(int x, int y, int w, int h) {

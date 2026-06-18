@@ -1,5 +1,6 @@
 package nv.core.assets;
 
+import nv.core.annotations.EngineCore;
 import nv.core.data.NvImage;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkDevice;
@@ -13,8 +14,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
 
+@EngineCore
 @SuppressWarnings("unused")
-public class AtlasConverter {
+public final class AtlasConverter {
 
     public record Region(float u1, float v1, float u2, float v2) { }
     public record Atlas(NvImage image, Map<String, Region> regions, int width, int height) {}

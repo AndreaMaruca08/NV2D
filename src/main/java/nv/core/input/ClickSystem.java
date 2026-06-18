@@ -1,15 +1,20 @@
 package nv.core.input;
 
-import nv.components.NvComp;
+import nv.core.annotations.EngineCore;
+import nv.core.components.NvComp;
 import org.lwjgl.glfw.GLFWMouseButtonCallbackI;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
-import static org.lwjgl.glfw.GLFW.glfwGetWindowSize;
 
+/**
+ * <p>Handles Clicks and clickable readycomponents</p>
+ * @since 1.0
+ * @author Andrea Maruca
+ */
+@EngineCore
 @SuppressWarnings("unused")
 public final class ClickSystem {
     private ClickSystem(){}
