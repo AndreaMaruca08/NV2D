@@ -2,10 +2,7 @@ package nv.core;
 
 import nv.components.*;
 import nv.core.assets.AssetsManager;
-import nv.core.assets.AtlasConverter;
-import nv.core.collision.AABB;
-import nv.core.collision.Collidable;
-import nv.core.collision.CollisionSystem;
+import nv.core.collision.CollisionManager;
 import nv.core.data.DynamicVertexBuffer;
 import nv.core.data.DynamicIndexBuffer;
 import nv.core.data.FontAtlas;
@@ -13,6 +10,10 @@ import nv.core.data.TextureImage;
 import nv.core.data.DescriptorManager;
 import nv.core.data.NvImage;
 
+import nv.core.input.ClickSystem;
+import nv.core.input.HoverSystem;
+import nv.core.input.KeyboardListener;
+import nv.core.input.KeyboardSystem;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.*;
 import org.lwjgl.vulkan.*;
@@ -21,7 +22,6 @@ import org.lwjgl.system.MemoryStack;
 import java.awt.Font;
 import java.awt.Dimension;
 import java.awt.Toolkit;
-import java.io.IOException;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static nv.core.NvGraphic.camera;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.vulkan.KHRSurface.vkDestroySurfaceKHR;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
@@ -40,6 +39,7 @@ import static org.lwjgl.vulkan.VK10.*;
  * <p>SingleTone class responsible for managing the application's Vulkan resources and rendering pipeline</p>
  * @since 1.0
  */
+@SuppressWarnings("unused")
 public final class NvContext implements Runnable {
     private static final int MAJOR_VERSION = 1;
     private static final int MINOR_VERSION = 0;
@@ -59,7 +59,6 @@ public final class NvContext implements Runnable {
     private long renderPass;
     private long[] framebuffers;
     private UpdateCycle currentCameraUpdateCycle;
-    private CollisionSystem collisionSystem;
 
     private int maxVertices = 500_000; // vertici × 8 float
     private int maxIndices  = 850_000; // indici short
@@ -106,7 +105,7 @@ public final class NvContext implements Runnable {
 
     private final List<UpdateCycle> updatable = new ArrayList<>(10);
 
-    private NvCont rootComponent;
+    public static NvCont rootComponent;
 
     private float fps = -1;
     private boolean showFPS = false;
@@ -160,8 +159,6 @@ public final class NvContext implements Runnable {
         return image;
     }
 
-
-
     /**
      * Carica un'immagine dal classpath e la registra nel motore di rendering.
      *
@@ -184,13 +181,6 @@ public final class NvContext implements Runnable {
         return image;
     }
 
-    /**
-     * Standard is AABB
-     * @param collisionSystem new CollisionSystem
-     */
-    public void setCollisionSystem(CollisionSystem collisionSystem) {
-        this.collisionSystem = collisionSystem;
-    }
 
     public void setShowFPS(boolean shouldShow) {
         this.showFPS = shouldShow;
@@ -275,7 +265,7 @@ public final class NvContext implements Runnable {
         this.maxVertices = maxVertices;
         this.maxIndices  = maxIndices;
         this.currentCameraUpdateCycle = (_) -> {};
-        this.collisionSystem = new AABB();
+        CollisionManager.initialize();
         initWindow(name, windowDim);
         initVulkan();
 
@@ -284,19 +274,19 @@ public final class NvContext implements Runnable {
         this.currentCameraUpdateCycle = (_) -> {};
         initWindow(name, SCREEN);
         initVulkan();
-        this.collisionSystem = new AABB();
+        CollisionManager.initialize();
     }
     private NvContext(Dimension windowDimension) {
         this.currentCameraUpdateCycle = (_) -> {};
         initWindow("NV2D game", windowDimension);
         initVulkan();
-        this.collisionSystem = new AABB();
+        CollisionManager.initialize();
     }
     private NvContext(String name, Dimension windowDimension) {
         this.currentCameraUpdateCycle = (_) -> {};
         initWindow(name, windowDimension);
         initVulkan();
-        this.collisionSystem = new AABB();
+        CollisionManager.initialize();
     }
 
     public void addUpdatable(UpdateCycle updateCycle){
@@ -322,17 +312,6 @@ public final class NvContext implements Runnable {
     private int imageIndexOffset;
 
     private final NvGraphic graphic = new NvPixelGraphic();
-        private final List<NvComp> canCollide = new ArrayList<>(20);
-
-    private final Map<Long, List<NvComp>> spatialGrid = new HashMap<>();
-    private static final int COLLISION_CELL_SIZE = 250;
-
-    public void addCanCollide(NvComp component){
-        canCollide.add(component);
-    }
-    public void removeCanCollide(NvComp component){
-        canCollide.remove(component);
-    }
 
     private final NvComp fpsDisplay = new NvComp(10,10,260,70){
         private String displayString = "FPS: NONE";
@@ -368,7 +347,7 @@ public final class NvContext implements Runnable {
 
         graphic.initialize(w, h, wu, wv, fontAtlas);
 
-        handleCollisions();
+        CollisionManager.handleCollisions();
 
         rootComponent.draw(graphic);
 
@@ -398,43 +377,7 @@ public final class NvContext implements Runnable {
         dynamicVertexBuffer.update(combinedVerts);
         dynamicIndexBuffer.update(combinedInds);
     }
-    private void handleCollisions() {
-        spatialGrid.clear();
-        int size = canCollide.size();
 
-        for (int i = 0; i < size; i++) {
-            NvComp comp = canCollide.get(i);
-            int cellX = comp.getX() / COLLISION_CELL_SIZE;
-            int cellY = comp.getY() / COLLISION_CELL_SIZE;
-            
-            int endX = (comp.getX() + comp.getW()) / COLLISION_CELL_SIZE;
-            int endY = (comp.getY() + comp.getH()) / COLLISION_CELL_SIZE;
-
-            for (int x = cellX; x <= endX; x++) {
-                for (int y = cellY; y <= endY; y++) {
-                    long key = ((long) x << 32) | (y & 0xFFFFFFFFL);
-                    spatialGrid.computeIfAbsent(key, k -> new ArrayList<>()).add(comp);
-                }
-            }
-        }
-
-        for (List<NvComp> cellContent : spatialGrid.values()) {
-            int cellSize = cellContent.size();
-            if (cellSize < 2) continue;
-            
-            for (int i = 0; i < cellSize; i++) {
-                NvComp a = cellContent.get(i);
-                for (int j = i + 1; j < cellSize; j++) {
-                    NvComp b = cellContent.get(j);
-                    if (collisionSystem.isColliding(a, b)) {
-                        ((Collidable) a).whenCollide(b);
-                        ((Collidable) b).whenCollide(a);
-                        collisionSystem.resolveCollision(a, b);
-                    }
-                }
-            }
-        }
-    }
     @Override
     public void run() {
         mainLoop();
@@ -458,8 +401,8 @@ public final class NvContext implements Runnable {
             framebufferResized = true;
         });
 
-        mouseButtonCallback = GLFWMouseButtonCallback.create(inputCallback());
-        keyboardCallback = GLFWKeyCallback.create(keyboardCallBack());
+        mouseButtonCallback = GLFWMouseButtonCallback.create(ClickSystem.inputCallback(window));
+        keyboardCallback = GLFWKeyCallback.create(KeyboardSystem.keyboardCallBack());
 
         glfwSetKeyCallback(window, keyboardCallback);
         glfwSetMouseButtonCallback(window, mouseButtonCallback);
@@ -472,47 +415,11 @@ public final class NvContext implements Runnable {
         addUpdatable(fpsDisplay);
     }
 
-    private KeyboardListener focused = new EmptyKeyboardListener();
 
     public void setKeyboardFocus(KeyboardListener focused) {
-        this.focused = focused;
+        KeyboardSystem.focused = focused;
     }
 
-    private void handleMouseClick(NvComp parent, int x, int y, boolean press) {
-        for (NvComp child : parent.getChildren()) {
-            if (child.isInside(x, y)) {
-                if (child instanceof Clickable clickable) {
-                    if (press) clickable.onClick();
-                    else clickable.onClickRelease();
-                    return;
-                }
-                handleMouseClick(child, x, y, press);
-            }
-        }
-    }
-
-    private GLFWMouseButtonCallbackI inputCallback(){
-        return (_, button, action, mods) -> {
-            if (button == GLFW_MOUSE_BUTTON_LEFT) {
-                var correctedCoords = getCorrectedCoords();
-                handleMouseClick(rootComponent, correctedCoords[0], correctedCoords[1], action == GLFW_PRESS);
-            }
-        };
-    }
-    private final boolean[] keys = new boolean[GLFW_KEY_LAST + 1];
-
-    private GLFWKeyCallbackI keyboardCallBack(){
-        return (_, key, _, action, mods) -> {
-            if(action == GLFW_PRESS || action == GLFW_REPEAT){
-                keys[key] = true;
-                focused.onKeyPressed(keys, mods);
-            }
-            else if (action == GLFW_RELEASE) {
-                focused.onKeyReleased(keys, mods);
-                keys[key] = false;
-            }
-        };
-    }
 
     private void initVulkan() {
         createInstance();
@@ -626,7 +533,7 @@ public final class NvContext implements Runnable {
         }
 
         if (mouseMoved) {
-            handleHover();
+            HoverSystem.handleHover(window, rootComponent);
             mouseMoved = false;
         }
 
@@ -635,32 +542,7 @@ public final class NvContext implements Runnable {
         }
     }
 
-    private int[] getCorrectedCoords(){
-        double[] x1 = new double[1];
-        double[] y1 = new double[1];
 
-        glfwGetCursorPos(window, x1, y1);
-
-        int[] windowWidth = new int[1];
-        int[] windowHeight = new int[1];
-        int[] framebufferWidth = new int[1];
-        int[] framebufferHeight = new int[1];
-
-        glfwGetWindowSize(window, windowWidth, windowHeight);
-        glfwGetFramebufferSize(window, framebufferWidth, framebufferHeight);
-
-        int convertedMouseX = (int) (x1[0] * framebufferWidth[0] / windowWidth[0]);
-        int convertedMouseY = (int) (y1[0] * framebufferHeight[0] / windowHeight[0]);
-
-        rootComponent.handleHover(convertedMouseX, convertedMouseY);
-
-        return new int[]{convertedMouseX, convertedMouseY};
-    }
-
-    private void handleHover(){
-        var correctedCoords = getCorrectedCoords();
-        rootComponent.handleHover(correctedCoords[0], correctedCoords[1]);
-    }
 
     private void mainLoop() {
         double lastFrameTime = glfwGetTime();

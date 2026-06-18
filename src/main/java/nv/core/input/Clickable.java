@@ -1,4 +1,4 @@
-package nv.core;
+package nv.core.input;
 
 public interface Clickable {
     void onClick();

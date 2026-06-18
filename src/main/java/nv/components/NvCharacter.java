@@ -1,7 +1,7 @@
 package nv.components;
 
 import nv.components.camera.NvCamera;
-import nv.core.KeyboardListener;
+import nv.core.input.KeyboardListener;
 import nv.core.NvGraphic;
 import nv.core.collision.Collidable;
 

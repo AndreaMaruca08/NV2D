@@ -10,6 +10,7 @@ import org.lwjgl.vulkan.VkQueue;
 import java.util.HashMap;
 import java.util.Map;
 
+@SuppressWarnings("unused")
 public class AssetsManager {
 
     private final VkDevice device;
@@ -63,7 +64,7 @@ public class AssetsManager {
 
     private void bindAtlas(AtlasConverter.Atlas atlas) {
 
-        NvImage image = atlas.image;
+        NvImage image = atlas.image();
         int slot = NvContext.getInstance().getNextTextureSlot();
         image.setTextureIndex(slot);
 
@@ -81,7 +82,7 @@ public class AssetsManager {
             throw new RuntimeException("Atlas not loaded: " + atlasName);
         }
 
-        AtlasConverter.Region region = atlas.regions.get(textureName);
+        AtlasConverter.Region region = atlas.regions().get(textureName);
 
         if (region == null) {
             throw new RuntimeException("Region not found: " + textureName + " in " + atlasName);
@@ -96,7 +97,7 @@ public class AssetsManager {
 
     public NvImage getAtlasTexture(String name) {
         AtlasConverter.Atlas atlas = atlases.get(name);
-        return atlas != null ? atlas.image : null;
+        return atlas != null ? atlas.image() : null;
     }
 
     public void setDefaultTexture(NvImage texture) {

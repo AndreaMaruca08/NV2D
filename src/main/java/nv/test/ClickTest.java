@@ -2,7 +2,7 @@ package nv.test;
 
 import nv.components.NvComp;
 import nv.core.NvGraphic;
-import nv.core.Clickable;
+import nv.core.input.Clickable;
 import nv.core.collision.Collidable;
 
 public class ClickTest extends NvComp implements Clickable, Collidable {

@@ -1,6 +1,8 @@
 package nv.core;
 
-public class EmptyKeyboardListener implements KeyboardListener{
+import nv.core.input.KeyboardListener;
+
+public class EmptyKeyboardListener implements KeyboardListener {
     @Override
     public void onKeyPressed(boolean[] keys, int mods) {
 

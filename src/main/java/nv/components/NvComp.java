@@ -6,7 +6,10 @@ import nv.core.NvContext;
 import nv.core.NvGraphic;
 import nv.core.UpdateCycle;
 import nv.core.collision.Collidable;
+import nv.core.collision.CollisionManager;
 import nv.core.collision.CollisionSystem;
+import nv.core.input.ClickSystem;
+import nv.core.input.Clickable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +23,7 @@ import static nv.core.NvGraphic.camera;
  * @since 1.0
  * @author Andrea Maruca
  */
+@SuppressWarnings("unused")
 public abstract class NvComp implements UpdateCycle {
     private NvComp parent;
     private final List<NvComp> children;
@@ -123,7 +127,9 @@ public abstract class NvComp implements UpdateCycle {
         children.add(child);
         child.setParent(this);
         if(child instanceof Collidable)
-            context.addCanCollide(child);
+            CollisionManager.addCanCollide(child);
+        if(child instanceof Clickable)
+            ClickSystem.addClickable(child);
     }
 
     public void removeChild(NvComp child){
@@ -131,7 +137,9 @@ public abstract class NvComp implements UpdateCycle {
             context = NvContext.getInstance();
         children.remove(child);
         if(child instanceof Collidable)
-            context.removeCanCollide(child);
+            CollisionManager.removeCanCollide(child);
+        if(child instanceof Clickable)
+            ClickSystem.removeClickable(child);
     }
 
     protected void mouseEnter(){}
@@ -223,24 +231,28 @@ public abstract class NvComp implements UpdateCycle {
         for (NvComp child : children) {
             child.destroy();
             if(child instanceof Collidable) {
-                context.removeCanCollide(child);
+                CollisionManager.removeCanCollide(child);
+            }
+            if(child instanceof Clickable) {
+                ClickSystem.removeClickable(child);
             }
         }
         if(getParent() != null) {
             getParent().children.remove(this);
         }
         if(this instanceof Collidable){
-            context.removeCanCollide(this);
+            CollisionManager.removeCanCollide(this);
+        }
+        if(this instanceof Clickable) {
+            ClickSystem.removeClickable(this);
         }
         whenDestroyed();
     }
 
     /**
-     * For custom behavior when destroyed
+     * Override for custom behavior when destroyed
      */
-    protected void whenDestroyed(){
-
-    }
+    protected void whenDestroyed(){}
 
     @Override
     public String toString(){

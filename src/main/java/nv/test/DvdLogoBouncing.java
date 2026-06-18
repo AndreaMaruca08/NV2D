@@ -3,9 +3,7 @@ package nv.test;
 import nv.components.NvComp;
 import nv.core.NvContext;
 import nv.core.NvGraphic;
-import nv.core.assets.AssetsManager;
 import nv.core.assets.AtlasConverter;
-import nv.core.data.NvImage;
 
 import static nv.core.NvGraphic.camera;
 
@@ -41,7 +39,7 @@ public class DvdLogoBouncing extends NvComp {
     public void drawIntern(NvGraphic g) {
         // We use 0, 0 as local coordinates because draw(g) already applies component.x, component.y transformation in NvPixelGraphic.tx/ty
         g.drawImageRegion(
-                atlas.image, 0, 0, w, h,
+                atlas.image(), 0, 0, w, h,
                 region.u1(), region.v1(),
                 region.u2(), region.v2()
         );

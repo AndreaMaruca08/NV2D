@@ -13,23 +13,11 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
 
+@SuppressWarnings("unused")
 public class AtlasConverter {
 
     public record Region(float u1, float v1, float u2, float v2) { }
-
-    public static class Atlas {
-        public final NvImage image;
-        public final Map<String, Region> regions;
-        public final int width;
-        public final int height;
-
-        public Atlas(NvImage image, Map<String, Region> regions, int width, int height) {
-            this.image = image;
-            this.regions = regions;
-            this.width = width;
-            this.height = height;
-        }
-    }
+    public record Atlas(NvImage image, Map<String, Region> regions, int width, int height) {}
 
     public static Atlas build(VkDevice device,
                               VkPhysicalDevice physicalDevice,
