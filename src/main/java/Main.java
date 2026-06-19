@@ -1,3 +1,4 @@
+import nv.core.NvLogger;
 import nv.utils.NvCharacter;
 import nv.core.components.NvCont;
 
@@ -11,12 +12,11 @@ import nv.test.DvdLogoBouncing;
 import nv.test.FlagDisplay;
 
 void main() {
-    var context = NvContext.createInstance("TEST");
-
+    var context = NvContext.createInstance("TESTING");
     context.setShowFPS(true);
 
     var page = context.addAndSetPage("NewPage", NvCont.newPage());
-    page.setBackground(1,0.5f,0.5f);
+    page.setBackground(0.5f,0.5f,0.5f);
 
     NvCharacter character = new NvCharacter(1000,500, 100, 300, 3000);
     NvGraphic.setCurrentCamera(character.getCamera());
@@ -37,6 +37,7 @@ void main() {
     a.setWeight(40);
     a.setRgb(0,1,0);
     page.addChild(a);
+
 
     var dvd = new DvdLogoBouncing(300,300);
     

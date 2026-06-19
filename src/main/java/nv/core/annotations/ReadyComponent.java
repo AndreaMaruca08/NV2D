@@ -13,5 +13,4 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.SOURCE)
 @Target(ElementType.TYPE)
 @EngineCore
-public @interface ReadyComponent {
-}
+public @interface ReadyComponent {}

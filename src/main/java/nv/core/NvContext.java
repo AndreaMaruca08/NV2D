@@ -28,6 +28,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static nv.core.NvLogger.logEngine;
+import static nv.core.NvLogger.logInfo;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.vulkan.KHRSurface.vkDestroySurfaceKHR;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
@@ -61,8 +63,11 @@ public final class NvContext implements Runnable {
     private long[] framebuffers;
     private UpdateCycle currentCameraUpdateCycle;
 
-    private int maxVertices = 500_000; // vertici × 8 float
-    private int maxIndices  = 850_000; // indici short
+    private int MAX_VERTICES = 500_000; // vertici × 8 float
+    private int MAX_INDICES  = 850_000; // indici short
+
+    private static final int DEF_MAX_VERTICES = 500_000; // vertici × 8 float
+    private static final int DEF_MAX_INDICES  = 850_000;
     
     // Texture images caricati (massimo 15 per il shader)
     private static final int MAX_TEXTURES = 15;
@@ -263,33 +268,32 @@ public final class NvContext implements Runnable {
     }
 
     private NvContext(String name, int maxVertices, int maxIndices, Dimension windowDim) {
-        this.maxVertices = maxVertices;
-        this.maxIndices  = maxIndices;
+        this.MAX_VERTICES = maxVertices;
+        this.MAX_INDICES = maxIndices;
         this.currentCameraUpdateCycle = (_) -> {};
-        CollisionManager.initialize();
+
+        NvLogger.initialize(name, MAJOR_VERSION, MINOR_VERSION, PATCH);
         initWindow(name, windowDim);
+        logEngine("Window initialized");
         initVulkan();
+        logEngine("Vulkan initialized");
+        CollisionManager.initialize();
+        logEngine("Collisions initialized");
 
+        logEngine("-----------Game started successfully-------------");
     }
+
     private NvContext(String name) {
-        this.currentCameraUpdateCycle = (_) -> {};
-        initWindow(name, SCREEN);
-        initVulkan();
-        CollisionManager.initialize();
-    }
-    private NvContext(Dimension windowDimension) {
-        this.currentCameraUpdateCycle = (_) -> {};
-        initWindow("NV2D game", windowDimension);
-        initVulkan();
-        CollisionManager.initialize();
-    }
-    private NvContext(String name, Dimension windowDimension) {
-        this.currentCameraUpdateCycle = (_) -> {};
-        initWindow(name, windowDimension);
-        initVulkan();
-        CollisionManager.initialize();
+        this(name, DEF_MAX_VERTICES, DEF_MAX_INDICES, SCREEN);
     }
 
+    private NvContext(Dimension windowDimension) {
+        this("NV2D game", DEF_MAX_VERTICES, DEF_MAX_INDICES, windowDimension);
+    }
+
+    private NvContext(String name, Dimension windowDimension) {
+        this(name, DEF_MAX_VERTICES, DEF_MAX_INDICES, windowDimension);
+    }
     public void addUpdatable(UpdateCycle updateCycle){
         updatable.add(updateCycle);
     }
@@ -424,7 +428,9 @@ public final class NvContext implements Runnable {
 
     private void initVulkan() {
         createInstance();
+        logEngine("Vulkan instanced");
         createSurface();
+        logEngine("Vulkan surface created");
         pickPhysicalDeviceAndCreateLogicalDevice();
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -439,13 +445,17 @@ public final class NvContext implements Runnable {
             rootComponent = new NvCont(0, 0, fbW, fbH);
         }
 
+        logEngine("Swapchain created");
+
         createRenderPass();
 
         this.fontAtlas   = new FontAtlas(new Font("SansSerif", Font.PLAIN, 42));
+        logEngine("Font atlas created");
         this.fontTexture = new TextureImage(
                 device, physicalDevice, graphicsQueue,
                 fontAtlas.getPixelBuffer(), fontAtlas.getWidth(), fontAtlas.getHeight()
         );
+        logEngine("Font texture created");
 
         int imageCount = swapchain.getImageViews().length;
         this.ubo               = new OrthoUBO(device, physicalDevice, imageCount);
@@ -455,11 +465,13 @@ public final class NvContext implements Runnable {
                 device, swapchain, renderPass,
                 descriptorManager.getDescriptorSetLayoutHandle()
         );
+        logEngine("Graphics pipeline created");
 
         this.texturePipeline = new TexturePipeline(
                 device, swapchain, renderPass,
                 descriptorManager.getDescriptorSetLayoutHandle()
         );
+        logEngine("Texture pipeline created");
 
         createFramebuffers();
         buildCombinedGeometry();
@@ -481,9 +493,9 @@ public final class NvContext implements Runnable {
     }
 
     private void buildCombinedGeometry() {
-        long vertexBufferSize = (long) maxVertices * 8 * Float.BYTES;
+        long vertexBufferSize = (long) MAX_VERTICES * 8 * Float.BYTES;
         this.dynamicVertexBuffer = new DynamicVertexBuffer(device, physicalDevice, vertexBufferSize);
-        this.dynamicIndexBuffer  = new DynamicIndexBuffer(device, physicalDevice, maxIndices);
+        this.dynamicIndexBuffer  = new DynamicIndexBuffer(device, physicalDevice, MAX_INDICES);
         rebuildScene();
     }
 
@@ -856,6 +868,7 @@ public final class NvContext implements Runnable {
     }
 
     private void cleanup() {
+        logEngine("Cleaning up allocated memory before exiting");
         if (mouseButtonCallback != null) {
             mouseButtonCallback.free();
             mouseButtonCallback = null;

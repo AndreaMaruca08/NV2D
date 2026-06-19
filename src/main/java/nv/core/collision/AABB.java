@@ -5,6 +5,8 @@ import nv.core.components.NvComp;
 
 /**
  * Default collision system for fast but simple collision detection.
+ * @since 1.0
+ * @author Andrea Maruca
  */
 @DefaultChose
 public final class AABB implements CollisionSystem{
