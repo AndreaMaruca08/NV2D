@@ -1,6 +1,7 @@
 package nv.core;
 
 import nv.core.annotations.EngineCore;
+import nv.core.errors.ex.EngineEx;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -182,7 +183,7 @@ public final class TexturePipeline implements AutoCloseable {
 
             LongBuffer pPipelineLayout = stack.mallocLong(1);
             if (vkCreatePipelineLayout(device, pipelineLayoutInfo, null, pPipelineLayout) != VK_SUCCESS) {
-                throw new RuntimeException("Impossibile creare il Texture Pipeline Layout");
+                throw new EngineEx("Impossibile creare il Texture Pipeline Layout");
             }
             tempLayout = pPipelineLayout.get(0);
 
@@ -204,7 +205,7 @@ public final class TexturePipeline implements AutoCloseable {
 
             LongBuffer pGraphicsPipeline = stack.mallocLong(1);
             if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, pipelineInfo, null, pGraphicsPipeline) != VK_SUCCESS) {
-                throw new RuntimeException("Impossibile creare la Texture Graphics Pipeline");
+                throw new EngineEx("Impossibile creare la Texture Graphics Pipeline");
             }
             tempPipeline = pGraphicsPipeline.get(0);
 
@@ -227,12 +228,12 @@ public final class TexturePipeline implements AutoCloseable {
     private byte[] readShaderFile(String resourcePath) {
         try (InputStream is = getClass().getResourceAsStream(resourcePath)) {
             if (is == null) {
-                throw new RuntimeException("Impossibile trovare il file shader compilato in: " + resourcePath +
-                        "\nVerifica che i file .spv siano posizionati correttamente in src/main/resources/shaders/");
+                throw new EngineEx("Error finding compiled shader file at: " + resourcePath +
+                        "\nCheck that the .spv files are correctly placed in src/main/resources/shaders/");
             }
             return is.readAllBytes();
         } catch (IOException e) {
-            throw new RuntimeException("Errore durante la lettura dello shader: " + resourcePath, e);
+            throw new EngineEx("Error reading shader: " + resourcePath + " specific: "+ e);
         }
     }
 
@@ -249,7 +250,7 @@ public final class TexturePipeline implements AutoCloseable {
 
             LongBuffer pShaderModule = stack.mallocLong(1);
             if (vkCreateShaderModule(device, createInfo, null, pShaderModule) != VK_SUCCESS) {
-                throw new RuntimeException("Impossibile creare lo Shader Module nativo.");
+                throw new EngineEx("Error creating native Shader Module.");
             }
 
             return pShaderModule.get(0);

@@ -7,6 +7,8 @@ import nv.core.components.NvComp;
 import nv.core.components.NvCont;
 import nv.core.data.*;
 import nv.core.data.DescriptorManager;
+import nv.core.errors.NvLogger;
+import nv.core.errors.ex.EngineEx;
 import nv.core.graphic.NvGraphic;
 import nv.core.graphic.NvPixelGraphic;
 import nv.core.input.ClickSystem;
@@ -28,8 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static nv.core.NvLogger.logEngine;
-import static nv.core.NvLogger.logInfo;
+import static nv.core.errors.NvLogger.logEngine;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.vulkan.KHRSurface.vkDestroySurfaceKHR;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
@@ -63,8 +64,8 @@ public final class NvContext implements Runnable {
     private long[] framebuffers;
     private UpdateCycle currentCameraUpdateCycle;
 
-    private int MAX_VERTICES = 500_000; // vertici × 8 float
-    private int MAX_INDICES  = 850_000; // indici short
+    private final int MAX_VERTICES; // vertici × 8 float
+    private final int MAX_INDICES; // indici short
 
     private static final int DEF_MAX_VERTICES = 500_000; // vertici × 8 float
     private static final int DEF_MAX_INDICES  = 850_000;
@@ -76,7 +77,7 @@ public final class NvContext implements Runnable {
 
     public synchronized int getNextTextureSlot() {
         if (textureCount >= MAX_TEXTURES) {
-            throw new RuntimeException("Limite massimo di texture raggiunto (" + MAX_TEXTURES + ")");
+            throw new EngineEx("Limite massimo di texture raggiunto (" + MAX_TEXTURES + ")");
         }
         return textureCount++;
     }
@@ -148,7 +149,7 @@ public final class NvContext implements Runnable {
      *
      * @param filePath percorso del file immagine (relativo o assoluto)
      * @return NvImage registrato con un indice di texture assegnato
-     * @throws RuntimeException se il numero massimo di texture (15) è stato raggiunto o se il file non può essere caricato
+     * @throws EngineEx se il numero massimo di texture (15) è stato raggiunto o se il file non può essere caricato
      */
     public synchronized NvImage loadImageAbsolute(String filePath) {
         var cached = images.get(filePath);
@@ -170,7 +171,7 @@ public final class NvContext implements Runnable {
      *
      * @param resourcePath percorso della risorsa nel classpath (es. "/images/sprite.png")
      * @return NvImage registrato con un indice di texture assegnato
-     * @throws RuntimeException se il numero massimo di texture (15) è stato raggiunto o se la risorsa non esiste
+     * @throws EngineEx se il numero massimo di texture (15) è stato raggiunto o se la risorsa non esiste
      */
     public synchronized NvImage loadImage(String resourcePath) {
         var cached = images.get(resourcePath);
@@ -394,13 +395,13 @@ public final class NvContext implements Runnable {
     }
 
     private void initWindow(String name, Dimension windowDimension) {
-        if (!glfwInit()) throw new IllegalStateException("Impossibile inizializzare GLFW");
+        if (!glfwInit()) throw new EngineEx("Impossibile inizializzare GLFW");
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
         window = glfwCreateWindow(windowDimension.width, windowDimension.height, name, 0, 0);
-        if (window == 0) throw new RuntimeException("Impossibile creare la finestra GLFW");
+        if (window == 0) throw new EngineEx("Impossibile creare la finestra GLFW");
 
         glfwSetFramebufferSizeCallback(window, (windowHandle, width, height) -> {
             framebufferResized = true;
@@ -514,7 +515,7 @@ public final class NvContext implements Runnable {
             if (vkCreateSemaphore(device, semaphoreInfo, null, pImgAvail) != VK_SUCCESS ||
                 vkCreateSemaphore(device, semaphoreInfo, null, pRndDone)  != VK_SUCCESS ||
                 vkCreateFence(device, fenceInfo, null, pFence)            != VK_SUCCESS) {
-                throw new RuntimeException("Impossibile creare gli oggetti di sincronizzazione.");
+                throw new EngineEx("Impossibile creare gli oggetti di sincronizzazione.");
             }
 
             this.imageAvailableSemaphore = pImgAvail.get(0);
@@ -579,7 +580,7 @@ public final class NvContext implements Runnable {
             }
 
             if (acquireResult != VK_SUCCESS && acquireResult != VK_SUBOPTIMAL_KHR) {
-                throw new RuntimeException("Errore durante l'acquisizione dell'immagine della swapchain.");
+                throw new EngineEx("Errore durante l'acquisizione dell'immagine della swapchain.");
             }
 
             int imageIndex = pImageIndex.get(0);
@@ -611,7 +612,7 @@ public final class NvContext implements Runnable {
                     .pSignalSemaphores(stack.longs(renderFinishedSemaphore));
 
             if (vkQueueSubmit(graphicsQueue, submitInfo, inFlightFence) != VK_SUCCESS) {
-                throw new RuntimeException("Errore nel submit della lista comandi alla GPU.");
+                throw new EngineEx("Errore nel submit della lista comandi alla GPU.");
             }
 
             LongBuffer signalSemaphores = stack.longs(renderFinishedSemaphore);
@@ -628,7 +629,7 @@ public final class NvContext implements Runnable {
                 framebufferResized = false;
                 recreateSwapchain();
             } else if (presentResult != VK_SUCCESS) {
-                throw new RuntimeException("Errore durante la presentazione della swapchain.");
+                throw new EngineEx("Errore durante la presentazione della swapchain.");
             }
         }
     }
@@ -720,7 +721,7 @@ public final class NvContext implements Runnable {
                     .apiVersion(VK_API_VERSION_1_0);
 
             PointerBuffer glfwExtensions = GLFWVulkan.glfwGetRequiredInstanceExtensions();
-            if (glfwExtensions == null) throw new RuntimeException("Estensioni Vulkan GLFW non trovate.");
+            if (glfwExtensions == null) throw new EngineEx("Estensioni Vulkan GLFW non trovate.");
 
             VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO)
@@ -729,7 +730,7 @@ public final class NvContext implements Runnable {
 
             PointerBuffer pInstance = stack.mallocPointer(1);
             if (vkCreateInstance(createInfo, null, pInstance) != VK_SUCCESS) {
-                throw new RuntimeException("Impossibile creare l'istanza Vulkan.");
+                throw new EngineEx("Impossibile creare l'istanza Vulkan.");
             }
             this.instance = new VkInstance(pInstance.get(0), createInfo);
         }
@@ -739,7 +740,7 @@ public final class NvContext implements Runnable {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             LongBuffer pSurface = stack.mallocLong(1);
             if (GLFWVulkan.glfwCreateWindowSurface(instance, window, null, pSurface) != VK_SUCCESS) {
-                throw new RuntimeException("Impossibile creare la surface Vulkan.");
+                throw new EngineEx("Impossibile creare la surface Vulkan.");
             }
             this.surface = pSurface.get(0);
         }
@@ -749,7 +750,7 @@ public final class NvContext implements Runnable {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             IntBuffer pDeviceCount = stack.mallocInt(1);
             vkEnumeratePhysicalDevices(instance, pDeviceCount, null);
-            if (pDeviceCount.get(0) == 0) throw new RuntimeException("Nessuna GPU Vulkan trovata.");
+            if (pDeviceCount.get(0) == 0) throw new EngineEx("Nessuna GPU Vulkan trovata.");
 
             PointerBuffer pPhysicalDevices = stack.mallocPointer(pDeviceCount.get(0));
             vkEnumeratePhysicalDevices(instance, pDeviceCount, pPhysicalDevices);
@@ -768,7 +769,7 @@ public final class NvContext implements Runnable {
                     break;
                 }
             }
-            if (graphicsQFI == -1) throw new RuntimeException("Nessuna queue grafica trovata.");
+            if (graphicsQFI == -1) throw new EngineEx("Nessuna queue grafica trovata.");
 
             VkDeviceQueueCreateInfo.Buffer queueCreateInfo = VkDeviceQueueCreateInfo.calloc(1, stack)
                     .sType(VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO)
@@ -787,7 +788,7 @@ public final class NvContext implements Runnable {
 
             PointerBuffer pDevice = stack.mallocPointer(1);
             if (vkCreateDevice(physicalDevice, createInfo, null, pDevice) != VK_SUCCESS) {
-                throw new RuntimeException("Impossibile creare il Logical Device.");
+                throw new EngineEx("Impossibile creare il Logical Device.");
             }
             this.device = new VkDevice(pDevice.get(0), physicalDevice, createInfo);
 
@@ -834,7 +835,7 @@ public final class NvContext implements Runnable {
 
             LongBuffer pRenderPass = stack.mallocLong(1);
             if (vkCreateRenderPass(device, renderPassInfo, null, pRenderPass) != VK_SUCCESS) {
-                throw new RuntimeException("Impossibile creare il Render Pass.");
+                throw new EngineEx("Impossibile creare il Render Pass.");
             }
             this.renderPass = pRenderPass.get(0);
         }
@@ -860,7 +861,7 @@ public final class NvContext implements Runnable {
 
                 LongBuffer pFb = stack.mallocLong(1);
                 if (vkCreateFramebuffer(device, fbInfo, null, pFb) != VK_SUCCESS) {
-                    throw new RuntimeException("Impossibile creare il Framebuffer [" + i + "]");
+                    throw new EngineEx("Impossibile creare il Framebuffer [" + i + "]");
                 }
                 this.framebuffers[i] = pFb.get(0);
             }

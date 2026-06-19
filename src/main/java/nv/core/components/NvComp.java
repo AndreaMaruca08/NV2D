@@ -7,6 +7,8 @@ import nv.core.annotations.EngineCore;
 import nv.core.collision.Collidable;
 import nv.core.collision.CollisionManager;
 import nv.core.collision.CollisionSystem;
+import nv.core.errors.ex.EngineEx;
+import nv.core.errors.ex.NvLogicEx;
 import nv.core.graphic.NvGraphic;
 import nv.core.input.ClickSystem;
 import nv.core.input.Clickable;
@@ -53,7 +55,7 @@ public abstract class NvComp implements UpdateCycle {
 
     public void setHUD(boolean HUD) {
         if(this instanceof Collidable)
-            throw new UnsupportedOperationException("Collidable readycomponents cannot be set as HUD");
+            throw new NvLogicEx("Collidable readycomponents cannot be set as HUD");
         isHUD = HUD;
     }
 

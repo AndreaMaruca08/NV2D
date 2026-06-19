@@ -4,6 +4,7 @@ import nv.core.NvContext;
 import nv.core.annotations.EngineCore;
 import nv.core.data.NvImage;
 import nv.core.data.TextureImage;
+import nv.core.errors.ex.EngineEx;
 import org.lwjgl.vulkan.VkDevice;
 import org.lwjgl.vulkan.VkPhysicalDevice;
 import org.lwjgl.vulkan.VkQueue;
@@ -60,7 +61,7 @@ public final class AssetsManager {
             return atlas;
 
         } catch (Exception e) {
-            throw new RuntimeException("Failed to load atlas: " + name, e);
+            throw new EngineEx("Failed to load atlas: " + name + " specific: " + e);
         }
     }
 
@@ -81,13 +82,13 @@ public final class AssetsManager {
         AtlasConverter.Atlas atlas = atlases.get(atlasName);
 
         if (atlas == null) {
-            throw new RuntimeException("Atlas not loaded: " + atlasName);
+            throw new EngineEx("Atlas not loaded: " + atlasName);
         }
 
         AtlasConverter.Region region = atlas.regions().get(textureName);
 
         if (region == null) {
-            throw new RuntimeException("Region not found: " + textureName + " in " + atlasName);
+            throw new EngineEx("Region not found: " + textureName + " in " + atlasName);
         }
 
         return region;

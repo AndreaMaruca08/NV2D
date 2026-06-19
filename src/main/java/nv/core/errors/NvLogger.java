@@ -1,10 +1,12 @@
-package nv.core;
+package nv.core.errors;
 
 import nv.core.annotations.EngineCore;
 import nv.core.components.NvComp;
 
 /**
  * <p>Specific Logger class for the NV2DLIB</p>
+ * @since 1.0
+ * @author Andrea Maruca
  */
 @EngineCore
 @SuppressWarnings("unused")

@@ -1,6 +1,7 @@
 package nv.core;
 
 import nv.core.annotations.EngineCore;
+import nv.core.errors.ex.EngineEx;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkDevice;
 import org.lwjgl.vulkan.VkImageViewCreateInfo;
@@ -62,7 +63,7 @@ public final class Swapchain implements AutoCloseable {
             LongBuffer pSwapchain = stack.mallocLong(1);
             int result = vkCreateSwapchainKHR(device, createInfo, null, pSwapchain);
             if (result != VK_SUCCESS) {
-                throw new RuntimeException("Impossibile creare la nv.core.Swapchain Vulkan. Codice errore: " + result);
+                throw new EngineEx("Error creating nv.core.Swapchain Vulkan. Error code: " + result);
             }
             this.swapchainHandle = pSwapchain.get(0);
 
@@ -107,7 +108,7 @@ public final class Swapchain implements AutoCloseable {
 
                 LongBuffer pImageView = stack.mallocLong(1);
                 if (vkCreateImageView(device, viewInfo, null, pImageView) != VK_SUCCESS) {
-                    throw new RuntimeException("Impossibile creare la Image View all'indice: " + i);
+                    throw new EngineEx("Error creating Image View at index: " + i);
                 }
                 this.imageViews[i] = pImageView.get(0);
             }

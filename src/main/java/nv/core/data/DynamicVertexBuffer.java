@@ -1,6 +1,7 @@
 package nv.core.data;
 
 import nv.core.annotations.EngineCore;
+import nv.core.errors.ex.EngineEx;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -34,7 +35,7 @@ public final class DynamicVertexBuffer implements AutoCloseable {
 
             LongBuffer pBuffer = stack.mallocLong(1);
             if (vkCreateBuffer(device, bufferInfo, null, pBuffer) != VK_SUCCESS) {
-                throw new RuntimeException("Errore nella creazione del Dynamic Vertex Buffer!");
+                throw new EngineEx("Impossible to allocate Dynamic Vertex Buffer!");
             }
             this.buffer = pBuffer.get(0);
 
@@ -52,7 +53,7 @@ public final class DynamicVertexBuffer implements AutoCloseable {
 
             LongBuffer pBufferMemory = stack.mallocLong(1);
             if (vkAllocateMemory(device, allocInfo, null, pBufferMemory) != VK_SUCCESS) {
-                throw new RuntimeException("Errore nell'allocazione memoria del Dynamic Vertex Buffer!");
+                throw new EngineEx("Impossible to allocate memory for Dynamic Vertex Buffer!");
             }
             this.bufferMemory = pBufferMemory.get(0);
 
@@ -61,7 +62,7 @@ public final class DynamicVertexBuffer implements AutoCloseable {
             // Persistent mapping: la memoria rimane mappata per tutta la vita del buffer
             PointerBuffer pData = stack.mallocPointer(1);
             if (vkMapMemory(device, bufferMemory, 0, bufferSize, 0, pData) != VK_SUCCESS) {
-                throw new RuntimeException("Impossibile mappare la memoria del Dynamic Vertex Buffer!");
+                throw new EngineEx("Impossible to map Dynamic Vertex Buffer memory!");
             }
             this.mappedData = MemoryUtil.memByteBuffer(pData.get(0), (int) bufferSize);
         }
@@ -74,8 +75,8 @@ public final class DynamicVertexBuffer implements AutoCloseable {
     public void update(float[] vertices) {
         long requiredSize = (long) vertices.length * Float.BYTES;
         if (requiredSize > bufferSize) {
-            throw new IllegalArgumentException(
-                    "Vertici (" + requiredSize + " bytes) superano la capacità del buffer (" + bufferSize + " bytes)!");
+            throw new EngineEx(
+                    "Vertices (" + requiredSize + " bytes) exceed the buffer capacity (" + bufferSize + " bytes)!");
         }
         mappedData.clear();
         mappedData.asFloatBuffer().put(vertices);
@@ -103,6 +104,6 @@ public final class DynamicVertexBuffer implements AutoCloseable {
                 }
             }
         }
-        throw new RuntimeException("Tipo di memoria Vulkan non supportato!");
+        throw new EngineEx("Memory type not supported on Vulkan");
     }
 }

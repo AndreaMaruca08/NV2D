@@ -1,4 +1,4 @@
-import nv.core.NvLogger;
+import nv.core.errors.ex.EngineEx;
 import nv.utils.NvCharacter;
 import nv.core.components.NvCont;
 
@@ -38,9 +38,8 @@ void main() {
     a.setRgb(0,1,0);
     page.addChild(a);
 
-
     var dvd = new DvdLogoBouncing(300,300);
-    
+
     // Add FlagDisplay at a visible position
     var flags = new FlagDisplay(500, 300);
 

@@ -2,6 +2,7 @@ package nv.core.assets;
 
 import nv.core.annotations.EngineCore;
 import nv.core.data.NvImage;
+import nv.core.errors.ex.EngineEx;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkDevice;
 import org.lwjgl.vulkan.VkPhysicalDevice;
@@ -34,7 +35,7 @@ public final class AtlasConverter {
         );
 
         if (files == null || files.length == 0) {
-            throw new RuntimeException("No textures found in: " + dir.getAbsolutePath());
+            throw new EngineEx("No textures found in: " + dir.getAbsolutePath());
         }
 
         Arrays.sort(files);
@@ -54,7 +55,7 @@ public final class AtlasConverter {
             }
 
             if (img.getWidth() != tileW || img.getHeight() != tileH) {
-                throw new RuntimeException("All textures must have same size");
+                throw new EngineEx("All textures must have same size");
             }
 
             images.add(img);

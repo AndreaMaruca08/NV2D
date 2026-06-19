@@ -2,6 +2,8 @@ package nv.core.input;
 
 import nv.core.annotations.EngineCore;
 import nv.core.components.NvComp;
+import nv.core.errors.ex.EngineEx;
+import nv.core.errors.ex.NvLogicEx;
 import org.lwjgl.glfw.GLFWMouseButtonCallbackI;
 
 import java.util.ArrayList;
@@ -23,7 +25,7 @@ public final class ClickSystem {
 
     public static void addClickable(NvComp comp){
         if(!(comp instanceof Clickable))
-            throw new RuntimeException("Component must implement Clickable interface");
+            throw new NvLogicEx("Component must implement Clickable interface");
         clickable.add(comp);
     }
     public static void removeClickable(NvComp comp){

@@ -1,6 +1,7 @@
 package nv.core.data;
 
 import nv.core.annotations.EngineCore;
+import nv.core.errors.ex.EngineEx;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 import java.nio.LongBuffer;
@@ -43,7 +44,7 @@ public final class TextureImage implements AutoCloseable {
 
             LongBuffer pImage = stack.mallocLong(1);
             if (vkCreateImage(device, imageInfo, null, pImage) != VK_SUCCESS) {
-                throw new RuntimeException("Impossibile creare la VkImage per la texture");
+                throw new EngineEx("Impossibile creare la VkImage per la texture");
             }
             this.imageHandle = pImage.get(0);
 
@@ -59,7 +60,7 @@ public final class TextureImage implements AutoCloseable {
 
             LongBuffer pMemory = stack.mallocLong(1);
             if (vkAllocateMemory(device, allocInfo, null, pMemory) != VK_SUCCESS) {
-                throw new RuntimeException("Impossibile allocare memoria per la texture");
+                throw new EngineEx("Impossibile allocare memoria per la texture");
             }
             this.memoryHandle = pMemory.get(0);
             vkBindImageMemory(device, imageHandle, memoryHandle, 0);
@@ -92,7 +93,7 @@ public final class TextureImage implements AutoCloseable {
 
             LongBuffer pView = stack.mallocLong(1);
             if (vkCreateImageView(device, viewInfo, null, pView) != VK_SUCCESS) {
-                throw new RuntimeException("Impossibile creare la VkImageView della texture");
+                throw new EngineEx("Impossibile creare la VkImageView della texture");
             }
             this.imageViewHandle = pView.get(0);
 
@@ -109,7 +110,7 @@ public final class TextureImage implements AutoCloseable {
 
             LongBuffer pSampler = stack.mallocLong(1);
             if (vkCreateSampler(device, samplerInfo, null, pSampler) != VK_SUCCESS) {
-                throw new RuntimeException("Impossibile creare la VkSampler");
+                throw new EngineEx("Impossibile creare la VkSampler");
             }
             this.samplerHandle = pSampler.get(0);
         }
@@ -168,7 +169,7 @@ public final class TextureImage implements AutoCloseable {
                 sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
                 destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
             } else {
-                throw new IllegalArgumentException("Transizione layout non supportata!");
+                throw new EngineEx("Transizione layout non supportata!");
             }
 
             vkCmdPipelineBarrier(cmd, sourceStage, destinationStage, 0, null, null, barrier);

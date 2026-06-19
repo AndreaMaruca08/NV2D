@@ -2,6 +2,7 @@ package nv.core.data;
 
 import nv.core.OrthoUBO;
 import nv.core.annotations.EngineCore;
+import nv.core.errors.ex.EngineEx;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 import java.nio.LongBuffer;
@@ -58,7 +59,7 @@ public final class DescriptorManager implements AutoCloseable {
 
             LongBuffer pLayout = stack.mallocLong(1);
             if (vkCreateDescriptorSetLayout(device, layoutInfo, null, pLayout) != VK_SUCCESS) {
-                throw new RuntimeException("Impossibile creare il Descriptor Set Layout");
+                throw new EngineEx("Impossible to allocate Descriptor Set Layout");
             }
             return pLayout.get(0);
         }
@@ -83,7 +84,7 @@ public final class DescriptorManager implements AutoCloseable {
 
             LongBuffer pPool = stack.mallocLong(1);
             if (vkCreateDescriptorPool(device, poolInfo, null, pPool) != VK_SUCCESS) {
-                throw new RuntimeException("Impossibile creare il Descriptor Pool");
+                throw new EngineEx("Impossible to allocate Descriptor Pool");
             }
             return pPool.get(0);
         }
@@ -102,7 +103,7 @@ public final class DescriptorManager implements AutoCloseable {
 
             LongBuffer pSets = stack.mallocLong(imageCount);
             if (vkAllocateDescriptorSets(device, allocInfo, pSets) != VK_SUCCESS) {
-                throw new RuntimeException("Impossibile allocare i Descriptor Sets");
+                throw new EngineEx("Impossible to allocate Descriptor Sets");
             }
 
             for (int i = 0; i < imageCount; i++) {

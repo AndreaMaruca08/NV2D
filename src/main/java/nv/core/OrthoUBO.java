@@ -1,6 +1,7 @@
 package nv.core;
 
 import nv.core.annotations.EngineCore;
+import nv.core.errors.ex.EngineEx;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 import java.nio.LongBuffer;
@@ -48,7 +49,7 @@ public final class OrthoUBO implements AutoCloseable {
 
             LongBuffer pBuffer = stack.mallocLong(1);
             if (vkCreateBuffer(device, bufferInfo, null, pBuffer) != VK_SUCCESS) {
-                throw new RuntimeException("Impossibile creare il buffer UBO all'indice " + index);
+                throw new EngineEx("Error creating UBO buffer at index " + index);
             }
             bufferHandles[index] = pBuffer.get(0);
 
@@ -70,7 +71,7 @@ public final class OrthoUBO implements AutoCloseable {
 
             LongBuffer pMemory = stack.mallocLong(1);
             if (vkAllocateMemory(device, allocInfo, null, pMemory) != VK_SUCCESS) {
-                throw new RuntimeException("Impossibile allocare memoria UBO all'indice " + index);
+                throw new EngineEx("Error allocating UBO memory at index " + index);
             }
             memoryHandles[index] = pMemory.get(0);
 
@@ -140,7 +141,7 @@ public final class OrthoUBO implements AutoCloseable {
             boolean propMatch = (memProperties.memoryTypes(i).propertyFlags() & properties) == properties;
             if (typeMatch && propMatch) return i;
         }
-        throw new RuntimeException("Nessun tipo di memoria GPU compatibile trovato per l'UBO.");
+        throw new EngineEx("No compatible GPU memory type found for UBO.");
     }
 
     @Override

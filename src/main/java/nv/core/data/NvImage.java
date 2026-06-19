@@ -1,6 +1,7 @@
 package nv.core.data;
 
 import nv.core.annotations.EngineCore;
+import nv.core.errors.ex.EngineEx;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkDevice;
 import org.lwjgl.vulkan.VkPhysicalDevice;
@@ -95,11 +96,11 @@ public final class NvImage implements AutoCloseable {
         try {
             BufferedImage img = ImageIO.read(new File(filePath));
             if (img == null) {
-                throw new RuntimeException("Formato immagine non supportato: " + filePath);
+                throw new EngineEx("Unsupported image format: " + filePath);
             }
             return new NvImage(device, physicalDevice, graphicsQueue, img);
         } catch (IOException e) {
-            throw new RuntimeException("Impossibile caricare immagine: " + filePath, e);
+            throw new EngineEx("Impossible to load image: " + filePath + " specific: " +  e);
         }
     }
 
@@ -114,18 +115,18 @@ public final class NvImage implements AutoCloseable {
 
         try (InputStream is = NvImage.class.getResourceAsStream(resourcePath)) {
             if (is == null) {
-                throw new RuntimeException("Risorsa non trovata: " + resourcePath);
+                throw new EngineEx("Resource not found: " + resourcePath);
             }
 
             BufferedImage img = ImageIO.read(is);
             if (img == null) {
-                throw new RuntimeException("Formato immagine non supportato: " + resourcePath);
+                throw new EngineEx("Unsupported image format: " + resourcePath);
             }
 
             return new NvImage(device, physicalDevice, graphicsQueue, img);
 
         } catch (IOException e) {
-            throw new RuntimeException("Errore caricamento risorsa: " + resourcePath, e);
+            throw new EngineEx("Errore caricamento risorsa: " + resourcePath + " specific: " + e );
         }
     }
 

@@ -1,6 +1,7 @@
 package nv.core.data;
 
 import nv.core.annotations.EngineCore;
+import nv.core.errors.ex.EngineEx;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -36,7 +37,7 @@ public final class DynamicIndexBuffer implements AutoCloseable {
 
             LongBuffer pBuffer = stack.mallocLong(1);
             if (vkCreateBuffer(device, bufferInfo, null, pBuffer) != VK_SUCCESS) {
-                throw new RuntimeException("Errore nella creazione del Dynamic Index Buffer!");
+                throw new EngineEx("Impossible to allocate Dynamic Index Buffer!");
             }
             this.buffer = pBuffer.get(0);
 
@@ -54,7 +55,7 @@ public final class DynamicIndexBuffer implements AutoCloseable {
 
             LongBuffer pMemory = stack.mallocLong(1);
             if (vkAllocateMemory(device, allocInfo, null, pMemory) != VK_SUCCESS) {
-                throw new RuntimeException("Errore nell'allocazione memoria del Dynamic Index Buffer!");
+                throw new EngineEx("Impossible to allocate memory for Dynamic Index Buffer!");
             }
             this.bufferMemory = pMemory.get(0);
 
@@ -62,7 +63,7 @@ public final class DynamicIndexBuffer implements AutoCloseable {
 
             PointerBuffer pData = stack.mallocPointer(1);
             if (vkMapMemory(device, bufferMemory, 0, bufferSize, 0, pData) != VK_SUCCESS) {
-                throw new RuntimeException("Impossibile mappare la memoria del Dynamic Index Buffer!");
+                throw new EngineEx("Impossible to map Dynamic Index Buffer memory!");
             }
             this.mappedData = MemoryUtil.memByteBuffer(pData.get(0), (int) bufferSize);
         }
@@ -74,8 +75,8 @@ public final class DynamicIndexBuffer implements AutoCloseable {
      */
     public int update(int[] indices) {
         if (indices.length > maxIndexCount) {
-            throw new IllegalArgumentException(
-                    "Indici (" + indices.length + ") superano la capacità del buffer (" + maxIndexCount + ")!");
+            throw new EngineEx(
+                    "Indices (" + indices.length + ") exceed the buffer capacity (" + maxIndexCount + ")!");
         }
 
         mappedData.clear();
@@ -112,6 +113,6 @@ public final class DynamicIndexBuffer implements AutoCloseable {
             }
         }
 
-        throw new RuntimeException("Tipo di memoria Vulkan non supportato!");
+        throw new EngineEx("Memory type not supported on Vulkan");
     }
 }

@@ -1,6 +1,7 @@
 package nv.core.data;
 
 import nv.core.annotations.EngineCore;
+import nv.core.errors.ex.EngineEx;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -40,8 +41,8 @@ public final class VulkanMemory {
                 if (typeMatch && propMatch) return i;
             }
         }
-        throw new RuntimeException(
-                "Nessun tipo di memoria GPU compatibile trovato. " +
+        throw new EngineEx(
+                "No compatible GPU memory type found. " +
                 "typeFilter=" + typeFilter + " properties=" + properties);
     }
 
@@ -69,7 +70,7 @@ public final class VulkanMemory {
 
             LongBuffer pBuffer = stack.mallocLong(1);
             if (vkCreateBuffer(device, bufferInfo, null, pBuffer) != VK_SUCCESS) {
-                throw new RuntimeException("Impossibile creare il buffer Vulkan (usage=" + usage + ")");
+                throw new EngineEx("Impossible to create Vulkan buffer (usage=" + usage + ")");
             }
             long bufferHandle = pBuffer.get(0);
 
@@ -84,7 +85,7 @@ public final class VulkanMemory {
 
             LongBuffer pMemory = stack.mallocLong(1);
             if (vkAllocateMemory(device, allocInfo, null, pMemory) != VK_SUCCESS) {
-                throw new RuntimeException("Impossibile allocare memoria GPU (usage=" + usage + ")");
+                throw new EngineEx("Impossible to allocate memory GPU (usage=" + usage + ")");
             }
             long memoryHandle = pMemory.get(0);
 

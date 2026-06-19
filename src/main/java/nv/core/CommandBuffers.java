@@ -1,6 +1,7 @@
 package nv.core;
 
 import nv.core.annotations.EngineCore;
+import nv.core.errors.ex.EngineEx;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -31,7 +32,7 @@ public final class CommandBuffers {
 
             LongBuffer pCommandPool = stack.mallocLong(1);
             if (vkCreateCommandPool(device, poolInfo, null, pCommandPool) != VK_SUCCESS) {
-                throw new RuntimeException("Errore nella creazione del Command Pool");
+                throw new EngineEx("Error creating the Command Pool");
             }
             this.commandPoolHandle = pCommandPool.get(0);
 
@@ -43,7 +44,7 @@ public final class CommandBuffers {
 
             PointerBuffer pCommandBuffer = stack.mallocPointer(1);
             if (vkAllocateCommandBuffers(device, allocInfo, pCommandBuffer) != VK_SUCCESS) {
-                throw new RuntimeException("Errore nell'allocazione del Command Buffer");
+                throw new EngineEx("Error allocating the Command Buffer");
             }
             this.commandBuffer = new VkCommandBuffer(pCommandBuffer.get(0), device);
         }
@@ -66,7 +67,7 @@ public final class CommandBuffers {
 
             int err = vkBeginCommandBuffer(commandBuffer, beginInfo);
             if (err != VK_SUCCESS) {
-                throw new RuntimeException("vkBeginCommandBuffer fallita: " + err);
+                throw new EngineEx("Error starting vkBeginCommandBuffer: " + err);
             }
 
             VkClearValue.Buffer clearValues = VkClearValue.calloc(1, stack);
@@ -124,7 +125,7 @@ public final class CommandBuffers {
 
             err = vkEndCommandBuffer(commandBuffer);
             if (err != VK_SUCCESS) {
-                throw new RuntimeException("vkEndCommandBuffer fallita: " + err);
+                throw new EngineEx("vkEndCommandBuffer failed: " + err);
             }
         }
     }
@@ -150,7 +151,7 @@ public final class CommandBuffers {
 
             int err = vkBeginCommandBuffer(commandBuffer, beginInfo);
             if (err != VK_SUCCESS) {
-                throw new RuntimeException("vkBeginCommandBuffer fallita: " + err);
+                throw new EngineEx("Error starting vkBeginCommandBuffer: " + err);
             }
 
             VkClearValue.Buffer clearValues = VkClearValue.calloc(1, stack);
@@ -212,7 +213,7 @@ public final class CommandBuffers {
 
             err = vkEndCommandBuffer(commandBuffer);
             if (err != VK_SUCCESS) {
-                throw new RuntimeException("vkEndCommandBuffer fallita: " + err);
+                throw new EngineEx("vkEndCommandBuffer failed: " + err);
             }
         }
     }

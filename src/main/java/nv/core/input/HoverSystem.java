@@ -2,6 +2,7 @@ package nv.core.input;
 
 import nv.core.annotations.EngineCore;
 import nv.core.components.NvComp;
+import nv.core.errors.ex.NvLogicEx;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +21,7 @@ public final class HoverSystem {
 
     public static void addHoverable(NvComp comp){
         if(!(comp instanceof Hoverable))
-            throw new RuntimeException("Component is not Hoverable");
+            throw new NvLogicEx("Component is not Hoverable");
         hoverableComponents.add(comp);
     }
     public static void removeHoverable(NvComp comp){
