@@ -1,57 +1,21 @@
-import nv.core.errors.ex.EngineEx;
-import nv.utils.NvCharacter;
 import nv.core.components.NvCont;
+import nv.test.game.example.CustomCharacter;
 
-import nv.utils.shapes.dynamic.DynamicCircle;
-import nv.utils.shapes.dynamic.DynamicSquare;
 import nv.core.NvContext;
-import nv.core.graphic.NvGraphic;
-import nv.core.input.KeyboardSystem;
-import nv.test.ClickTest;
-import nv.test.DvdLogoBouncing;
-import nv.test.FlagDisplay;
+import nv.test.game.example.Portal;
 
 void main() {
     var context = NvContext.createInstance("TESTING");
     context.setShowFPS(true);
+    context.setVsync(true);
 
     var page = context.addAndSetPage("NewPage", NvCont.newPage());
-    page.setBackground(0.5f,0.5f,0.5f);
+    page.setBackground(0,0,0);
 
-    NvCharacter character = new NvCharacter(1000,500, 100, 300, 3000);
-    NvGraphic.setCurrentCamera(character.getCamera());
-    character.setNeedCamera(true);
+    CustomCharacter character = new CustomCharacter(1000,500, 100, 100, 1000);
+    context.setKeyboardFocus(character);
 
-    var click = new ClickTest(0, 1000, 500, 100);
-    click.setWeight(2);
-
-    for(int i = 1; i < 50; i++){
-        for(int j =1 ; j < 50; j++){
-            var c = new DynamicCircle(i*20,100 * j,15);
-            c.setRgb(0,0,0);
-            page.addChild(c);
-        }
-    }
-
-    var a = new DynamicSquare(100,100,10000,50);
-    a.setWeight(40);
-    a.setRgb(0,1,0);
-    page.addChild(a);
-
-    var dvd = new DvdLogoBouncing(300,300);
-
-    // Add FlagDisplay at a visible position
-    var flags = new FlagDisplay(500, 300);
-
-    // Add Stateless (colored triangle example) at a visible position
-    var triangleDemo = new nv.test.Stateless(400, 200, 200, 200);
-
-    page.addChild(dvd);
-    page.addChild(flags);
-    page.addChild(triangleDemo);
-    page.addChild(click);
-    character.setWeight(100);
-    KeyboardSystem.setKeyboardFocus(character);
+    page.addChild(new Portal(page.getX(), page.getY(), 1000, 100));
 
     page.addChild(character);
 

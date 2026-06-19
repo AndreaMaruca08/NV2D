@@ -559,6 +559,22 @@ public final class NvContext implements Runnable {
             drawFrame();
             tickHandler(deltaTime);
 
+            if (targetFps > 0) {
+                double targetFrameTime = 1.0 / targetFps;
+                while (glfwGetTime() - now < targetFrameTime) {
+                    double remaining = targetFrameTime - (glfwGetTime() - now);
+                    if (remaining > 0.001) { // if more than 1ms remaining, sleep
+                        try {
+                            Thread.sleep((long) (remaining * 1000 - 1));
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                    } else {
+                        // Busy-wait for precision during the last millisecond
+                        Thread.onSpinWait();
+                    }
+                }
+            }
         }
         vkDeviceWaitIdle(device);
     }

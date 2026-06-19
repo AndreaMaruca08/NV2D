@@ -11,7 +11,7 @@ import static org.lwjgl.glfw.GLFW.*;
 
 /**
  * <h3>Base for a game character</h3>
- * <p>Character with movements, intended to be extended</p>
+ * <p>CustomCharacter with movements, intended to be extended</p>
  * @since 1.0
  * @author Andrea Maruca
  */
