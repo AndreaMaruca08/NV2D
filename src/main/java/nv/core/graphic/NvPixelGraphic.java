@@ -46,6 +46,46 @@ public class NvPixelGraphic extends NvGraphic {
     }
 
     @Override
+    public void drawPolygon(float[] vertices, int[] indices, float[] colors, AppendableGeometry comp) {
+        int numVertices = vertices.length / 2;
+        float[] polyVerts = new float[numVertices * FLOATS_PER_VERTEX];
+
+        for (int i = 0; i < numVertices; i++) {
+            float vx = tx(component.getX() + vertices[i * 2]);
+            float vy = ty(component.getY() + vertices[i * 2 + 1]);
+
+            float vr = r, vg = g, vb = b;
+            if (colors != null) {
+                if (colors.length >= numVertices * 4) {
+                    vr = colors[i * 4];
+                    vg = colors[i * 4 + 1];
+                    vb = colors[i * 4 + 2];
+                } else if (colors.length >= numVertices * 3) {
+                    vr = colors[i * 3];
+                    vg = colors[i * 3 + 1];
+                    vb = colors[i * 3 + 2];
+                } else if (colors.length == 4 || colors.length == 3) {
+                    vr = colors[0];
+                    vg = colors[1];
+                    vb = colors[2];
+                }
+            }
+
+            int off = i * FLOATS_PER_VERTEX;
+            polyVerts[off]     = vx;
+            polyVerts[off + 1] = vy;
+            polyVerts[off + 2] = vr;
+            polyVerts[off + 3] = vg;
+            polyVerts[off + 4] = vb;
+            polyVerts[off + 5] = wu;
+            polyVerts[off + 6] = wv;
+            polyVerts[off + 7] = 0f;
+        }
+
+        comp.append(polyVerts, indices);
+    }
+
+    @Override
     public void drawOval(float x, float y, float radius, int accuracy,
                          float r, float g, float b,
                          AppendableGeometry comp) {

@@ -43,8 +43,12 @@ void main() {
     // Add FlagDisplay at a visible position
     var flags = new FlagDisplay(500, 300);
 
+    // Add Stateless (colored triangle example) at a visible position
+    var triangleDemo = new nv.test.Stateless(400, 200, 200, 200);
+
     page.addChild(dvd);
     page.addChild(flags);
+    page.addChild(triangleDemo);
     page.addChild(click);
     character.setWeight(100);
     KeyboardSystem.setKeyboardFocus(character);

@@ -245,6 +245,47 @@ public abstract class NvGraphic implements AppendableGeometry {
         drawTri(base1, base2, y, r, g, b, comp);
     }
 
+    /**
+     * Draws a polygon based on the specified vertices, indices, and colors.
+     *
+     * {@snippet :
+     * // Example: Drawing a triangle with different colors for each vertex
+     * float[] vertices = {
+     *     100f, 0f,      // Vertex 0 (Top Center)
+     *     0f, 200f,      // Vertex 1 (Bottom Left)
+     *     200f, 200f     // Vertex 2 (Bottom Right)
+     * };
+     * 
+     * int[] indices = { 0, 1, 2 };
+     * 
+     * float[] colors = {
+     *     1.0f, 0.0f, 0.0f, // Red color for Vertex 0
+     *     0.0f, 1.0f, 0.0f, // Green color for Vertex 1
+     *     0.0f, 0.0f, 1.0f  // Blue color for Vertex 2
+     * };
+     * 
+     * g.drawPolygon(vertices, indices, colors);
+     * }
+     *
+     * @param vertices an array of float values representing the coordinates of the polygon's vertices.
+     * @param indices an array of integer values defining the order in which the vertices should be connected to form the polygon.
+     * @param colors an array of float values specifying the colors for each vertex; typically contains RGBA values.
+     * @param comp an {@link AppendableGeometry} instance to which the geometry of the polygon will be appended.
+     */
+    public abstract void drawPolygon(float[] vertices, int[] indices, float[] colors, AppendableGeometry comp);
+
+    public void drawPolygon(float[] vertices, int[] indices, float[] colors) {
+        drawPolygon(vertices, indices, colors, this);
+    }
+
+    public void drawPolygon(float[] vertices, int[] indices, AppendableGeometry comp) {
+        drawPolygon(vertices, indices, null, comp);
+    }
+
+    public void drawPolygon(float[] vertices, int[] indices) {
+        drawPolygon(vertices, indices, null, this);
+    }
+
     public abstract void drawOval(float x, float y, float radius, int accuracy, float r, float g, float b, AppendableGeometry comp);
     public void drawOval(float x, float y, float radius, int accuracy){
         drawOval(x, y, radius, accuracy, r, g, b, this);
