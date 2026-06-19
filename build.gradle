@@ -27,6 +27,7 @@ dependencies {
 
     runtimeOnly "org.lwjgl:lwjgl::$lwjglNatives"
     runtimeOnly "org.lwjgl:lwjgl-glfw::$lwjglNatives"
+    runtimeOnly "org.lwjgl:lwjgl-vulkan::$lwjglNatives"
 }
 
 tasks.withType(JavaExec) {

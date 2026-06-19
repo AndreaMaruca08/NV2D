@@ -178,7 +178,8 @@ public abstract class NvComp implements UpdateCycle {
     }
 
     private void updateChildren(float dt){
-        for (NvComp child : children) {
+        List<NvComp> childrenCopy = new ArrayList<>(children);
+        for (NvComp child : childrenCopy) {
             child.tick(dt);
         }
     }
@@ -237,7 +238,8 @@ public abstract class NvComp implements UpdateCycle {
     public void destroy(){
         if(context == null)
             context = NvContext.getInstance();
-        for (NvComp child : children) {
+        List<NvComp> childrenCopy = new ArrayList<>(children);
+        for (NvComp child : childrenCopy) {
             child.destroy();
         }
         if(getParent() != null) {
