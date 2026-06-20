@@ -1,4 +1,4 @@
-package nv.core.input;
+package nv.core.io;
 
 import nv.core.EmptyKeyboardListener;
 import org.lwjgl.glfw.GLFWKeyCallbackI;

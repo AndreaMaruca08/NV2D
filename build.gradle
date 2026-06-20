@@ -19,15 +19,30 @@ repositories {
 }
 
 dependencies {
+    //-Engine dependencies-
     implementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
 
+    // Core & Graphics
     implementation "org.lwjgl:lwjgl"
     implementation "org.lwjgl:lwjgl-glfw"
     implementation "org.lwjgl:lwjgl-vulkan"
 
+    // Audio & Audio Tools (OpenAL + STB for OGG decoding)
+    implementation "org.lwjgl:lwjgl-openal"
+    implementation "org.lwjgl:lwjgl-stb"
+
+    // Natives
     runtimeOnly "org.lwjgl:lwjgl::$lwjglNatives"
     runtimeOnly "org.lwjgl:lwjgl-glfw::$lwjglNatives"
     runtimeOnly "org.lwjgl:lwjgl-vulkan::$lwjglNatives"
+    runtimeOnly "org.lwjgl:lwjgl-openal::$lwjglNatives"
+    runtimeOnly "org.lwjgl:lwjgl-stb::$lwjglNatives"
+
+    // MP3 SPI decoder provider for JavaSound AudioSystem
+    implementation 'com.googlecode.soundlibs:mp3spi:1.9.5.4'
+
+    //-End engine dependencies-
+
 }
 
 tasks.withType(JavaExec) {

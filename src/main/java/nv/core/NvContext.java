@@ -11,10 +11,7 @@ import nv.core.errors.NvLogger;
 import nv.core.errors.ex.EngineEx;
 import nv.core.graphic.NvGraphic;
 import nv.core.graphic.NvPixelGraphic;
-import nv.core.input.ClickSystem;
-import nv.core.input.HoverSystem;
-import nv.core.input.KeyboardListener;
-import nv.core.input.KeyboardSystem;
+import nv.core.io.*;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWMouseButtonCallback;
@@ -280,6 +277,7 @@ public final class NvContext implements Runnable {
         logEngine("Vulkan initialized");
         CollisionManager.initialize();
         logEngine("Collisions initialized");
+        AudioManager.init();
 
         logEngine("-----------Game started successfully-------------");
     }
@@ -924,7 +922,10 @@ public final class NvContext implements Runnable {
         if (device              != null) vkDestroyDevice(device, null);
         if (instance            != null) vkDestroyInstance(instance, null);
 
+        AudioManager.cleanup();
+
         glfwDestroyWindow(window);
+        logEngine("Memory cleaned up successfully");
         glfwTerminate();
     }
 

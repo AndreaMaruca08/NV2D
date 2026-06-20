@@ -7,13 +7,12 @@ import nv.core.annotations.EngineCore;
 import nv.core.collision.Collidable;
 import nv.core.collision.CollisionManager;
 import nv.core.collision.CollisionSystem;
-import nv.core.errors.ex.EngineEx;
 import nv.core.errors.ex.NvLogicEx;
 import nv.core.graphic.NvGraphic;
-import nv.core.input.ClickSystem;
-import nv.core.input.Clickable;
-import nv.core.input.HoverSystem;
-import nv.core.input.Hoverable;
+import nv.core.io.ClickSystem;
+import nv.core.io.Clickable;
+import nv.core.io.HoverSystem;
+import nv.core.io.Hoverable;
 
 import java.util.ArrayList;
 import java.util.List;

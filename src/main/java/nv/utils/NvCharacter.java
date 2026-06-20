@@ -5,7 +5,7 @@ import nv.core.camera.NvCamera;
 import nv.core.collision.Collidable;
 import nv.core.components.NvComp;
 import nv.core.graphic.NvGraphic;
-import nv.core.input.KeyboardListener;
+import nv.core.io.KeyboardListener;
 
 import static org.lwjgl.glfw.GLFW.*;
 
@@ -27,7 +27,7 @@ public class NvCharacter extends NvComp implements KeyboardListener, Collidable 
 
     protected float velocity;
 
-    private boolean[] keys = new boolean[GLFW_KEY_LAST];
+    protected boolean[] keys = new boolean[GLFW_KEY_LAST];
 
     public NvCharacter(int x, int y, int w, int h, float velocity) {
         super(x, y, w,h);

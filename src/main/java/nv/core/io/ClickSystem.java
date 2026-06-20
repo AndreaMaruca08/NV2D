@@ -1,8 +1,7 @@
-package nv.core.input;
+package nv.core.io;
 
 import nv.core.annotations.EngineCore;
 import nv.core.components.NvComp;
-import nv.core.errors.ex.EngineEx;
 import nv.core.errors.ex.NvLogicEx;
 import org.lwjgl.glfw.GLFWMouseButtonCallbackI;
 

@@ -3,8 +3,10 @@ package nv.test.game.example;
 import nv.core.NvContext;
 import nv.core.assets.AtlasConverter;
 import nv.core.graphic.NvGraphic;
+import nv.core.io.AudioManager;
 import nv.utils.NvCharacter;
 import nv.utils.shapes.dynamic.NvLabel;
+import org.lwjgl.glfw.GLFW;
 
 public class CustomCharacter extends NvCharacter {
     //All images
@@ -42,9 +44,19 @@ public class CustomCharacter extends NvCharacter {
                 character.u2(), character.v2()
         );
     }
+    private boolean playing = true;
     @Override
     public void update(float dt) {
         super.update(dt);
+        if(keys[GLFW.GLFW_KEY_SPACE]){
+            if(playing){
+                AudioManager.stop("dialtone.mp3");
+                playing = false;
+            }else{
+                AudioManager.playLoop("dialtone.mp3");
+                playing = true;
+            }
+        }
         if(hp <= 0 && hplabel != null){
             destroy();
         }
