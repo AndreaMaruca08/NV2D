@@ -2,6 +2,7 @@ package nv.test.game.example;
 
 import nv.core.NvContext;
 import nv.core.components.NvCont;
+import nv.core.errors.NvLogger;
 import nv.utils.NvTimer;
 
 import java.util.ArrayList;
@@ -52,9 +53,8 @@ public class BattleArena extends NvCont {
         pausa.setOnFinished(() -> {
             int currentRound = round.incrementAndGet();
             if (currentRound > 5) {
-                System.out.println("All rounds finished!");
+                NvLogger.logInfo("rounds finished");
             } else {
-                System.out.println("Starting Round " + currentRound);
                 timer.reset();
                 timer.start();
             }
@@ -63,7 +63,6 @@ public class BattleArena extends NvCont {
         context.addUpdatable(timer);
         context.addUpdatable(pausa);
 
-        System.out.println("Starting Round " + round.get());
         timer.start();
 
         addChild(wall1);
