@@ -26,6 +26,8 @@ public final class AABB implements CollisionSystem{
 
     @Override
     public void resolveCollision(NvComp a, NvComp b) {
+        if(a.getZIndex() != b.getZIndex())
+            return;
         int dx1 = (a.getX() + a.getW()) - b.getX();
         int dx2 = (b.getX() + b.getW()) - a.getX();
 

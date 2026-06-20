@@ -38,6 +38,7 @@ public abstract class NvComp implements UpdateCycle {
     protected int weight = CollisionSystem.NO_WEIGHT;
     public boolean border = false;
     protected boolean isHUD = false;
+    protected int zIndex = 0;
 
     public NvComp(int x, int y, int w, int h) {
         children = new ArrayList<>();
@@ -47,6 +48,15 @@ public abstract class NvComp implements UpdateCycle {
         this.w = w;
         this.h = h;
     }
+
+    public int getZIndex() {
+        return zIndex;
+    }
+
+    public void setZIndex(int zIndex) {
+        this.zIndex = zIndex;
+    }
+
 
     public boolean isHUD() {
         return isHUD;
