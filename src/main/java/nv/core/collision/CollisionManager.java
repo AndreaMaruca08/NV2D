@@ -57,6 +57,8 @@ public final class CollisionManager {
 
             for (int x = cellX; x <= endX; x++) {
                 for (int y = cellY; y <= endY; y++) {
+                    // stessa identica chiave del codice originale: cambia solo
+                    // come viene indicizzata internamente, non il risultato del raggruppamento
                     long key = ((long) x << 32) | (y & 0xFFFFFFFFL);
                     spatialGrid.add(key, idx);
                 }
@@ -188,6 +190,8 @@ public final class CollisionManager {
         }
 
         private static long mix(long z) {
+            // splitmix64 finalizer: ottima distribuzione, evita cluster sulle chiavi
+            // (x,y) tipiche di una griglia, che con hash banali tendono ad allinearsi.
             z = (z ^ (z >>> 30)) * 0xbf58476d1ce4e5b9L;
             z = (z ^ (z >>> 27)) * 0x94d049bb133111ebL;
             return z ^ (z >>> 31);

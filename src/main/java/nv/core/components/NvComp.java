@@ -40,6 +40,7 @@ public abstract class NvComp implements UpdateCycle {
     protected boolean isHUD = false;
     protected boolean phaseThrough = false;
     protected int zIndex = 0;
+    private boolean shouldGetDestroyed = false;
 
     public NvComp(int x, int y, int w, int h) {
         children = new ArrayList<>();
@@ -196,10 +197,18 @@ public abstract class NvComp implements UpdateCycle {
     }
 
     private void updateChildren(float dt){
-        List<NvComp> childrenCopy = new ArrayList<>(children);
-        for (NvComp child : childrenCopy) {
-            child.tick(dt);
+        int n = children.size();
+        for (int i = 0; i < n; i++) {
+            children.get(i).tick(dt);
         }
+
+        children.removeIf(child -> {
+            if (child.shouldGetDestroyed) {
+                child.actualDestroy();
+                return true;
+            }
+            return false;
+        });
     }
 
     public void draw(NvGraphic g){
@@ -254,15 +263,18 @@ public abstract class NvComp implements UpdateCycle {
     }
 
     public void destroy(){
+        this.shouldGetDestroyed = true;
+    }
+    private void actualDestroy(){
         if(context == null)
             context = NvContext.getInstance();
+
         List<NvComp> childrenCopy = new ArrayList<>(children);
         for (NvComp child : childrenCopy) {
-            child.destroy();
+            child.actualDestroy();
         }
-        if(getParent() != null) {
-            getParent().children.remove(this);
-        }
+        children.clear();
+
         if(this instanceof Collidable){
             CollisionManager.removeCanCollide(this);
         }
@@ -271,6 +283,7 @@ public abstract class NvComp implements UpdateCycle {
         }
         if(this instanceof Hoverable)
             HoverSystem.removeHoverable(this);
+
         whenDestroyed();
     }
 

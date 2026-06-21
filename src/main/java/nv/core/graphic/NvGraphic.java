@@ -383,35 +383,35 @@ public abstract class NvGraphic implements AppendableGeometry {
 
 
     //LOW LEVEL
-    public static Scene generateTextGeometry(String text, float startX, float startY, FontAtlas atlas) {
+    public static Scene generateTextGeometry(String text, float startX, float startY, FontAtlas atlas, float r, float g, float b) {
         int n = text.length();
-        float[] vertices = new float[n * 4 * FLOATS_PER_VERTEX]; // 4 vertici × 8 float
+        float[] vertices = new float[n * 4 * FLOATS_PER_VERTEX];
         int[] indices  = new int[n * 6];
         float cursorX = startX;
 
         for (int i = 0; i < n; i++) {
-            FontAtlas.Glyph g = atlas.getGlyph(text.charAt(i));
+            FontAtlas.Glyph glyph = atlas.getGlyph(text.charAt(i));
 
             float x0 = cursorX,            y0 = startY;
-            float x1 = cursorX + g.width,  y1 = startY + g.height;
+            float x1 = cursorX + glyph.width,  y1 = startY + glyph.height;
 
             int v = i * 4 * FLOATS_PER_VERTEX;
             // top-left
             vertices[v     ] = x0;    vertices[v +  1] = y0;
-            vertices[v +  2] = 1f;    vertices[v +  3] = 1f;    vertices[v +  4] = 1f;
-            vertices[v +  5] = g.uMin; vertices[v +  6] = g.vMin; vertices[v +  7] = 0f;
+            vertices[v +  2] = r;    vertices[v +  3] = g;    vertices[v +  4] = b;
+            vertices[v +  5] = glyph.uMin; vertices[v +  6] = glyph.vMin; vertices[v +  7] = 0f;
             // top-right
             vertices[v +  8] = x1;    vertices[v +  9] = y0;
-            vertices[v + 10] = 1f;    vertices[v + 11] = 1f;    vertices[v + 12] = 1f;
-            vertices[v + 13] = g.uMax; vertices[v + 14] = g.vMin; vertices[v + 15] = 0f;
+            vertices[v + 10] = r;    vertices[v + 11] = g;    vertices[v + 12] = b;
+            vertices[v + 13] = glyph.uMax; vertices[v + 14] = glyph.vMin; vertices[v + 15] = 0f;
             // bottom-right
             vertices[v + 16] = x1;    vertices[v + 17] = y1;
-            vertices[v + 18] = 1f;    vertices[v + 19] = 1f;    vertices[v + 20] = 1f;
-            vertices[v + 21] = g.uMax; vertices[v + 22] = g.vMax; vertices[v + 23] = 0f;
+            vertices[v + 18] = r;    vertices[v + 19] = g;    vertices[v + 20] = b;
+            vertices[v + 21] = glyph.uMax; vertices[v + 22] = glyph.vMax; vertices[v + 23] = 0f;
             // bottom-left
             vertices[v + 24] = x0;    vertices[v + 25] = y1;
-            vertices[v + 26] = 1f;    vertices[v + 27] = 1f;    vertices[v + 28] = 1f;
-            vertices[v + 29] = g.uMin; vertices[v + 30] = g.vMax; vertices[v + 31] = 0f;
+            vertices[v + 26] = r;    vertices[v + 27] = g;    vertices[v + 28] = b;
+            vertices[v + 29] = glyph.uMin; vertices[v + 30] = glyph.vMax; vertices[v + 31] = 0f;
 
             int idx = i * 6, base = i * 4;
             indices[idx]     = (short)  base;
@@ -421,7 +421,7 @@ public abstract class NvGraphic implements AppendableGeometry {
             indices[idx + 4] = (short) (base + 3);
             indices[idx + 5] = (short)  base;
 
-            cursorX += g.advance;
+            cursorX += glyph.advance;
         }
         return new Scene(vertices, indices);
     }
