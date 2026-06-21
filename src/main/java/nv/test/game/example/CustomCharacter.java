@@ -2,11 +2,14 @@ package nv.test.game.example;
 
 import nv.core.NvContext;
 import nv.core.assets.AtlasConverter;
+import nv.core.components.NvComp;
 import nv.core.graphic.NvGraphic;
 import nv.core.io.AudioManager;
 import nv.utils.NvCharacter;
 import nv.utils.shapes.dynamic.NvLabel;
 import org.lwjgl.glfw.GLFW;
+
+import static nv.core.errors.NvLogger.logInfo;
 
 public class CustomCharacter extends NvCharacter {
     //All images
