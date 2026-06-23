@@ -7,6 +7,8 @@ import nv.core.components.Vector2D;
 
 /**
  * <p>Component used for moving objects, if you follow gravity remember to reset the speed</p>
+ * @since 1.1
+ * @author Andrea Maruca
  */
 @ReadyComponent
 @SuppressWarnings("unused")

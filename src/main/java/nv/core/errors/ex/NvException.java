@@ -12,6 +12,6 @@ import nv.core.annotations.EngineCore;
 public class NvException extends RuntimeException {
     private ExSeverity problem;
     public NvException(ExSeverity problem, String message) {
-        super(problem.description + message);
+        super(problem.description + " " + message);
     }
 }

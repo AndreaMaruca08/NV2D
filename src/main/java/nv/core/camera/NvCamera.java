@@ -24,7 +24,7 @@ public class NvCamera {
     public NvCamera(float x, float y, float zoom) {
         this.x = x;
         this.y = y;
-        this.zoom = zoom;
+        this.zoom = zoom/100;
     }
 
     public void translate(Vector2D vector2D){

@@ -9,6 +9,8 @@ import org.lwjgl.vulkan.VkDevice;
 import org.lwjgl.vulkan.VkPhysicalDevice;
 import org.lwjgl.vulkan.VkQueue;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -52,7 +54,7 @@ public final class AssetsManager {
                     device,
                     physicalDevice,
                     graphicsQueue,
-                    folder
+                    "textures/" + folder
             );
 
             bindAtlas(atlas);
@@ -60,7 +62,7 @@ public final class AssetsManager {
 
             return atlas;
 
-        } catch (Exception e) {
+        } catch (IOException | URISyntaxException e) {
             throw new EngineEx("Failed to load atlas: " + name + " specific: " + e);
         }
     }

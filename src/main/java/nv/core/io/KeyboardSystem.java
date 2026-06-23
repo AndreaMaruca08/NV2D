@@ -23,6 +23,8 @@ public final class KeyboardSystem {
             }
             else if (action == GLFW_RELEASE) {
                 focused.onKeyReleased(keys, mods);
+                if(key == -1)
+                    return;
                 keys[key] = false;
             }
         };

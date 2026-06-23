@@ -19,7 +19,7 @@ repositories {
 }
 
 dependencies {
-    //-Engine dependencies-
+    //----Engine dependencies----
     implementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
 
     // Core & Graphics
@@ -41,7 +41,7 @@ dependencies {
     // MP3 SPI decoder provider for JavaSound AudioSystem
     implementation 'com.googlecode.soundlibs:mp3spi:1.9.5.4'
 
-    //-End engine dependencies-
+    //----End engine dependencies----
 
 }
 
@@ -57,6 +57,14 @@ tasks.named('jar') {
         attributes(
                 'Main-Class': 'Main'
         )
+    }
+}
+
+sourceSets {
+    main {
+        resources {
+            srcDirs = ["src/main/resources"]
+        }
     }
 }
 

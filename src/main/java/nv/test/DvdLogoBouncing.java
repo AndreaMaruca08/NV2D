@@ -26,10 +26,8 @@ public class DvdLogoBouncing extends NvComp {
         this.preciseX = x;
         this.preciseY = y;
 
-        // Note: atlas "tiles" must be loaded in NvContext before this component is created
         atlas = app.assets().getAtlas("tiles");
         if (atlas == null) {
-            // If not loaded, try to load it now from the root textures folder
             atlas = app.assets().loadAtlas("tiles", "");
         }
         region = app.assets().getRegion("tiles", "dvdLogo");
@@ -37,7 +35,6 @@ public class DvdLogoBouncing extends NvComp {
 
     @Override
     public void drawIntern(NvGraphic g) {
-        // We use 0, 0 as local coordinates because draw(g) already applies component.x, component.y transformation in NvPixelGraphic.tx/ty
         g.drawImageRegion(
                 atlas.image(), 0, 0, w, h,
                 region.u1(), region.v1(),
