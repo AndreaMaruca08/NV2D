@@ -32,7 +32,14 @@ public class CustomCharacter extends NvCharacter {
         hplabel.changeText("HP: " + hp);
         hplabel.setHUD(true);
 
+        // info display for loading
+        var infos = new NvLabel(200,200);
+        infos.setRgb(0.1f,0.1f,0.1f);
+        infos.changeText("Press ESC to save and R to load from save");
+        infos.setHUD(true);
+
         addChild(hplabel);
+        addChild(infos);
     }
     public void takeDamage(int amount){
         hp -= amount;

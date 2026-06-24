@@ -13,13 +13,13 @@ import nv.core.graphic.NvGraphic;
 import nv.core.graphic.NvPixelGraphic;
 import nv.core.io.*;
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.glfw.GLFWKeyCallback;
-import org.lwjgl.glfw.GLFWMouseButtonCallback;
-import org.lwjgl.glfw.GLFWVulkan;
+import org.lwjgl.glfw.*;
+import org.lwjgl.stb.STBImage;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
 import java.awt.*;
+import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.*;
@@ -71,7 +71,7 @@ public final class NvContext implements Runnable {
 
     public synchronized int getNextTextureSlot() {
         if (textureCount >= MAX_TEXTURES) {
-            throw new EngineEx("Limite massimo di texture raggiunto (" + MAX_TEXTURES + ")");
+            throw new EngineEx("Max texture slots reached (" + MAX_TEXTURES + ")");
         }
         return textureCount++;
     }
@@ -269,6 +269,7 @@ public final class NvContext implements Runnable {
 
         NvLogger.initialize(name, MAJOR_VERSION, MINOR_VERSION, PATCH);
         initWindow(name, windowDim);
+
         logEngine("Window initialized");
         initVulkan();
         logEngine("Vulkan initialized");
@@ -417,6 +418,21 @@ public final class NvContext implements Runnable {
             mouseY = (int) y;
             mouseMoved = true;
         });
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            IntBuffer w = stack.mallocInt(1);
+            IntBuffer h = stack.mallocInt(1);
+            IntBuffer channels = stack.mallocInt(1);
+
+            ByteBuffer icon = STBImage.stbi_load("src/main/resources/gameicon/gameIcon.png", w, h, channels, 4);
+
+            if (icon != null) {
+                GLFWImage.Buffer iconBuffer = GLFWImage.malloc(1, stack);
+                iconBuffer.position(0).width(w.get(0)).height(h.get(0)).pixels(icon);
+                org.lwjgl.glfw.GLFW.glfwSetWindowIcon(window, iconBuffer);
+                STBImage.stbi_image_free(icon);
+            }
+        }
+
         addUpdatable(fpsDisplay);
     }
 
@@ -787,17 +803,30 @@ public final class NvContext implements Runnable {
                 }
             }
             if (graphicsQFI == -1) throw new EngineEx("Nessuna queue grafica trovata.");
-
             VkDeviceQueueCreateInfo.Buffer queueCreateInfo = VkDeviceQueueCreateInfo.calloc(1, stack)
                     .sType(VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO)
                     .queueFamilyIndex(graphicsQFI)
                     .pQueuePriorities(stack.floats(1.0f));
 
-            PointerBuffer deviceExtensions = stack.mallocPointer(2);
-            deviceExtensions.put(stack.UTF8(VK_KHR_SWAPCHAIN_EXTENSION_NAME));
-            deviceExtensions.put(stack.UTF8("VK_KHR_portability_subset"));
-            deviceExtensions.flip();
+            IntBuffer extCount = stack.mallocInt(1);
+            vkEnumerateDeviceExtensionProperties(physicalDevice, (String) null, extCount, null);
+            VkExtensionProperties.Buffer availableExtensions = VkExtensionProperties.malloc(extCount.get(0));
+            vkEnumerateDeviceExtensionProperties(physicalDevice, (String) null, extCount.rewind(), availableExtensions);
 
+            boolean hasPortabilitySubset = false;
+            for (VkExtensionProperties ext : availableExtensions) {
+                if (ext.extensionNameString().equals("VK_KHR_portability_subset")) {
+                    hasPortabilitySubset = true;
+                    break;
+                }
+            }
+
+            PointerBuffer deviceExtensions = stack.mallocPointer(hasPortabilitySubset ? 2 : 1);
+            deviceExtensions.put(stack.UTF8(VK_KHR_SWAPCHAIN_EXTENSION_NAME));
+            if (hasPortabilitySubset) {
+                deviceExtensions.put(stack.UTF8("VK_KHR_portability_subset"));
+            }
+            deviceExtensions.flip();
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO)
                     .pQueueCreateInfos(queueCreateInfo)

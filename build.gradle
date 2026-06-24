@@ -123,7 +123,7 @@ def registerNvBuild = { String taskName, String platform, Object extraCfg ->
 }
 
 // Builds for the current platform
-tasks.register('nvBuild', ShadowJar) {
+tasks.register('nvBuildCurrent', ShadowJar) {
     group = 'nv build'
     description = "Build for the current platform (${project.ext.lwjglNatives})"
 
@@ -137,7 +137,7 @@ tasks.register('nvBuild', ShadowJar) {
     }
 
     doLast {
-        println "✅ [nvBuild] Build completata → ${project.ext.lwjglNatives}"
+        println "✅ [nvBuildCurrent] Build completata → ${project.ext.lwjglNatives}"
         println "📦 JAR: ${archiveFile.get().asFile.absolutePath}"
     }
 }
@@ -168,5 +168,16 @@ tasks.register('nvBuildAll', ShadowJar) {
     doLast {
         println "✅ [nvBuildAll] Build universale completata"
         println "📦 JAR: ${archiveFile.get().asFile.absolutePath}"
+    }
+}
+
+tasks.register('nvBuild') {
+    group = 'nv build'
+    description = 'Build for every platform'
+    dependsOn 'nvBuildMac', 'nvBuildWindows', 'nvBuildLinux', 'nvBuildAll'
+
+    doLast {
+        println '✅ Build completed for every platform'
+        println '📦 Output in: ' + layout.buildDirectory.dir('libs').get().asFile.absolutePath
     }
 }
