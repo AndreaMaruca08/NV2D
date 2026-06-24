@@ -9,8 +9,6 @@ import nv.utils.NvCharacter;
 import nv.utils.shapes.dynamic.NvLabel;
 import org.lwjgl.glfw.GLFW;
 
-import static nv.core.errors.NvLogger.logInfo;
-
 public class CustomCharacter extends NvCharacter {
     //All images
     private final AtlasConverter.Atlas atlas;
@@ -18,7 +16,7 @@ public class CustomCharacter extends NvCharacter {
     private final AtlasConverter.Region character;
 
     private int hp;
-    private NvLabel hplabel;
+    private final NvLabel hplabel;
 
     public CustomCharacter(int x, int y, int w, int h, float velocity) {
         super(x, y, w, h, velocity);
@@ -63,5 +61,14 @@ public class CustomCharacter extends NvCharacter {
         if(hp <= 0 && hplabel != null){
             destroy();
         }
+    }
+    private boolean shake = false;
+    @Override
+    public void whenCollide(NvComp other){
+        if(!shake){
+            camera.shake(20,100);
+            shake = true;
+        }
+
     }
 }

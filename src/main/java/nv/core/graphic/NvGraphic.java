@@ -41,7 +41,7 @@ public abstract class NvGraphic implements AppendableGeometry {
 
     protected float r=0, g=0, b=0, a=0;
 
-    public static NvCamera camera = new NvCamera(0,0,1);
+    public static NvCamera camera = new NvCamera(0,0,100);
     public static void setCurrentCamera(NvCamera camera){
         NvGraphic.camera = camera;
     }

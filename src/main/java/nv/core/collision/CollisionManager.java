@@ -57,8 +57,6 @@ public final class CollisionManager {
 
             for (int x = cellX; x <= endX; x++) {
                 for (int y = cellY; y <= endY; y++) {
-                    // stessa identica chiave del codice originale: cambia solo
-                    // come viene indicizzata internamente, non il risultato del raggruppamento
                     long key = ((long) x << 32) | (y & 0xFFFFFFFFL);
                     spatialGrid.add(key, idx);
                 }

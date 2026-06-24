@@ -22,10 +22,8 @@ import org.lwjgl.vulkan.*;
 import java.awt.*;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 import static nv.core.errors.NvLogger.logEngine;
 import static org.lwjgl.glfw.GLFW.*;
@@ -43,7 +41,7 @@ import static org.lwjgl.vulkan.VK10.*;
 @SuppressWarnings("unused")
 public final class NvContext implements Runnable {
     private static final int MAJOR_VERSION = 1;
-    private static final int MINOR_VERSION = 0;
+    private static final int MINOR_VERSION = 1;
     private static final int PATCH = 0;
     private static final String ENGINE_NAME = "NV2Dlib";
 
@@ -530,10 +528,11 @@ public final class NvContext implements Runnable {
         currentCameraUpdateCycle.update(dt);
         rootComponent.tick(dt);
 
-        for(UpdateCycle updateCycle : updatable){
-            updateCycle.update(dt);
-        }
+        int size = updatable.size();
 
+        for(int i = 0; i < size; i++){
+            updatable.get(i).update(dt);
+        }
         if (mouseMoved) {
             HoverSystem.handleHover(window, rootComponent);
             mouseMoved = false;
@@ -562,7 +561,7 @@ public final class NvContext implements Runnable {
                 double targetFrameTime = 1.0 / targetFps;
                 while (glfwGetTime() - now < targetFrameTime) {
                     double remaining = targetFrameTime - (glfwGetTime() - now);
-                    if (remaining > 0.001) { // if more than 1ms remaining, sleep
+                    if (remaining > 0.001) {
                         try {
                             Thread.sleep((long) (remaining * 1000 - 1));
                         } catch (InterruptedException e) {

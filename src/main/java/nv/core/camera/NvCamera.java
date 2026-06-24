@@ -1,10 +1,18 @@
 package nv.core.camera;
 
+import nv.core.EmptyKeyboardListener;
 import nv.core.NvContext;
 import nv.core.annotations.EngineCore;
 import nv.core.components.NvComp;
 import nv.core.graphic.NvGraphic;
 import nv.core.components.Vector2D;
+import nv.core.io.KeyboardListener;
+import nv.core.io.KeyboardSystem;
+import nv.utils.NvTimer;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static nv.core.errors.NvLogger.logInfo;
 
 /**
  * Represents a camera that can be used to control the view of a 2D game.
@@ -20,6 +28,7 @@ public class NvCamera {
     public float y;
     public float zoom;
     public NvContext context;
+    private final NvTimer shakeTimer = new NvTimer(100);
 
     public NvCamera(float x, float y, float zoom) {
         this.x = x;
@@ -80,6 +89,59 @@ public class NvCamera {
 
     public void zoom(float amount){
         zoom += amount;
+    }
+
+    /**
+     * blocks every user keyboard input and shakes the camera in every direction
+     * @param msFrequency how often the camera shakes
+     * @param times how many times the camera shakes
+     * @param intensity how many pixels the camera shakes
+     */
+    public void shake(int msFrequency, int times, int intensity){
+        KeyboardListener listener = KeyboardSystem.focused;
+        KeyboardSystem.setKeyboardFocus(new EmptyKeyboardListener());
+
+        AtomicInteger timeCount = new AtomicInteger(0);
+        AtomicInteger stutterCount = new AtomicInteger(0);
+        shakeTimer.setDuration(msFrequency);
+        shakeTimer.setIsLoop(true);
+        shakeTimer.setOnFinished(() -> {
+            stutterCount.getAndIncrement();
+            if(stutterCount.get() % 2 == 0)
+                return;
+            int count = timeCount.get() % 4;
+
+            switch (count){
+                case 0 -> x += intensity;
+                case 1 -> x -= intensity;
+                case 2 -> y += intensity;
+                case 3 -> y -= intensity;
+            }
+
+            timeCount.getAndIncrement();
+            if(times == timeCount.get()){
+                shakeTimer.setIsLoop(false);
+                KeyboardSystem.setKeyboardFocus(listener);
+                NvContext.getInstance().removeUpdatable(shakeTimer);
+            }
+        });
+        NvContext.getInstance().addUpdatable(shakeTimer);
+        shakeTimer.start();
+    }
+
+    /**
+     * blocks every user keyboard input and shakes the camera in every direction
+     * <p> msFrequency (how often the camera shake) is set to 15ms as standard, call
+     * {@code shake(int msFrequency, int times, int intensity)} for custom duration</p>
+     * @param times how many times the camera shakes
+     * @param intensity how many pixels the camera shakes
+     */
+    public void shake(int times, int intensity){
+        shake(15, times, intensity);
+    }
+
+    public boolean isShaking(){
+        return shakeTimer.isStarted();
     }
 
     @Override

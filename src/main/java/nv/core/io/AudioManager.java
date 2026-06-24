@@ -39,15 +39,15 @@ import static nv.core.errors.NvLogger.logErr;
 @SuppressWarnings("unused")
 public final class AudioManager {
 
-    private static final Map<String, Integer> bufferCache = new ConcurrentHashMap<>();
-    private static final Map<String, Integer> activeSources = new ConcurrentHashMap<>();
+    private static final Map<String, Integer> bufferCache = new ConcurrentHashMap<>(10);
+    private static final Map<String, Integer> activeSources = new ConcurrentHashMap<>(10);
 
     /**
      * Stores volumes using OpenAL gain values.
      * 0.0 = mute
      * 1.0 = max
      */
-    private static final Map<String, Float> volumeCache = new ConcurrentHashMap<>();
+    private static final Map<String, Float> volumeCache = new ConcurrentHashMap<>(10);
 
     private static final float DEFAULT_VOLUME = 1.0f;
     private static final String PREFIX = "audio/";
