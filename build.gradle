@@ -1,14 +1,31 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 plugins {
     id 'java'
     id 'application'
     id 'com.gradleup.shadow' version '9.0.0'
 }
 
-group = 'nv2dlib'
-version = '1.0'
+group = 'not specified' // to change
+version = '1.1'
 
 project.ext.lwjglVersion = "3.4.1"
-project.ext.lwjglNatives = "natives-macos-arm64"
+
+// Platform finder
+project.ext.lwjglNatives = {
+    def os = org.gradle.internal.os.OperatingSystem.current()
+    def arch = System.getProperty("os.arch")
+    if (os.isMacOsX()) {
+        return arch.startsWith("aarch64") ? "natives-macos-arm64" : "natives-macos"
+    } else if (os.isWindows()) {
+        return arch.contains("64") ? "natives-windows" : "natives-windows-x86"
+    } else if (os.isLinux()) {
+        return arch.startsWith("aarch64") ? "natives-linux-arm64"
+                : arch.startsWith("arm")     ? "natives-linux-arm32"
+                : "natives-linux"
+    }
+    throw new GradleException("Piattaforma non supportata")
+}()
 
 application {
     mainClass = 'Main'
@@ -19,38 +36,148 @@ repositories {
 }
 
 dependencies {
+    //----Engine dependencies----
     implementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
 
+    // Core & Graphics
     implementation "org.lwjgl:lwjgl"
     implementation "org.lwjgl:lwjgl-glfw"
     implementation "org.lwjgl:lwjgl-vulkan"
 
+    // Audio & Audio Tools (OpenAL + STB for OGG decoding)
+    implementation "org.lwjgl:lwjgl-openal"
+    implementation "org.lwjgl:lwjgl-stb"
+
     runtimeOnly "org.lwjgl:lwjgl::$lwjglNatives"
     runtimeOnly "org.lwjgl:lwjgl-glfw::$lwjglNatives"
-    runtimeOnly "org.lwjgl:lwjgl-vulkan::$lwjglNatives"
+    runtimeOnly "org.lwjgl:lwjgl-openal::$lwjglNatives"
+    runtimeOnly "org.lwjgl:lwjgl-stb::$lwjglNatives"
+
+    // MP3 SPI decoder provider for JavaSound AudioSystem
+    implementation 'com.googlecode.soundlibs:mp3spi:1.9.5.4'
+
+    // Library to save game data
+    implementation 'com.esotericsoftware:kryo:5.6.2'
+
+
+    //----End engine dependencies----
 }
 
+application {
+    applicationDefaultJvmArgs = ['-Dkryo.unsafe=false']
+}
+sourceSets {
+    main {
+        resources {
+            srcDirs = ["src/main/resources"]
+        }
+    }
+}
+
+// -XstartOnFirstThread only on mac due to restrictions of the OS
 tasks.withType(JavaExec) {
-    jvmArgs += [
-            "-XstartOnFirstThread",
-            "--enable-native-access=ALL-UNNAMED"
-    ]
+    if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
+        jvmArgs += ["-XstartOnFirstThread"]
+    }
+    jvmArgs += ["--enable-native-access=ALL-UNNAMED"]
 }
 
 tasks.named('jar') {
     manifest {
-        attributes(
-                'Main-Class': 'Main'
-        )
+        attributes('Main-Class': 'Main')
     }
 }
 
-tasks.named('shadowJar') {
-    archiveClassifier.set('all')
+def lwjglModules = ['lwjgl', 'lwjgl-glfw', 'lwjgl-openal', 'lwjgl-stb']
+
+def makeNativesConfig = { String platform ->
+    def safeName = "natives_${platform.replace('-', '_')}"
+    def cfg = configurations.findByName(safeName) ?: configurations.create(safeName)
+    if (cfg.dependencies.empty) {
+        lwjglModules.each { mod ->
+            dependencies.add(safeName, "org.lwjgl:${mod}:${lwjglVersion}:natives-${platform}")
+        }
+    }
+    return cfg
+}
+
+def registerNvBuild = { String taskName, String platform, Object extraCfg ->
+    tasks.register(taskName, ShadowJar) {
+        group = 'nv build'
+        description = "Build for $platform"
+
+        from sourceSets.main.output
+        configurations = [project.configurations.runtimeClasspath, extraCfg]
+
+        archiveClassifier.set(platform)
+
+        manifest {
+            attributes 'Main-Class': 'Main'
+        }
+
+        doLast {
+            println "✅ [$taskName] Build completata → $platform"
+            println "📦 JAR: ${archiveFile.get().asFile.absolutePath}"
+        }
+    }
+}
+
+// Builds for the current platform
+tasks.register('nvBuildCurrent', ShadowJar) {
+    group = 'nv build'
+    description = "Build for the current platform (${project.ext.lwjglNatives})"
+
+    from sourceSets.main.output
+    configurations = [project.configurations.runtimeClasspath]
+
+    archiveClassifier.set(project.ext.lwjglNatives as String)
 
     manifest {
-        attributes(
-                'Main-Class': 'Main'
-        )
+        attributes 'Main-Class': 'Main'
+    }
+
+    doLast {
+        println "✅ [nvBuildCurrent] Build completata → ${project.ext.lwjglNatives}"
+        println "📦 JAR: ${archiveFile.get().asFile.absolutePath}"
+    }
+}
+
+// Build option for each platform
+registerNvBuild('nvBuildMac',     'macos-arm64', makeNativesConfig('macos-arm64'))
+registerNvBuild('nvBuildWindows', 'windows',     makeNativesConfig('windows'))
+registerNvBuild('nvBuildLinux',   'linux',       makeNativesConfig('linux'))
+
+// Universal build working on every OS (8 MB heavier) SUGGESTED FOR AN EASIER DEPLOYMENT
+tasks.register('nvBuildAll', ShadowJar) {
+    group = 'nv build'
+    description = 'Universal build'
+
+    from sourceSets.main.output
+
+    def allPlatforms = ['macos-arm64', 'macos', 'windows', 'windows-x86', 'linux', 'linux-arm64', 'linux-arm32']
+    def allNativesCfgs = allPlatforms.collect { makeNativesConfig(it) }
+
+    configurations = [project.configurations.runtimeClasspath] + allNativesCfgs
+
+    archiveClassifier.set('universal')
+
+    manifest {
+        attributes 'Main-Class': 'Main'
+    }
+
+    doLast {
+        println "✅ [nvBuildAll] Build universale completata"
+        println "📦 JAR: ${archiveFile.get().asFile.absolutePath}"
+    }
+}
+
+tasks.register('nvBuild') {
+    group = 'nv build'
+    description = 'Build for every platform'
+    dependsOn 'nvBuildMac', 'nvBuildWindows', 'nvBuildLinux', 'nvBuildAll'
+
+    doLast {
+        println '✅ Build completed for every platform'
+        println '📦 Output in: ' + layout.buildDirectory.dir('libs').get().asFile.absolutePath
     }
 }

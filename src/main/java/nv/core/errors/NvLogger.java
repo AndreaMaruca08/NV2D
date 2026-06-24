@@ -60,12 +60,18 @@ public final class NvLogger {
     public static void logInfo(String info){
         System.out.println(getDefaultMessage() + GREEN+"[INFO]"+RESET + info);
     }
+    public static void logInfo(Object info) {
+        logInfo(info.toString());
+    }
     public static void logInfo(NvComp comp, String info){
         logInfo(comp.getClass().getName() + ": " + info);
     }
 
     public static void logErr(String info){
         System.out.println(getDefaultMessage() +RED+"[ERR]"+ RESET + info);
+    }
+    public static void logErr(Object info) {
+        logErr(info.toString());
     }
     public static void logErr(NvComp comp, String info){
         logErr(comp.getClass().getName() + ": " + info);
@@ -74,12 +80,18 @@ public final class NvLogger {
     public static void logWarn(String info){
         System.out.println(getDefaultMessage() +YELLOW+"[WARN]" + RESET + info);
     }
+    public static void logWarn(Object info) {
+        logWarn(info.toString());
+    }
     public static void logWarn(NvComp comp, String info){
         logWarn(comp.getClass().getName() + ": " + info);
     }
 
     public static void logEngine(String info){
         System.out.println(getDefaultMessage() +MAGENTA+"[ENGINE]" + RESET + info);
+    }
+    public static void logEngine(Object info) {
+        logEngine(info.toString());
     }
     public static void logEngine(NvComp comp, String info){
         logEngine(comp.getClass().getName() + ": " + info);

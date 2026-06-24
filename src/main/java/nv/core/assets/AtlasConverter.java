@@ -12,8 +12,17 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLDecoder;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 
 @EngineCore
 @SuppressWarnings("unused")
@@ -25,30 +34,86 @@ public final class AtlasConverter {
     public static Atlas build(VkDevice device,
                               VkPhysicalDevice physicalDevice,
                               VkQueue graphicsQueue,
-                              String folder) throws IOException {
+                              String folder) throws IOException, URISyntaxException {
 
-        // Point to the source resources directory
-        File dir = new File("src/main/resources/textures/" + folder);
-
-        File[] files = dir.listFiles((d, name) ->
-                name.endsWith(".png") || name.endsWith(".jpg")
-        );
-
-        if (files == null || files.length == 0) {
-            throw new EngineEx("No textures found in: " + dir.getAbsolutePath());
+        URL resourceUrl = AtlasConverter.class.getResource("/" + folder);
+        if (resourceUrl == null) {
+            throw new EngineEx("Resource folder not found: " + folder);
         }
-
-        Arrays.sort(files);
 
         List<BufferedImage> images = new ArrayList<>();
         List<String> names = new ArrayList<>();
 
+        if (resourceUrl.getProtocol().equals("jar")) {
+            String path = resourceUrl.getPath();
+            String jarPath = path.substring(5, path.indexOf("!")); // Remove "file:" prefix
+            String resourcePath = path.substring(path.indexOf("!") + 2); // Remove "!/" prefix
+            
+            // Decode the jarPath to handle spaces or special characters
+            jarPath = URLDecoder.decode(jarPath, StandardCharsets.UTF_8);
+
+            // Ensure resourcePath ends with a '/' for proper directory matching
+            if (!resourcePath.endsWith("/")) {
+                resourcePath += "/";
+            }
+
+            try (JarFile jarFile = new JarFile(jarPath)) {
+                Enumeration<JarEntry> entries = jarFile.entries();
+                List<JarEntry> imageEntries = new ArrayList<>();
+
+                while (entries.hasMoreElements()) {
+                    JarEntry entry = entries.nextElement();
+                    String entryName = entry.getName();
+                    // Check if the entry is directly within the specified resourcePath directory
+                    if (entryName.startsWith(resourcePath) && !entry.isDirectory() &&
+                            (entryName.endsWith(".png") || entryName.endsWith(".jpg"))) {
+                        // Further check to ensure it's not in a subfolder of resourcePath
+                        String relativePath = entryName.substring(resourcePath.length());
+                        if (!relativePath.contains("/")) { // Only add if it's a direct child
+                            imageEntries.add(entry);
+                        }
+                    }
+                }
+                
+                // Sort entries by name to ensure consistent atlas generation
+                imageEntries.sort(Comparator.comparing(JarEntry::getName));
+
+                for (JarEntry entry : imageEntries) {
+                    try (InputStream is = jarFile.getInputStream(entry)) {
+                        BufferedImage img = ImageIO.read(is);
+                        images.add(img);
+                        names.add(getFileNameWithoutExtension(entry.getName()));
+                    }
+                }
+            }
+
+        } else { // Running from file system
+            File dir = new File(resourceUrl.toURI());
+            File[] files = dir.listFiles((d, name) ->
+                    name.endsWith(".png") || name.endsWith(".jpg")
+            );
+
+            if (files == null || files.length == 0) {
+                throw new EngineEx("No textures found in: " + dir.getAbsolutePath());
+            }
+
+            Arrays.sort(files);
+
+            for (File f : files) {
+                BufferedImage img = ImageIO.read(f);
+                images.add(img);
+                names.add(getFileNameWithoutExtension(f.getName()));
+            }
+        }
+
+        if (images.isEmpty()) {
+            throw new EngineEx("No textures found in: " + folder);
+        }
+
         int tileW = -1;
         int tileH = -1;
 
-        for (File f : files) {
-            BufferedImage img = ImageIO.read(f);
-
+        for (BufferedImage img : images) {
             if (tileW == -1) {
                 tileW = img.getWidth();
                 tileH = img.getHeight();
@@ -57,9 +122,6 @@ public final class AtlasConverter {
             if (img.getWidth() != tileW || img.getHeight() != tileH) {
                 throw new EngineEx("All textures must have same size");
             }
-
-            images.add(img);
-            names.add(f.getName().replace(".png", "").replace(".jpg", ""));
         }
 
         int cols = (int) Math.ceil(Math.sqrt(images.size()));
@@ -124,5 +186,12 @@ public final class AtlasConverter {
 
         buf.flip();
         return buf;
+    }
+
+    private static String getFileNameWithoutExtension(String filePath) {
+        int lastSlash = filePath.lastIndexOf('/');
+        String fileName = (lastSlash == -1) ? filePath : filePath.substring(lastSlash + 1);
+        int dotIndex = fileName.lastIndexOf('.');
+        return (dotIndex == -1) ? fileName : fileName.substring(0, dotIndex);
     }
 }

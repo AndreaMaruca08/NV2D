@@ -3,6 +3,7 @@ package nv.test.game.example;
 import nv.core.NvContext;
 import nv.core.components.NvCont;
 import nv.core.errors.NvLogger;
+import nv.core.io.AudioManager;
 import nv.utils.NvTimer;
 
 import java.util.ArrayList;
@@ -40,6 +41,8 @@ public class BattleArena extends NvCont {
         AtomicInteger round = new AtomicInteger(1);
         NvTimer timer = new NvTimer(100);
         NvTimer pausa = new NvTimer(5000);
+
+        AudioManager.playLoop("dialtone.mp3");
 
         timer.setOnFinished(() -> {
             int i = (int) ((Math.random() * 100) % events.size());

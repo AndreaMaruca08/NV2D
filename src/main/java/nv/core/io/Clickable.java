@@ -1,4 +1,4 @@
-package nv.core.input;
+package nv.core.io;
 
 import nv.core.annotations.EngineCore;
 

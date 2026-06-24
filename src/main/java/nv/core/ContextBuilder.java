@@ -32,7 +32,6 @@ public final class ContextBuilder {
         ctx.setVsync(vsync);
         return this;
     }
-
     /**
      * Also deactivates Vsync
      * @param maxFps number of fps to limit

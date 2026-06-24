@@ -269,8 +269,7 @@ public class NvPixelGraphic extends NvGraphic {
 
         float x = tx(component.getX() + textX);
         float y = ty(component.getY() + textY);
-
-        Scene textGeo = generateTextGeometry(text, x, y, fontAtlas);
+        Scene textGeo = generateTextGeometry(text, x, y, fontAtlas, r,g,b);
         comp.append(textGeo.vertices(), textGeo.indices());
     }
 

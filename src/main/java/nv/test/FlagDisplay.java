@@ -18,7 +18,7 @@ public class FlagDisplay extends NvComp {
 
         // Load the atlas from the "test" subfolder
         NvContext app = NvContext.getInstance();
-        flagsAtlas = app.assets().loadAtlas("flags", "test");
+        flagsAtlas = app.assets().loadAtlas("flags", "");
 
         List<String> flagNames = List.of("AD", "AI", "AR", "VC", "ZM");
         for (String name : flagNames) {

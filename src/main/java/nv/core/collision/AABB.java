@@ -60,24 +60,18 @@ public final class AABB implements CollisionSystem{
         }
 
         if (ox < oy) {
-            // Collisione ORIZZONTALE
             if (dx1 < dx2) {
-                // 'a' e a sinistra di 'b'
                 a.setX(a.getX() - Math.round(ox * ratioA));
                 b.setX(b.getX() + Math.round(ox * ratioB));
             } else {
-                // 'a' e a destra di 'b'
                 a.setX(a.getX() + Math.round(ox * ratioA));
                 b.setX(b.getX() - Math.round(ox * ratioB));
             }
         } else {
-            // Collisione VERTICALE
             if (dy1 < dy2) {
-                // 'a' e sopra 'b'
                 a.setY(a.getY() - Math.round(oy * ratioA));
                 b.setY(b.getY() + Math.round(oy * ratioB));
             } else {
-                // 'a' e sotto 'b'
                 a.setY(a.getY() + Math.round(oy * ratioA));
                 b.setY(b.getY() - Math.round(oy * ratioB));
             }

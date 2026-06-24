@@ -19,11 +19,11 @@ public class NvTimer implements UpdateCycle {
     private boolean started;
     private boolean loop;
     private Runnable onFinished;
+    private NvContext context;
 
     public NvTimer(long milliseconds) {
-        remaining =  (float)(milliseconds/1000);
-        fullRemaining =  (float)(milliseconds/1000);
-        NvContext.getInstance();
+        remaining =  milliseconds/1000f;
+        fullRemaining =  milliseconds/1000f;
     }
 
     public NvTimer(long milliseconds, Runnable onFinished) {
@@ -39,14 +39,13 @@ public class NvTimer implements UpdateCycle {
         this.loop = loop;
     }
 
-
     public void setOnFinished(Runnable onFinished) {
         this.onFinished = onFinished;
     }
 
     public void setDuration(long milliseconds){
-        remaining =  (float)(milliseconds/1000);
-        fullRemaining =  (float)(milliseconds/1000);
+        remaining =  milliseconds/1000f;
+        fullRemaining =  milliseconds/1000f;
     }
 
     public boolean isFinished() {

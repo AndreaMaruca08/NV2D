@@ -25,6 +25,5 @@ public class DynamicSquare extends NvRgbComp implements Collidable {
 
     @Override
     public void update(float dt) {
-
     }
 }

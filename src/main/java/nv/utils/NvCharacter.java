@@ -5,7 +5,8 @@ import nv.core.camera.NvCamera;
 import nv.core.collision.Collidable;
 import nv.core.components.NvComp;
 import nv.core.graphic.NvGraphic;
-import nv.core.input.KeyboardListener;
+import nv.core.io.KeyboardListener;
+import nv.core.io.KeyboardSystem;
 
 import static org.lwjgl.glfw.GLFW.*;
 
@@ -27,11 +28,11 @@ public class NvCharacter extends NvComp implements KeyboardListener, Collidable 
 
     protected float velocity;
 
-    private boolean[] keys = new boolean[GLFW_KEY_LAST];
+    protected boolean[] keys = new boolean[GLFW_KEY_LAST];
 
     public NvCharacter(int x, int y, int w, int h, float velocity) {
         super(x, y, w,h);
-        camera = new NvCamera(x, y, 1);
+        camera = new NvCamera(x, y, 100);
         needCamera = false;
         this.velocity = velocity;
     }
@@ -47,6 +48,7 @@ public class NvCharacter extends NvComp implements KeyboardListener, Collidable 
 
     @Override
     public void drawIntern(NvGraphic g) {
+        g.setRGB(1,0,0);
         g.drawRoundRect(0, 0, w, h, 40);
     }
 
@@ -64,6 +66,8 @@ public class NvCharacter extends NvComp implements KeyboardListener, Collidable 
 
     @Override
     public void update(float dt) {
+        if(KeyboardSystem.focused != this)
+            return;
         float dx = 0;
         float dy = 0;
 

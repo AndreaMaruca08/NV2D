@@ -21,10 +21,10 @@ public abstract class NvCinematic extends NvCamera implements UpdateCycle {
     protected boolean loop;
 
     public NvCinematic(int x, int y, float zoom, long msDuration, boolean loop) {
-        super(x, y, zoom/10);
+        super(x, y, zoom);
         xStart = x;
         yStart = y;
-        initialZoom = zoom/10;
+        initialZoom = zoom;
         this.loop = loop;
         this.duration = (float) (msDuration/1000);
         initialDuration = (float) (msDuration/1000);

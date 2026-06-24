@@ -11,24 +11,19 @@ import nv.core.errors.NvLogger;
 import nv.core.errors.ex.EngineEx;
 import nv.core.graphic.NvGraphic;
 import nv.core.graphic.NvPixelGraphic;
-import nv.core.input.ClickSystem;
-import nv.core.input.HoverSystem;
-import nv.core.input.KeyboardListener;
-import nv.core.input.KeyboardSystem;
+import nv.core.io.*;
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.glfw.GLFWKeyCallback;
-import org.lwjgl.glfw.GLFWMouseButtonCallback;
-import org.lwjgl.glfw.GLFWVulkan;
+import org.lwjgl.glfw.*;
+import org.lwjgl.stb.STBImage;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
 import java.awt.*;
+import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 import static nv.core.errors.NvLogger.logEngine;
 import static org.lwjgl.glfw.GLFW.*;
@@ -46,9 +41,9 @@ import static org.lwjgl.vulkan.VK10.*;
 @SuppressWarnings("unused")
 public final class NvContext implements Runnable {
     private static final int MAJOR_VERSION = 1;
-    private static final int MINOR_VERSION = 0;
+    private static final int MINOR_VERSION = 1;
     private static final int PATCH = 0;
-    private static final String ENGINE_NAME = "NV2Dlib";
+    private static final String ENGINE_NAME = "NV2D";
 
     private long window;
     private VkInstance instance;
@@ -64,20 +59,19 @@ public final class NvContext implements Runnable {
     private long[] framebuffers;
     private UpdateCycle currentCameraUpdateCycle;
 
-    private final int MAX_VERTICES; // vertici × 8 float
-    private final int MAX_INDICES; // indici short
+    private final int MAX_VERTICES;
+    private final int MAX_INDICES;
 
-    private static final int DEF_MAX_VERTICES = 500_000; // vertici × 8 float
+    private static final int DEF_MAX_VERTICES = 500_000;
     private static final int DEF_MAX_INDICES  = 850_000;
-    
-    // Texture images caricati (massimo 15 per il shader)
+
     private static final int MAX_TEXTURES = 15;
     private final NvImage[] loadedTextures = new NvImage[MAX_TEXTURES];
     private int textureCount = 1;
 
     public synchronized int getNextTextureSlot() {
         if (textureCount >= MAX_TEXTURES) {
-            throw new EngineEx("Limite massimo di texture raggiunto (" + MAX_TEXTURES + ")");
+            throw new EngineEx("Max texture slots reached (" + MAX_TEXTURES + ")");
         }
         return textureCount++;
     }
@@ -275,11 +269,17 @@ public final class NvContext implements Runnable {
 
         NvLogger.initialize(name, MAJOR_VERSION, MINOR_VERSION, PATCH);
         initWindow(name, windowDim);
+
         logEngine("Window initialized");
         initVulkan();
         logEngine("Vulkan initialized");
         CollisionManager.initialize();
         logEngine("Collisions initialized");
+        AudioManager.init();
+        logEngine("OpenAL Audio Engine initialized successfully.");
+        GameSaveManager.initialize("save/"+name + "_save.bin");
+        logEngine("GameSaveManager initialized successfully");
+
 
         logEngine("-----------Game started successfully-------------");
     }
@@ -418,8 +418,24 @@ public final class NvContext implements Runnable {
             mouseY = (int) y;
             mouseMoved = true;
         });
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            IntBuffer w = stack.mallocInt(1);
+            IntBuffer h = stack.mallocInt(1);
+            IntBuffer channels = stack.mallocInt(1);
+
+            ByteBuffer icon = STBImage.stbi_load("src/main/resources/gameicon/gameIcon.png", w, h, channels, 4);
+
+            if (icon != null) {
+                GLFWImage.Buffer iconBuffer = GLFWImage.malloc(1, stack);
+                iconBuffer.position(0).width(w.get(0)).height(h.get(0)).pixels(icon);
+                org.lwjgl.glfw.GLFW.glfwSetWindowIcon(window, iconBuffer);
+                STBImage.stbi_image_free(icon);
+            }
+        }
+
         addUpdatable(fpsDisplay);
     }
+
 
 
     public void setKeyboardFocus(KeyboardListener focused) {
@@ -531,10 +547,11 @@ public final class NvContext implements Runnable {
         currentCameraUpdateCycle.update(dt);
         rootComponent.tick(dt);
 
-        for(UpdateCycle updateCycle : updatable){
-            updateCycle.update(dt);
-        }
+        int size = updatable.size();
 
+        for(int i = 0; i < size; i++){
+            updatable.get(i).update(dt);
+        }
         if (mouseMoved) {
             HoverSystem.handleHover(window, rootComponent);
             mouseMoved = false;
@@ -563,7 +580,7 @@ public final class NvContext implements Runnable {
                 double targetFrameTime = 1.0 / targetFps;
                 while (glfwGetTime() - now < targetFrameTime) {
                     double remaining = targetFrameTime - (glfwGetTime() - now);
-                    if (remaining > 0.001) { // if more than 1ms remaining, sleep
+                    if (remaining > 0.001) {
                         try {
                             Thread.sleep((long) (remaining * 1000 - 1));
                         } catch (InterruptedException e) {
@@ -786,17 +803,30 @@ public final class NvContext implements Runnable {
                 }
             }
             if (graphicsQFI == -1) throw new EngineEx("Nessuna queue grafica trovata.");
-
             VkDeviceQueueCreateInfo.Buffer queueCreateInfo = VkDeviceQueueCreateInfo.calloc(1, stack)
                     .sType(VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO)
                     .queueFamilyIndex(graphicsQFI)
                     .pQueuePriorities(stack.floats(1.0f));
 
-            PointerBuffer deviceExtensions = stack.mallocPointer(2);
-            deviceExtensions.put(stack.UTF8(VK_KHR_SWAPCHAIN_EXTENSION_NAME));
-            deviceExtensions.put(stack.UTF8("VK_KHR_portability_subset"));
-            deviceExtensions.flip();
+            IntBuffer extCount = stack.mallocInt(1);
+            vkEnumerateDeviceExtensionProperties(physicalDevice, (String) null, extCount, null);
+            VkExtensionProperties.Buffer availableExtensions = VkExtensionProperties.malloc(extCount.get(0));
+            vkEnumerateDeviceExtensionProperties(physicalDevice, (String) null, extCount.rewind(), availableExtensions);
 
+            boolean hasPortabilitySubset = false;
+            for (VkExtensionProperties ext : availableExtensions) {
+                if (ext.extensionNameString().equals("VK_KHR_portability_subset")) {
+                    hasPortabilitySubset = true;
+                    break;
+                }
+            }
+
+            PointerBuffer deviceExtensions = stack.mallocPointer(hasPortabilitySubset ? 2 : 1);
+            deviceExtensions.put(stack.UTF8(VK_KHR_SWAPCHAIN_EXTENSION_NAME));
+            if (hasPortabilitySubset) {
+                deviceExtensions.put(stack.UTF8("VK_KHR_portability_subset"));
+            }
+            deviceExtensions.flip();
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO)
                     .pQueueCreateInfos(queueCreateInfo)
@@ -924,7 +954,10 @@ public final class NvContext implements Runnable {
         if (device              != null) vkDestroyDevice(device, null);
         if (instance            != null) vkDestroyInstance(instance, null);
 
+        AudioManager.cleanup();
+
         glfwDestroyWindow(window);
+        logEngine("Memory cleaned up successfully");
         glfwTerminate();
     }
 

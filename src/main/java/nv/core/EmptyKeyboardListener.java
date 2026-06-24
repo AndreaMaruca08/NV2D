@@ -1,7 +1,7 @@
 package nv.core;
 
 import nv.core.annotations.DefaultChose;
-import nv.core.input.KeyboardListener;
+import nv.core.io.KeyboardListener;
 
 /**
  * <p>Empty Keyboard Listener</p>
