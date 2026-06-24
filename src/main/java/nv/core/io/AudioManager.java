@@ -80,7 +80,6 @@ public final class AudioManager {
         ALC10.alcMakeContextCurrent(audioContext);
         AL.createCapabilities(alcCapabilities);
 
-        logEngine("OpenAL Audio Engine initialized successfully.");
     }
 
     /**

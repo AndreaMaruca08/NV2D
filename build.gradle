@@ -48,7 +48,6 @@ dependencies {
     implementation "org.lwjgl:lwjgl-openal"
     implementation "org.lwjgl:lwjgl-stb"
 
-    // Nativi per la piattaforma corrente (usati da 'run')
     runtimeOnly "org.lwjgl:lwjgl::$lwjglNatives"
     runtimeOnly "org.lwjgl:lwjgl-glfw::$lwjglNatives"
     runtimeOnly "org.lwjgl:lwjgl-openal::$lwjglNatives"
@@ -57,9 +56,16 @@ dependencies {
     // MP3 SPI decoder provider for JavaSound AudioSystem
     implementation 'com.googlecode.soundlibs:mp3spi:1.9.5.4'
 
+    // Library to save game data
+    implementation 'com.esotericsoftware:kryo:5.6.2'
+
+
     //----End engine dependencies----
 }
 
+application {
+    applicationDefaultJvmArgs = ['-Dkryo.unsafe=false']
+}
 sourceSets {
     main {
         resources {

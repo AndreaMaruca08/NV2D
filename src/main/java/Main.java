@@ -3,6 +3,7 @@ import nv.core.components.NvCont;
 import nv.core.components.Vector2D;
 import nv.core.graphic.NvGraphic;
 import nv.core.io.AudioManager;
+import nv.core.io.GameSaveManager;
 import nv.test.DvdLogoBouncing;
 import nv.test.MovingComponent;
 import nv.test.WhenOverCollision;

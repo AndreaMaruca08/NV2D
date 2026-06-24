@@ -43,7 +43,7 @@ public final class NvContext implements Runnable {
     private static final int MAJOR_VERSION = 1;
     private static final int MINOR_VERSION = 1;
     private static final int PATCH = 0;
-    private static final String ENGINE_NAME = "NV2Dlib";
+    private static final String ENGINE_NAME = "NV2D";
 
     private long window;
     private VkInstance instance;
@@ -59,13 +59,12 @@ public final class NvContext implements Runnable {
     private long[] framebuffers;
     private UpdateCycle currentCameraUpdateCycle;
 
-    private final int MAX_VERTICES; // vertici × 8 float
-    private final int MAX_INDICES; // indici short
+    private final int MAX_VERTICES;
+    private final int MAX_INDICES;
 
-    private static final int DEF_MAX_VERTICES = 500_000; // vertici × 8 float
+    private static final int DEF_MAX_VERTICES = 500_000;
     private static final int DEF_MAX_INDICES  = 850_000;
-    
-    // Texture images caricati (massimo 15 per il shader)
+
     private static final int MAX_TEXTURES = 15;
     private final NvImage[] loadedTextures = new NvImage[MAX_TEXTURES];
     private int textureCount = 1;
@@ -276,6 +275,10 @@ public final class NvContext implements Runnable {
         CollisionManager.initialize();
         logEngine("Collisions initialized");
         AudioManager.init();
+        logEngine("OpenAL Audio Engine initialized successfully.");
+        GameSaveManager.initialize("save/"+name + "_save.bin");
+        logEngine("GameSaveManager initialized successfully");
+
 
         logEngine("-----------Game started successfully-------------");
     }

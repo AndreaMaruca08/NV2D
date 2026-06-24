@@ -5,9 +5,12 @@ import nv.core.assets.AtlasConverter;
 import nv.core.components.NvComp;
 import nv.core.graphic.NvGraphic;
 import nv.core.io.AudioManager;
+import nv.core.io.GameSaveManager;
 import nv.utils.NvCharacter;
 import nv.utils.shapes.dynamic.NvLabel;
 import org.lwjgl.glfw.GLFW;
+
+import static nv.core.errors.NvLogger.logInfo;
 
 public class CustomCharacter extends NvCharacter {
     //All images
@@ -49,7 +52,15 @@ public class CustomCharacter extends NvCharacter {
     @Override
     public void update(float dt) {
         super.update(dt);
-        if(keys[GLFW.GLFW_KEY_SPACE]){
+        // Example of saving and loading
+        if(keys[GLFW.GLFW_KEY_ESCAPE]){
+            GameSaveManager.save(new GameSave(x,y));
+        }else if(keys[GLFW.GLFW_KEY_R]){
+            GameSave cha = GameSaveManager.get(GameSave.class);
+            this.x = cha.playerX();
+            this.y = cha.playerY();
+        }
+        else if(keys[GLFW.GLFW_KEY_SPACE]){
             if(playing){
                 AudioManager.stop("dialtone.mp3");
                 playing = false;
