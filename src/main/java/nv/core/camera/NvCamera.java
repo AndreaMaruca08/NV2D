@@ -39,47 +39,53 @@ public class NvCamera {
     public void translate(Vector2D vector2D){
         x += vector2D.x;
         y += vector2D.y;
+        NvContext.markSceneDirty();
     }
     public void translateOnCenter(Vector2D vector2D){
         if(context == null){
             context = NvContext.getInstance();
         }
-        x += vector2D.x - context.getWidth() / 2.0f + 50.0f;
-        y += vector2D.y - context.getHeight() / 2.0f + 50.0f;
+        x += vector2D.x - context.getRenderWidth() / 2.0f + 50.0f;
+        y += vector2D.y - context.getRenderHeight() / 2.0f + 50.0f;
+        NvContext.markSceneDirty();
     }
     public void translate(float x, float y){
         this.x += x;
         this.y += y;
+        NvContext.markSceneDirty();
     }
     public void translateOnCenter(float x, float y){
         if(context == null){
             context = NvContext.getInstance();
         }
-        this.x += x - context.getWidth() / 2.0f + 50.0f;
-        this.y += y - context.getHeight() / 2.0f + 50.0f;
+        this.x += x - context.getRenderWidth() / 2.0f + 50.0f;
+        this.y += y - context.getRenderHeight() / 2.0f + 50.0f;
+        NvContext.markSceneDirty();
     }
     public void setXY(float x, float y){
         this.x = x;
         this.y = y;
+        NvContext.markSceneDirty();
     }
     public void setXYOnCenter(float x, float y){
         if(context == null){
             context = NvContext.getInstance();
         }
-        this.x = x - context.getWidth()/2.0f + 50.0f;
-        this.y = y - context.getHeight()/2.0f + 50.0f;
+        this.x = x - context.getRenderWidth() / 2.0f + 50.0f;
+        this.y = y - context.getRenderHeight() / 2.0f + 50.0f;
+        NvContext.markSceneDirty();
     }
     public boolean isComponentInRendering(NvComp comp) {
         if (context == null) context = NvContext.getInstance();
         
         if (comp.isHUD()) {
-            return comp.getX() + comp.getW() >= 0 && comp.getX() <= context.getWidth() &&
-                   comp.getY() + comp.getH() >= 0 && comp.getY() <= context.getHeight();
+            return comp.getX() + comp.getW() >= 0 && comp.getX() <= context.getRenderWidth() &&
+                   comp.getY() + comp.getH() >= 0 && comp.getY() <= context.getRenderHeight();
         }
 
         float safeZoom = Math.max(zoom, 0.0001f);
-        float viewW = context.getWidth() / safeZoom;
-        float viewH = context.getHeight() / safeZoom;
+        float viewW = context.getRenderWidth() / safeZoom;
+        float viewH = context.getRenderHeight() / safeZoom;
 
         return comp.getX() + comp.getW() >= this.x && 
                comp.getX() <= this.x + viewW &&
@@ -89,6 +95,7 @@ public class NvCamera {
 
     public void zoom(float amount){
         zoom += amount;
+        NvContext.markSceneDirty();
     }
 
     /**
@@ -117,6 +124,7 @@ public class NvCamera {
                 case 2 -> y += intensity;
                 case 3 -> y -= intensity;
             }
+            NvContext.markSceneDirty();
 
             timeCount.getAndIncrement();
             if(times == timeCount.get()){

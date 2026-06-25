@@ -75,7 +75,10 @@ public abstract class NvComp implements UpdateCycle {
     public void setHUD(boolean HUD) {
         if(this instanceof Collidable)
             throw new NvLogicEx("Collidable readycomponents cannot be set as HUD");
-        isHUD = HUD;
+        if (isHUD != HUD) {
+            isHUD = HUD;
+            invalidate();
+        }
     }
 
     public boolean isChildrenFirst() {
@@ -142,7 +145,9 @@ public abstract class NvComp implements UpdateCycle {
         invalidate();
     }
 
-    public void invalidate() {}
+    public void invalidate() {
+        NvContext.markSceneDirty();
+    }
 
     private NvContext context;
     public void addChild(NvComp child){
@@ -156,6 +161,7 @@ public abstract class NvComp implements UpdateCycle {
             ClickSystem.addClickable(child);
         if(child instanceof Hoverable)
             HoverSystem.addHoverable(child);
+        invalidate();
     }
 
     public void removeChild(NvComp child){
@@ -168,6 +174,7 @@ public abstract class NvComp implements UpdateCycle {
             ClickSystem.removeClickable(child);
         if(child instanceof Hoverable)
             HoverSystem.removeHoverable(child);
+        invalidate();
     }
 
     protected void mouseEnter(){}
@@ -181,13 +188,20 @@ public abstract class NvComp implements UpdateCycle {
     }
 
     public void handleHover(int mouseX, int mouseY){
-        if(!isInside(mouseX, mouseY)) {
-            isHovered = false;
+        boolean hoveredNow = isInside(mouseX, mouseY);
+        if(!hoveredNow) {
+            if (isHovered) {
+                isHovered = false;
+                invalidate();
+            }
             return;
         }
         for(NvComp child : children)
             child.handleHover(mouseX, mouseY);
-        isHovered = true;
+        if (!isHovered) {
+            isHovered = true;
+            invalidate();
+        }
     }
 
 

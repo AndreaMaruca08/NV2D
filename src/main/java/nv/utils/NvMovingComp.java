@@ -3,6 +3,7 @@ package nv.utils;
 import nv.core.annotations.ReadyComponent;
 import nv.core.components.NvComp;
 import nv.core.components.Vector2D;
+import nv.core.NvContext;
 
 
 /**
@@ -40,6 +41,7 @@ public abstract class NvMovingComp extends NvComp {
 
         x += Math.round(velocityX * direction.x * dt);
         y += Math.round(velocityY * (gravity ? 1 : direction.y) * dt);
+        NvContext.markSceneDirty();
     }
 
     public void setAccelerationX(float accelerationX) {

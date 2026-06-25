@@ -26,9 +26,8 @@ public final class AABB implements CollisionSystem{
 
     @Override
     public void resolveCollision(NvComp a, NvComp b) {
-        int dx1 = (a.getX() + a.getW()) - b.getX();
-        int dx2 = (b.getX() + b.getW()) - a.getX();
-
+        int dx1 = (a.getX() + a.getW()) - b.getX(); // quanto a sfora a destra di b
+        int dx2 = (b.getX() + b.getW()) - a.getX(); // quanto b sfora a destra di a
         int dy1 = (a.getY() + a.getH()) - b.getY();
         int dy2 = (b.getY() + b.getH()) - a.getY();
 
@@ -41,39 +40,36 @@ public final class AABB implements CollisionSystem{
         if (wA == Integer.MAX_VALUE && wB == Integer.MAX_VALUE) return;
 
         float ratioA, ratioB;
-
         if (wA == Integer.MAX_VALUE) {
-            ratioA = 0;
-            ratioB = 1;
+            ratioA = 0; ratioB = 1;
         } else if (wB == Integer.MAX_VALUE) {
-            ratioA = 1;
-            ratioB = 0;
+            ratioA = 1; ratioB = 0;
         } else {
-            float totalWeight = (float)wA + wB;
-            if (totalWeight <= 0) {
-                ratioA = 0.5f;
-                ratioB = 0.5f;
-            } else {
-                ratioA = (float) wB / totalWeight;
-                ratioB = (float) wA / totalWeight;
-            }
+            float totalWeight = (float) wA + wB;
+            ratioA = totalWeight <= 0 ? 0.5f : (float) wB / totalWeight;
+            ratioB = totalWeight <= 0 ? 0.5f : (float) wA / totalWeight;
         }
 
+        // Usa float per la correzione, non int — evita troncamenti su oggetti piccoli
         if (ox < oy) {
+            float correctionA = ox * ratioA;
+            float correctionB = ox * ratioB;
             if (dx1 < dx2) {
-                a.setX(a.getX() - Math.round(ox * ratioA));
-                b.setX(b.getX() + Math.round(ox * ratioB));
+                a.setX(Math.round(a.getX() - correctionA));
+                b.setX(Math.round(b.getX() + correctionB));
             } else {
-                a.setX(a.getX() + Math.round(ox * ratioA));
-                b.setX(b.getX() - Math.round(ox * ratioB));
+                a.setX(Math.round(a.getX() + correctionA));
+                b.setX(Math.round(b.getX() - correctionB));
             }
         } else {
+            float correctionA = oy * ratioA;
+            float correctionB = oy * ratioB;
             if (dy1 < dy2) {
-                a.setY(a.getY() - Math.round(oy * ratioA));
-                b.setY(b.getY() + Math.round(oy * ratioB));
+                a.setY(Math.round(a.getY() - correctionA));
+                b.setY(Math.round(b.getY() + correctionB));
             } else {
-                a.setY(a.getY() + Math.round(oy * ratioA));
-                b.setY(b.getY() - Math.round(oy * ratioB));
+                a.setY(Math.round(a.getY() + correctionA));
+                b.setY(Math.round(b.getY() - correctionB));
             }
         }
     }

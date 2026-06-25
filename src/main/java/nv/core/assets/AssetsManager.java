@@ -68,17 +68,14 @@ public final class AssetsManager {
     }
 
     private void bindAtlas(AtlasConverter.Atlas atlas) {
-
         NvImage image = atlas.image();
         int slot = NvContext.getInstance().getNextTextureSlot();
         image.setTextureIndex(slot);
 
-        descriptorHook.bindTexture(
-                slot,
-                image.getTextureImage()
-        );
+        // Registra in loadedTextures E aggiorna il descriptor
+        NvContext.getInstance().registerTexture(slot, image);
+        NvContext.markSceneDirty();
     }
-
     public AtlasConverter.Region getRegion(String atlasName, String textureName) {
 
         AtlasConverter.Atlas atlas = atlases.get(atlasName);

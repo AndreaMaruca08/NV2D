@@ -29,7 +29,7 @@ public final class HoverSystem {
     }
 
     public static void handleHover(long window, NvComp rootComponent){
-        var correctedCoords = ClickSystem.getCorrectedCoords(window);
+        var correctedCoords = ClickSystem.getMappedCoords(window);
         for(NvComp comp : hoverableComponents){
             comp.handleHover(correctedCoords[0], correctedCoords[1]);
         }

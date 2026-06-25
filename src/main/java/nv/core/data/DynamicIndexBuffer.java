@@ -74,15 +74,19 @@ public final class DynamicIndexBuffer implements AutoCloseable {
      * @return il numero di indici effettivamente caricati, da passare a vkCmdDrawIndexed
      */
     public int update(int[] indices) {
-        if (indices.length > maxIndexCount) {
+        return update(indices, indices.length);
+    }
+
+    public int update(int[] indices, int indexCount) {
+        if (indexCount > maxIndexCount) {
             throw new EngineEx(
-                    "Indices (" + indices.length + ") exceed the buffer capacity (" + maxIndexCount + ")!");
+                    "Indices (" + indexCount + ") exceed the buffer capacity (" + maxIndexCount + ")!");
         }
 
         mappedData.clear();
-        mappedData.asIntBuffer().put(indices);
+        mappedData.asIntBuffer().put(indices, 0, indexCount);
 
-        return indices.length;
+        return indexCount;
     }
 
     public int getMaxIndexCount() {

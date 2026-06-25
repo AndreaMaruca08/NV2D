@@ -66,6 +66,7 @@ public class CustomCharacter extends NvCharacter {
             GameSave cha = GameSaveManager.get(GameSave.class);
             this.x = cha.playerX();
             this.y = cha.playerY();
+            NvContext.markSceneDirty();
         }
         else if(keys[GLFW.GLFW_KEY_SPACE]){
             if(playing){

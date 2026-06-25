@@ -97,5 +97,6 @@ public class DvdLogoBouncing extends NvComp {
 
         x = Math.round(preciseX);
         y = Math.round(preciseY);
+        NvContext.markSceneDirty();
     }
 }
