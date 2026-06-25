@@ -6,6 +6,7 @@ import nv.core.collision.CollisionSystem;
 import nv.core.graphic.NvGraphic;
 
 import java.util.Arrays;
+
 import static nv.core.graphic.NvGraphic.FLOATS_PER_VERTEX;
 
 @EngineCore
@@ -24,6 +25,7 @@ public abstract class NvStateless extends NvComp implements AppendableGeometry {
         this.weight = CollisionSystem.MAX_WEIGHT;
     }
     public void invalidate() {
+        super.invalidate();
         this.initialized = false;
         this.vertexFloatCount = 0;
         this.indexCount = 0;
@@ -34,26 +36,28 @@ public abstract class NvStateless extends NvComp implements AppendableGeometry {
             super.draw(g);
             initialized = true;
         }
-        g.append(
-                Arrays.copyOf(vertices, vertexFloatCount),
-                Arrays.copyOf(indices, indexCount)
-        );
+        g.append(vertices, vertexFloatCount, indices, indexCount);
     }
     @Override
     public void update(float dt) {}
     @Override
     public void append(float[] newVertices, int[] newIndices) {
-        int vertexOffset = vertexFloatCount / FLOATS_PER_VERTEX;
+        append(newVertices, newVertices.length, newIndices, newIndices.length);
+    }
 
-        ensureVertexCapacity(vertexFloatCount + newVertices.length);
-        ensureIndexCapacity(indexCount + newIndices.length);
+    @Override
+    public void append(float[] newVertices, int vertexFloatCount, int[] newIndices, int indexCount) {
+        int vertexOffset = this.vertexFloatCount / FLOATS_PER_VERTEX;
 
-        System.arraycopy(newVertices, 0, vertices, vertexFloatCount, newVertices.length);
-        for (int i = 0; i < newIndices.length; i++) {
-            indices[indexCount + i] = newIndices[i] + vertexOffset;
+        ensureVertexCapacity(this.vertexFloatCount + vertexFloatCount);
+        ensureIndexCapacity(this.indexCount + indexCount);
+
+        System.arraycopy(newVertices, 0, vertices, this.vertexFloatCount, vertexFloatCount);
+        for (int i = 0; i < indexCount; i++) {
+            indices[this.indexCount + i] = newIndices[i] + vertexOffset;
         }
-        vertexFloatCount += newVertices.length;
-        indexCount += newIndices.length;
+        this.vertexFloatCount += vertexFloatCount;
+        this.indexCount += indexCount;
     }
     private void ensureVertexCapacity(int requiredCapacity) {
         if (requiredCapacity > vertices.length) {

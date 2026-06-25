@@ -32,6 +32,25 @@ public final class ContextBuilder {
         ctx.setVsync(vsync);
         return this;
     }
+
+    public ContextBuilder setInternalResolution(int width, int height) {
+        ctx.setInternalResolution(width, height);
+        return this;
+    }
+    public ContextBuilder setInternalResolution(ScreenSize size) {
+        ctx.setInternalResolution(size);
+        return this;
+    }
+
+    public ContextBuilder setRenderScale(float renderScale) {
+        ctx.setRenderScale(renderScale);
+        return this;
+    }
+
+    public ContextBuilder setPixelPerfect(boolean pixelPerfect) {
+        ctx.setPixelPerfect(pixelPerfect);
+        return this;
+    }
     /**
      * Also deactivates Vsync
      * @param maxFps number of fps to limit

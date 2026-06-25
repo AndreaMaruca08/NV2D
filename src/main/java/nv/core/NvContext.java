@@ -24,6 +24,7 @@ import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.*;
 
 import static nv.core.errors.NvLogger.logEngine;
 import static org.lwjgl.glfw.GLFW.*;
@@ -41,7 +42,7 @@ import static org.lwjgl.vulkan.VK10.*;
 @SuppressWarnings("unused")
 public final class NvContext implements Runnable {
     private static final int MAJOR_VERSION = 1;
-    private static final int MINOR_VERSION = 1;
+    private static final int MINOR_VERSION = 2;
     private static final int PATCH = 0;
     private static final String ENGINE_NAME = "NV2D";
 
@@ -56,7 +57,7 @@ public final class NvContext implements Runnable {
     private VkPhysicalDevice physicalDevice;
     private VkQueue graphicsQueue;
     private long renderPass;
-    private long[] framebuffers;
+    private InternalRenderTarget internalRenderTarget;
     private UpdateCycle currentCameraUpdateCycle;
 
     private final int MAX_VERTICES;
@@ -113,6 +114,10 @@ public final class NvContext implements Runnable {
     public int targetFps = -1;
     private boolean vsync = true;
     private final float[] backgroundColor = {0.1f, 0.1f, 0.1f, 1.0f};
+    private int internalResolutionWidth = -1;
+    private int internalResolutionHeight = -1;
+    private float renderScale = 1.0f;
+    private boolean pixelPerfect = false;
 
     public static final int UNLIMITED = -1;
     public void setFpsLimit(int fps) {
@@ -123,12 +128,14 @@ public final class NvContext implements Runnable {
         this.backgroundColor[0] = r;
         this.backgroundColor[1] = g;
         this.backgroundColor[2] = b;
+        sceneDirty = true;
     }
 
     public void setVsync(boolean enabled) {
         if (this.vsync != enabled) {
             this.vsync = enabled;
             this.framebufferResized = true; // Trigger swapchain recreation
+            sceneDirty = true;
         }
     }
 
@@ -136,55 +143,42 @@ public final class NvContext implements Runnable {
         currentCameraUpdateCycle = updateCycle;
     }
 
+    public void setInternalResolution(int width, int height) {
+        if (width <= 0 || height <= 0) {
+            throw new EngineEx("Internal resolution must be greater than zero.");
+        }
+        this.internalResolutionWidth = width;
+        this.internalResolutionHeight = height;
+        this.renderScale = -1.0f;
+        syncRootSizeToRenderTarget();
+        sceneDirty = true;
+    }
+    public void setInternalResolution(ScreenSize size) {
+        setInternalResolution(size.getWidth(), size.getHeight());
+    }
+
+    public void setRenderScale(float renderScale) {
+        if (renderScale <= 0.0f) {
+            throw new EngineEx("Render scale must be greater than zero.");
+        }
+        this.renderScale = renderScale;
+        this.internalResolutionWidth = -1;
+        this.internalResolutionHeight = -1;
+        syncRootSizeToRenderTarget();
+        sceneDirty = true;
+    }
+
+    public void setPixelPerfect(boolean pixelPerfect) {
+        this.pixelPerfect = pixelPerfect;
+        syncRootSizeToRenderTarget();
+        sceneDirty = true;
+    }
+
     private final Map<String, NvImage> images = new HashMap<>(16);
-    /**
-     * Carica un'immagine da file e la registra nel motore di rendering.
-     * Le immagini caricate possono essere disegnate usando {@link NvGraphic#drawImage} e {@link NvGraphic#drawImageRegion}.
-     *
-     * @param filePath percorso del file immagine (relativo o assoluto)
-     * @return NvImage registrato con un indice di texture assegnato
-     * @throws EngineEx se il numero massimo di texture (15) è stato raggiunto o se il file non può essere caricato
-     */
-    public synchronized NvImage loadImageAbsolute(String filePath) {
-        var cached = images.get(filePath);
-        if(cached != null)
-            return cached;
-
-        int slot = getNextTextureSlot();
-        NvImage image = NvImage.fromFile(device, physicalDevice, graphicsQueue, filePath);
-        image.setTextureIndex(slot);
-        loadedTextures[slot] = image;
-        descriptorManager.updateTexture(slot, image.getTextureImage());
-        
-        images.put(filePath, image);
-        return image;
-    }
-
-    /**
-     * Carica un'immagine dal classpath e la registra nel motore di rendering.
-     *
-     * @param resourcePath percorso della risorsa nel classpath (es. "/images/sprite.png")
-     * @return NvImage registrato con un indice di texture assegnato
-     * @throws EngineEx se il numero massimo di texture (15) è stato raggiunto o se la risorsa non esiste
-     */
-    public synchronized NvImage loadImage(String resourcePath) {
-        var cached = images.get(resourcePath);
-        if(cached != null)
-            return cached;
-
-        int slot = getNextTextureSlot();
-        NvImage image = NvImage.fromResource(device, physicalDevice, graphicsQueue, "/textures/"+resourcePath);
-        image.setTextureIndex(slot);
-        loadedTextures[slot] = image;
-        descriptorManager.updateTexture(slot, image.getTextureImage());
-
-        images.put(resourcePath, image);
-        return image;
-    }
-
 
     public void setShowFPS(boolean shouldShow) {
         this.showFPS = shouldShow;
+        sceneDirty = true;
     }
 
     public NvCont getPage(String key){
@@ -203,6 +197,14 @@ public final class NvContext implements Runnable {
         return swapchain.getHeight();
     }
 
+    public float getRenderWidth() {
+        return getEffectiveRenderSize()[0];
+    }
+
+    public float getRenderHeight() {
+        return getEffectiveRenderSize()[1];
+    }
+
     public NvCont getCurrentPage() {
         return rootComponent;
     }
@@ -214,27 +216,29 @@ public final class NvContext implements Runnable {
      */
     public NvCont addPage(String key, NvCont page){
         pages.put(key, page);
+        sceneDirty = true;
         return page;
     }
 
     public NvCont addAndSetPage(String key, NvCont page){
         pages.put(key, page);
         rootComponent = page;
-        rootComponent.setW(swapchain.getWidth());
-        rootComponent.setH(swapchain.getHeight());
+        syncRootSizeToRenderTarget();
+        sceneDirty = true;
         return page;
     }
 
     public void remove(String key){
         pages.remove(key);
+        sceneDirty = true;
     }
 
     private static NvContext appInstance;
 
     public void setCurrentPage(String key){
         rootComponent = pages.get(key);
-        rootComponent.setW(swapchain.getWidth());
-        rootComponent.setH(swapchain.getHeight());
+        syncRootSizeToRenderTarget();
+        sceneDirty = true;
     }
 
     public static void invalidateInstance(){
@@ -308,9 +312,11 @@ public final class NvContext implements Runnable {
      */
     public void addTreeComponent(NvComp component){
         rootComponent.addChild(component);
+        sceneDirty = true;
     }
     public void removeComponent(NvComp component){
         rootComponent.removeChild(component);
+        sceneDirty = true;
     }
 
     private int graphicsIndexCount;
@@ -318,6 +324,25 @@ public final class NvContext implements Runnable {
     private int imageIndexOffset;
 
     private final NvGraphic graphic = new NvPixelGraphic();
+    private volatile boolean sceneDirty = true;
+    private float[] combinedVertices = new float[0];
+    private int[] combinedIndices = new int[0];
+    private int combinedVertexFloatCount;
+    private int combinedIndexCount;
+    private final ExecutorService updatePool = Executors.newFixedThreadPool(
+            Math.max(2, Runtime.getRuntime().availableProcessors() - 1),
+            runnable -> {
+                Thread thread = new Thread(runnable, "nv-update-pool");
+                thread.setDaemon(true);
+                return thread;
+            }
+    );
+
+    public static void markSceneDirty() {
+        if (appInstance != null) {
+            appInstance.sceneDirty = true;
+        }
+    }
 
     private final NvComp fpsDisplay = new NvComp(10,10,260,70){
         private String displayString = "FPS: NONE";
@@ -333,6 +358,7 @@ public final class NvContext implements Runnable {
                 displayString = String.format("FPS: %.2f", averageFps);
                 localFrameCount = 0;
                 localFpsSum = 0;
+                NvContext.markSceneDirty();
             }
         }
         @Override
@@ -346,8 +372,13 @@ public final class NvContext implements Runnable {
     };
 
     private void rebuildScene() {
-        final float w = swapchain.getWidth();
-        final float h = swapchain.getHeight();
+        if (!sceneDirty) {
+            return;
+        }
+
+        float[] renderSize = getEffectiveRenderSize();
+        final float w = renderSize[0];
+        final float h = renderSize[1];
         final float wu = 8.0f / 512.0f;
         final float wv = 8.0f / 512.0f;
 
@@ -360,28 +391,49 @@ public final class NvContext implements Runnable {
         if(showFPS)
             fpsDisplay.draw(graphic);
 
-        float[] gVerts = graphic.getVertices();
-        int[]   gInds  = graphic.getIndices();
-        float[] iVerts = graphic.getImageVertices();
-        int[]   iInds  = graphic.getImageIndices();
-
-        graphicsIndexCount = gInds.length;
-        imageIndexCount    = iInds.length;
+        graphicsIndexCount = graphic.getIndexCount();
+        imageIndexCount    = graphic.getImageIndexCount();
         imageIndexOffset   = graphicsIndexCount;
 
-        float[] combinedVerts = new float[gVerts.length + iVerts.length];
-        System.arraycopy(gVerts, 0, combinedVerts, 0, gVerts.length);
-        System.arraycopy(iVerts, 0, combinedVerts, gVerts.length, iVerts.length);
+        combinedVertexFloatCount = graphic.getVertexFloatCount() + graphic.getImageVertexFloatCount();
+        combinedIndexCount = graphicsIndexCount + imageIndexCount;
 
-        int[] combinedInds = new int[gInds.length + iInds.length];
-        System.arraycopy(gInds, 0, combinedInds, 0, gInds.length);
-        int vertexOffset = gVerts.length / 8;
-        for (int i = 0; i < iInds.length; i++) {
-            combinedInds[graphicsIndexCount + i] = iInds[i] + vertexOffset;
+        ensureCombinedVertexCapacity(combinedVertexFloatCount);
+        ensureCombinedIndexCapacity(combinedIndexCount);
+
+        graphic.copyVerticesTo(combinedVertices, 0);
+        graphic.copyImageVerticesTo(combinedVertices, graphic.getVertexFloatCount());
+
+        graphic.copyIndicesTo(combinedIndices, 0);
+        graphic.copyImageIndicesTo(combinedIndices, graphicsIndexCount, graphic.getVertexFloatCount() / NvGraphic.FLOATS_PER_VERTEX);
+
+        dynamicVertexBuffer.update(combinedVertices, combinedVertexFloatCount);
+        dynamicIndexBuffer.update(combinedIndices, combinedIndexCount);
+        sceneDirty = false;
+    }
+
+    private void ensureCombinedVertexCapacity(int requiredFloatCount) {
+        if (combinedVertices.length >= requiredFloatCount) {
+            return;
         }
 
-        dynamicVertexBuffer.update(combinedVerts);
-        dynamicIndexBuffer.update(combinedInds);
+        int newCapacity = Math.max(2048, combinedVertices.length);
+        while (newCapacity < requiredFloatCount) {
+            newCapacity *= 2;
+        }
+        combinedVertices = Arrays.copyOf(combinedVertices, newCapacity);
+    }
+
+    private void ensureCombinedIndexCapacity(int requiredCount) {
+        if (combinedIndices.length >= requiredCount) {
+            return;
+        }
+
+        int newCapacity = Math.max(2048, combinedIndices.length);
+        while (newCapacity < requiredCount) {
+            newCapacity *= 2;
+        }
+        combinedIndices = Arrays.copyOf(combinedIndices, newCapacity);
     }
 
     @Override
@@ -391,7 +443,24 @@ public final class NvContext implements Runnable {
     }
 
     public void changeFont(Font font){
+        FontAtlas oldAtlas = this.fontAtlas;
+        TextureImage oldTexture = this.fontTexture;
+
         this.fontAtlas = new FontAtlas(font);
+        this.fontTexture = new TextureImage(
+                device, physicalDevice, graphicsQueue,
+                fontAtlas.getPixelBuffer(), fontAtlas.getWidth(), fontAtlas.getHeight()
+        );
+        descriptorManager.updateTexture(0, fontTexture);
+
+        if (oldTexture != null) {
+            oldTexture.close();
+        }
+        if (oldAtlas != null) {
+            oldAtlas.close();
+        }
+
+        sceneDirty = true;
     }
 
     private void initWindow(String name, Dimension windowDimension) {
@@ -456,13 +525,13 @@ public final class NvContext implements Runnable {
             glfwGetFramebufferSize(window, pWidth, pHeight);
             int fbW = pWidth.get(0);
             int fbH = pHeight.get(0);
-            
 
             this.swapchain = new Swapchain(device, surface, fbW, fbH, vsync);
             rootComponent = new NvCont(0, 0, fbW, fbH);
         }
-
         logEngine("Swapchain created");
+        currentImageCount = swapchain.getImageCount();
+
 
         createRenderPass();
 
@@ -474,7 +543,7 @@ public final class NvContext implements Runnable {
         );
         logEngine("Font texture created");
 
-        int imageCount = swapchain.getImageViews().length;
+        int imageCount = swapchain.getImageCount(); // usa il conteggio reale
         this.ubo               = new OrthoUBO(device, physicalDevice, imageCount);
         this.descriptorManager = new DescriptorManager(device, ubo, fontTexture, imageCount);
 
@@ -490,7 +559,8 @@ public final class NvContext implements Runnable {
         );
         logEngine("Texture pipeline created");
 
-        createFramebuffers();
+
+        createInternalRenderTarget();
         buildCombinedGeometry();
 
         this.commandBuffers = new CommandBuffers(device, pipeline, swapchain);
@@ -546,12 +616,7 @@ public final class NvContext implements Runnable {
     private void tickHandler(float dt) {
         currentCameraUpdateCycle.update(dt);
         rootComponent.tick(dt);
-
-        int size = updatable.size();
-
-        for(int i = 0; i < size; i++){
-            updatable.get(i).update(dt);
-        }
+        runUpdatablesParallel(dt);
         if (mouseMoved) {
             HoverSystem.handleHover(window, rootComponent);
             mouseMoved = false;
@@ -562,19 +627,54 @@ public final class NvContext implements Runnable {
         }
     }
 
+    private void runUpdatablesParallel(float dt) {
+        List<UpdateCycle> snapshot = new ArrayList<>(updatable);
+        int size = snapshot.size();
+        if (size == 0) {
+            return;
+        }
+        if (size == 1) {
+            snapshot.get(0).update(dt);
+            return;
+        }
+
+        List<Future<?>> futures = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            UpdateCycle updateCycle = snapshot.get(i);
+            futures.add(updatePool.submit(() -> updateCycle.update(dt)));
+        }
+
+        for (Future<?> future : futures) {
+            try {
+                future.get();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new EngineEx("Interrupted while waiting for update workers: " + e);
+            } catch (ExecutionException e) {
+                Throwable cause = e.getCause();
+                if (cause instanceof RuntimeException runtime) {
+                    throw runtime;
+                }
+                throw new EngineEx("Update worker failed: " + cause);
+            }
+        }
+    }
+
 
 
     private void mainLoop() {
         double lastFrameTime = glfwGetTime();
         while (!glfwWindowShouldClose(window)) {
 
+
             double now = glfwGetTime();
             float deltaTime = (float) (now - lastFrameTime);
             lastFrameTime = now;
 
             glfwPollEvents();
-            drawFrame();
             tickHandler(deltaTime);
+
+            drawFrame();
 
             if (targetFps > 0) {
                 double targetFrameTime = 1.0 / targetFps;
@@ -601,8 +701,6 @@ public final class NvContext implements Runnable {
             vkWaitForFences(device, inFlightFence, true, Long.MAX_VALUE);
             vkResetFences(device, inFlightFence);
 
-            rebuildScene();
-
             IntBuffer pImageIndex = stack.mallocInt(1);
             int acquireResult = vkAcquireNextImageKHR(device, swapchain.getHandle(), Long.MAX_VALUE,
                     imageAvailableSemaphore, VK_NULL_HANDLE, pImageIndex);
@@ -611,18 +709,21 @@ public final class NvContext implements Runnable {
                 recreateSwapchain();
                 return;
             }
-
             if (acquireResult != VK_SUCCESS && acquireResult != VK_SUBOPTIMAL_KHR) {
                 throw new EngineEx("Errore durante l'acquisizione dell'immagine della swapchain.");
             }
 
             int imageIndex = pImageIndex.get(0);
 
-            ubo.update(imageIndex, 0f, (float) swapchain.getWidth(), (float) swapchain.getHeight(), 0f);
+            if (sceneDirty || framebufferResized) {
+                float[] renderSize = getEffectiveRenderSize();
+                rebuildScene();
+                ubo.update(imageIndex, 0f, renderSize[0], renderSize[1], 0f);
+            }
 
-            commandBuffers.recordDual(backgroundColor,
+            commandBuffers.recordOffscreen(backgroundColor,
                     renderPass,
-                    framebuffers[imageIndex],
+                    internalRenderTarget.getFramebufferHandle(),
                     pipeline.getHandle(),
                     pipeline.getPipelineLayoutHandle(),
                     texturePipeline.getHandle(),
@@ -633,8 +734,13 @@ public final class NvContext implements Runnable {
                     imageIndexCount,
                     imageIndexOffset,
                     descriptorManager.getDescriptorSet(imageIndex),
+                    internalRenderTarget.getImageHandle(),
+                    swapchain.getImages()[imageIndex],
+                    internalRenderTarget.getWidth(),
+                    internalRenderTarget.getHeight(),
                     swapchain.getWidth(),
-                    swapchain.getHeight()
+                    swapchain.getHeight(),
+                    pixelPerfect
             );
 
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack)
@@ -648,32 +754,55 @@ public final class NvContext implements Runnable {
                 throw new EngineEx("Errore nel submit della lista comandi alla GPU.");
             }
 
-            LongBuffer signalSemaphores = stack.longs(renderFinishedSemaphore);
             VkPresentInfoKHR presentInfo = VkPresentInfoKHR.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_PRESENT_INFO_KHR)
-                    .pWaitSemaphores(signalSemaphores)
+                    .pWaitSemaphores(stack.longs(renderFinishedSemaphore))
                     .swapchainCount(1)
                     .pSwapchains(stack.longs(swapchain.getHandle()))
                     .pImageIndices(pImageIndex);
 
             int presentResult = vkQueuePresentKHR(graphicsQueue, presentInfo);
 
-            if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR || framebufferResized) {
+            if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || framebufferResized) {
                 framebufferResized = false;
                 recreateSwapchain();
-            } else if (presentResult != VK_SUCCESS) {
+            } else if (presentResult != VK_SUCCESS && presentResult != VK_SUBOPTIMAL_KHR) {
                 throw new EngineEx("Errore durante la presentazione della swapchain.");
             }
         }
     }
 
+    private float[] getEffectiveRenderSize() {
+        int windowWidth = swapchain.getWidth();
+        int windowHeight = swapchain.getHeight();
+
+        if (internalResolutionWidth > 0 && internalResolutionHeight > 0) {
+            return new float[]{internalResolutionWidth, internalResolutionHeight};
+        }
+
+        float scale = renderScale;
+        if (scale <= 0.0f) {
+            scale = 1.0f;
+        }
+
+        if (pixelPerfect) {
+            scale = Math.max(1.0f, Math.round(scale));
+        }
+
+        return new float[]{
+                Math.max(1.0f, windowWidth * scale),
+                Math.max(1.0f, windowHeight * scale)
+        };
+    }
+
+
+    private int currentImageCount = 0;
+
     private void recreateSwapchain() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            IntBuffer width = stack.mallocInt(1);
+            IntBuffer width  = stack.mallocInt(1);
             IntBuffer height = stack.mallocInt(1);
-
             glfwGetFramebufferSize(window, width, height);
-
             while (width.get(0) == 0 || height.get(0) == 0) {
                 glfwWaitEvents();
                 glfwGetFramebufferSize(window, width, height);
@@ -681,66 +810,76 @@ public final class NvContext implements Runnable {
         }
 
         vkDeviceWaitIdle(device);
-
         cleanupSwapchainResources();
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            IntBuffer pWidth = stack.mallocInt(1);
+            IntBuffer pWidth  = stack.mallocInt(1);
             IntBuffer pHeight = stack.mallocInt(1);
-
             glfwGetFramebufferSize(window, pWidth, pHeight);
-
-            int fbW = pWidth.get(0);
-            int fbH = pHeight.get(0);
-            this.swapchain = new Swapchain(device, surface, fbW, fbH, vsync);
-            rootComponent.setW(swapchain.getWidth());
-            rootComponent.setH(swapchain.getHeight());
+            this.swapchain = new Swapchain(device, surface, pWidth.get(0), pHeight.get(0), vsync);
+            logEngine(swapchain.getWidth());
         }
 
+        int newImageCount = swapchain.getImageCount();
 
-        createFramebuffers();
+        if (newImageCount != descriptorManager.getImageCount()) {
+            logEngine("ricreating descriptorManager, existing textures:");
+            for (int i = 0; i < loadedTextures.length; i++) {
+                if (loadedTextures[i] != null) {
+                    logEngine("  slot " + i + " = " + loadedTextures[i].getTextureImage());
+                }
+            }
+            if (ubo != null) ubo.close();
+            if (descriptorManager != null) descriptorManager.close();
 
-        if (commandBuffers != null) {
-            commandBuffers.free();
+            TextureImage[] existingTextures = new TextureImage[loadedTextures.length];
+            existingTextures[0] = fontTexture;
+            for (int i = 1; i < loadedTextures.length; i++) {
+                if (loadedTextures[i] != null) {
+                    existingTextures[i] = loadedTextures[i].getTextureImage();
+                }
+            }
+
+            this.ubo = new OrthoUBO(device, physicalDevice, newImageCount);
+            this.descriptorManager = new DescriptorManager(
+                    device, ubo, fontTexture, newImageCount, existingTextures
+            );
         }
 
-        if (pipeline != null) pipeline.close();
+        createInternalRenderTarget();
+        syncRootSizeToRenderTarget();
+
+        if (commandBuffers  != null) commandBuffers.free();
+        if (pipeline        != null) pipeline.close();
         if (texturePipeline != null) texturePipeline.close();
 
         this.pipeline = new GraphicsPipeline(
-                device,
-                swapchain,
-                renderPass,
+                device, swapchain, renderPass,
                 descriptorManager.getDescriptorSetLayoutHandle()
         );
-
         this.texturePipeline = new TexturePipeline(
-                device,
-                swapchain,
-                renderPass,
+                device, swapchain, renderPass,
                 descriptorManager.getDescriptorSetLayoutHandle()
         );
-
         this.commandBuffers = new CommandBuffers(device, pipeline, swapchain);
+        sceneDirty = true;
     }
 
     private void cleanupSwapchainResources() {
-        if (framebuffers != null) {
-            for (long framebuffer : framebuffers) {
-                vkDestroyFramebuffer(device, framebuffer, null);
-            }
-            framebuffers = null;
-        }
-
         if (swapchain != null) {
             swapchain.close();
             swapchain = null;
+        }
+
+        if (internalRenderTarget != null) {
+            internalRenderTarget.close();
+            internalRenderTarget = null;
         }
     }
 
 
     // -------------------------------------------------------------------------
-    // Inizializzazione Vulkan (instance, surface, device, renderpass, framebuffers)
+    // Inizializzazione Vulkan (instance, surface, device, renderpass, target)
     // -------------------------------------------------------------------------
 
     private void createInstance() {
@@ -854,7 +993,7 @@ public final class NvContext implements Runnable {
                     .stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
                     .stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
                     .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-                    .finalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+                    .finalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
             VkAttachmentReference.Buffer colorRef = VkAttachmentReference.calloc(1, stack)
                     .attachment(0)
@@ -887,31 +1026,34 @@ public final class NvContext implements Runnable {
         }
     }
 
-    private void createFramebuffers() {
-        long[] imageViews = swapchain.getImageViews();
-        this.framebuffers = new long[imageViews.length];
+    public synchronized void registerTexture(int slot, NvImage image) {
+        loadedTextures[slot] = image;
+        descriptorManager.updateTexture(slot, image.getTextureImage());
+    }
 
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            LongBuffer attachments = stack.mallocLong(1);
-
-            VkFramebufferCreateInfo fbInfo = VkFramebufferCreateInfo.calloc(stack)
-                    .sType(VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO)
-                    .renderPass(renderPass)
-                    .width(swapchain.getWidth())
-                    .height(swapchain.getHeight())
-                    .layers(1);
-
-            for (int i = 0; i < imageViews.length; i++) {
-                attachments.put(0, imageViews[i]);
-                fbInfo.pAttachments(attachments);
-
-                LongBuffer pFb = stack.mallocLong(1);
-                if (vkCreateFramebuffer(device, fbInfo, null, pFb) != VK_SUCCESS) {
-                    throw new EngineEx("Impossibile creare il Framebuffer [" + i + "]");
-                }
-                this.framebuffers[i] = pFb.get(0);
-            }
+    private void createInternalRenderTarget() {
+        if (internalRenderTarget != null) {
+            internalRenderTarget.close();
         }
+
+        float[] renderSize = getEffectiveRenderSize();
+        this.internalRenderTarget = new InternalRenderTarget(
+                device,
+                physicalDevice,
+                renderPass,
+                Math.max(1, Math.round(renderSize[0])),
+                Math.max(1, Math.round(renderSize[1])),
+                swapchain.getFormat()
+        );
+    }
+
+    private void syncRootSizeToRenderTarget() {
+        if (rootComponent == null) {
+            return;
+        }
+        float[] renderSize = getEffectiveRenderSize();
+        rootComponent.setW(Math.max(1, Math.round(renderSize[0])));
+        rootComponent.setH(Math.max(1, Math.round(renderSize[1])));
     }
 
     private void cleanup() {
@@ -932,7 +1074,10 @@ public final class NvContext implements Runnable {
         }
 
         if (commandBuffers      != null) commandBuffers.free();
-        if (framebuffers        != null) for (long fb : framebuffers) vkDestroyFramebuffer(device, fb, null);
+        if (internalRenderTarget != null) {
+            internalRenderTarget.close();
+            internalRenderTarget = null;
+        }
         if (descriptorManager   != null) descriptorManager.close();
         if (ubo                 != null) ubo.close();
         if (fontTexture         != null) fontTexture.close();
@@ -950,6 +1095,7 @@ public final class NvContext implements Runnable {
         if (dynamicVertexBuffer != null) dynamicVertexBuffer.close();
         if (dynamicIndexBuffer  != null) dynamicIndexBuffer.close();
         if (swapchain           != null) swapchain.close();
+        updatePool.shutdownNow();
         if (surface             != 0)    vkDestroySurfaceKHR(instance, surface, null);
         if (device              != null) vkDestroyDevice(device, null);
         if (instance            != null) vkDestroyInstance(instance, null);

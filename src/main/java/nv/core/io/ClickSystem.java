@@ -1,5 +1,6 @@
 package nv.core.io;
 
+import nv.core.NvContext;
 import nv.core.annotations.EngineCore;
 import nv.core.components.NvComp;
 import nv.core.errors.ex.NvLogicEx;
@@ -44,29 +45,37 @@ public final class ClickSystem {
     public static GLFWMouseButtonCallbackI inputCallback(long window){
         return (_, button, action, mods) -> {
             if (button == GLFW_MOUSE_BUTTON_LEFT) {
-                var correctedCoords = getCorrectedCoords(window);
+                var correctedCoords = getMappedCoords(window);
                 handleMouseClick(correctedCoords[0], correctedCoords[1], action == GLFW_PRESS);
             }
         };
     }
 
-    public static int[] getCorrectedCoords(long window){
-        double[] x1 = new double[1];
-        double[] y1 = new double[1];
+    public static int[] getMappedCoords(long window) {
+        double[] cx = new double[1];
+        double[] cy = new double[1];
+        glfwGetCursorPos(window, cx, cy);
 
-        glfwGetCursorPos(window, x1, y1);
-
-        int[] windowWidth = new int[1];
+        int[] windowWidth  = new int[1];
         int[] windowHeight = new int[1];
-        int[] framebufferWidth = new int[1];
-        int[] framebufferHeight = new int[1];
+        int[] fbWidth      = new int[1];
+        int[] fbHeight     = new int[1];
 
         glfwGetWindowSize(window, windowWidth, windowHeight);
-        glfwGetFramebufferSize(window, framebufferWidth, framebufferHeight);
+        glfwGetFramebufferSize(window, fbWidth, fbHeight);
 
-        int convertedMouseX = (int) (x1[0] * framebufferWidth[0] / windowWidth[0]);
-        int convertedMouseY = (int) (y1[0] * framebufferHeight[0] / windowHeight[0]);
+        // Step 1: cursore → framebuffer fisico (DPI scaling)
+        double physX = cx[0] * fbWidth[0]  / windowWidth[0];
+        double physY = cy[0] * fbHeight[0] / windowHeight[0];
 
-        return new int[]{convertedMouseX, convertedMouseY};
+        // Step 2: framebuffer fisico → spazio render target interna
+        NvContext ctx = NvContext.getInstance();
+        float renderW = ctx.getRenderWidth();
+        float renderH = ctx.getRenderHeight();
+
+        int logicalX = (int) (physX * renderW / fbWidth[0]);
+        int logicalY = (int) (physY * renderH / fbHeight[0]);
+
+        return new int[]{logicalX, logicalY};
     }
 }

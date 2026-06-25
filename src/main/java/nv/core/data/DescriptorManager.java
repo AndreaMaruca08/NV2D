@@ -6,6 +6,8 @@ import nv.core.errors.ex.EngineEx;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 import java.nio.LongBuffer;
+
+import static nv.core.errors.NvLogger.logEngine;
 import static org.lwjgl.vulkan.VK10.*;
 
 /**
@@ -23,15 +25,29 @@ public final class DescriptorManager implements AutoCloseable {
     private final TextureImage[] textures = new TextureImage[15];
 
     public DescriptorManager(VkDevice device, OrthoUBO ubo,
-                             TextureImage fontTexture, int imageCount) {
+                             TextureImage fontTexture, int imageCount,
+                             TextureImage[] existingTextures) {
         this.device = device;
         this.descriptorSetHandles = new long[imageCount];
+
+        // Copia le texture esistenti prima di creare i descriptor sets
+        if (existingTextures != null) {
+            for (int i = 0; i < Math.min(existingTextures.length, textures.length); i++) {
+                this.textures[i] = existingTextures[i];
+            }
+        }
+        // fontTexture sovrascrive sempre slot 0
         this.textures[0] = fontTexture;
 
         this.descriptorSetLayoutHandle = createDescriptorSetLayout();
         this.descriptorPoolHandle      = createDescriptorPool(imageCount);
         allocateAndUpdateDescriptorSets(ubo, imageCount);
     }
+    public DescriptorManager(VkDevice device, OrthoUBO ubo,
+                             TextureImage fontTexture, int imageCount) {
+        this(device, ubo, fontTexture, imageCount, null);
+    }
+
 
     private long createDescriptorSetLayout() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -157,12 +173,18 @@ public final class DescriptorManager implements AutoCloseable {
         }
     }
 
+    public int getImageCount() {
+        return descriptorSetHandles.length;
+    }
+
     /**
      * Aggiorna una texture specifica nell'array per tutti i descriptor sets.
      */
     public synchronized void updateTexture(int textureIndex, TextureImage texture) {
         if (textureIndex < 0 || textureIndex >= 15) return;
         textures[textureIndex] = texture;
+
+        logEngine("updateTexture slot=" + textureIndex + " su " + descriptorSetHandles.length + " sets");
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkDescriptorImageInfo.Buffer imageInfo = VkDescriptorImageInfo.calloc(1, stack)

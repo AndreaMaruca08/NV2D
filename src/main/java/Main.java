@@ -1,4 +1,5 @@
 import nv.core.ContextBuilder;
+import nv.core.ScreenSize;
 import nv.core.components.NvCont;
 import nv.core.components.Vector2D;
 import nv.core.graphic.NvGraphic;
@@ -19,6 +20,7 @@ void main() {
     // build the game
     var context = new ContextBuilder("TEST")
             .setVsync(true)
+            .setInternalResolution(ScreenSize._1920x1080)
             .showFps()
             .build();
 

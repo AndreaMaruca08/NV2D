@@ -55,6 +55,7 @@ public class NvTextField extends NvComp implements KeyboardListener, Clickable {
 
     public void setText(String text) {
         this.text = text;
+        NvContext.markSceneDirty();
     }
 
     public String cut(){
@@ -65,6 +66,7 @@ public class NvTextField extends NvComp implements KeyboardListener, Clickable {
 
     public void clear(){
         this.text = "";
+        NvContext.markSceneDirty();
     }
 
 

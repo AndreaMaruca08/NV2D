@@ -111,41 +111,58 @@ public abstract class NvGraphic implements AppendableGeometry {
         return vertexFloatCount;
     }
 
+    public int getIndexCount() {
+        return indexCount;
+    }
+
     public int getImageVertexFloatCount() {
         return imageVertexFloatCount;
     }
 
+    public int getImageIndexCount() {
+        return imageIndexCount;
+    }
+
     @Override
     public void append(float[] newVertices, int[] newIndices) {
-        int vertexOffset = vertexFloatCount / FLOATS_PER_VERTEX;
+        append(newVertices, newVertices.length, newIndices, newIndices.length);
+    }
 
-        ensureVertexCapacity(vertexFloatCount + newVertices.length);
-        ensureIndexCapacity(indexCount + newIndices.length);
+    @Override
+    public void append(float[] newVertices, int vertexFloatCount, int[] newIndices, int indexCount) {
+        int vertexOffset = this.vertexFloatCount / FLOATS_PER_VERTEX;
 
-        System.arraycopy(newVertices, 0, vertices, vertexFloatCount, newVertices.length);
+        ensureVertexCapacity(this.vertexFloatCount + vertexFloatCount);
+        ensureIndexCapacity(this.indexCount + indexCount);
 
-        for (int i = 0; i < newIndices.length; i++) {
-            indices[indexCount + i] = newIndices[i] + vertexOffset;
+        System.arraycopy(newVertices, 0, vertices, this.vertexFloatCount, vertexFloatCount);
+
+        for (int i = 0; i < indexCount; i++) {
+            indices[this.indexCount + i] = newIndices[i] + vertexOffset;
         }
 
-        vertexFloatCount += newVertices.length;
-        indexCount += newIndices.length;
+        this.vertexFloatCount += vertexFloatCount;
+        this.indexCount += indexCount;
     }
 
     protected void appendImageGeometry(float[] newVertices, int[] newIndices) {
+        appendImageGeometry(newVertices, newVertices.length, newIndices, newIndices.length);
+    }
+
+    protected void appendImageGeometry(float[] newVertices, int vertexFloatCount, int[] newIndices, int indexCount) {
         int vertexOffset = imageVertexFloatCount / FLOATS_PER_VERTEX;
 
-        ensureImageVertexCapacity(imageVertexFloatCount + newVertices.length);
-        ensureImageIndexCapacity(imageIndexCount + newIndices.length);
+        ensureImageVertexCapacity(imageVertexFloatCount + vertexFloatCount);
+        ensureImageIndexCapacity(imageIndexCount + indexCount);
 
-        System.arraycopy(newVertices, 0, imageVertices, imageVertexFloatCount, newVertices.length);
+        System.arraycopy(newVertices, 0, imageVertices, imageVertexFloatCount, vertexFloatCount);
 
-        for (int i = 0; i < newIndices.length; i++) {
+        for (int i = 0; i < indexCount; i++) {
             imageIndices[imageIndexCount + i] = newIndices[i] + vertexOffset;
         }
 
-        imageVertexFloatCount += newVertices.length;
-        imageIndexCount += newIndices.length;
+        imageVertexFloatCount += vertexFloatCount;
+        imageIndexCount += indexCount;
     }
 
     private void ensureVertexCapacity(int requiredCapacity) {
@@ -379,6 +396,24 @@ public abstract class NvGraphic implements AppendableGeometry {
 
     public int[] getImageIndices(){
         return Arrays.copyOf(imageIndices, imageIndexCount);
+    }
+
+    public void copyVerticesTo(float[] target, int targetOffset) {
+        System.arraycopy(vertices, 0, target, targetOffset, vertexFloatCount);
+    }
+
+    public void copyIndicesTo(int[] target, int targetOffset) {
+        System.arraycopy(indices, 0, target, targetOffset, indexCount);
+    }
+
+    public void copyImageVerticesTo(float[] target, int targetOffset) {
+        System.arraycopy(imageVertices, 0, target, targetOffset, imageVertexFloatCount);
+    }
+
+    public void copyImageIndicesTo(int[] target, int targetOffset, int vertexOffset) {
+        for (int i = 0; i < imageIndexCount; i++) {
+            target[targetOffset + i] = imageIndices[i] + vertexOffset;
+        }
     }
 
 

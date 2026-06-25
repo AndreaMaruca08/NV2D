@@ -1,6 +1,7 @@
 package nv.utils;
 
 import nv.core.annotations.ReadyComponent;
+import nv.core.NvContext;
 import nv.core.camera.NvCamera;
 import nv.core.collision.Collidable;
 import nv.core.components.NvComp;
@@ -94,5 +95,6 @@ public class NvCharacter extends NvComp implements KeyboardListener, Collidable 
         if(needCamera){
             camera.setXYOnCenter(x, y);
         }
+        NvContext.markSceneDirty();
     }
 }

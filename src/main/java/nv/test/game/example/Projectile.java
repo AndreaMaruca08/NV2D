@@ -37,6 +37,7 @@ public class Projectile extends NvRgbComp implements Collidable {
         floatY += direction.y * speed * dt;
         x = (int) floatX;
         y = (int) floatY;
+        NvContext.markSceneDirty();
         
         if(x < -ctx.getWidth() || x > ctx.getWidth()*2 ||
                 y < -ctx.getHeight() || y > ctx.getHeight()*2){

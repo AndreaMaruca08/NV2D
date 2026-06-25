@@ -73,13 +73,17 @@ public final class DynamicVertexBuffer implements AutoCloseable {
      * @param vertices array di float nel formato: x, y, r, g, b, u, v (7 float per vertice)
      */
     public void update(float[] vertices) {
-        long requiredSize = (long) vertices.length * Float.BYTES;
+        update(vertices, vertices.length);
+    }
+
+    public void update(float[] vertices, int floatCount) {
+        long requiredSize = (long) floatCount * Float.BYTES;
         if (requiredSize > bufferSize) {
             throw new EngineEx(
                     "Vertices (" + requiredSize + " bytes) exceed the buffer capacity (" + bufferSize + " bytes)!");
         }
         mappedData.clear();
-        mappedData.asFloatBuffer().put(vertices);
+        mappedData.asFloatBuffer().put(vertices, 0, floatCount);
     }
 
     public long getHandle() {
