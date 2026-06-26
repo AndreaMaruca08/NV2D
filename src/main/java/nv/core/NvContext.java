@@ -362,7 +362,6 @@ public final class NvContext implements Runnable {
 
     private final NvComp fpsDisplay = new NvComp(10, 10, 320, 130) {
         private String displayString = "FPS: NONE";
-        private String gpuString     = "GPU: --";
         private int localFrameCount  = 0;
         private float localFpsSum    = 0;
 
@@ -373,10 +372,6 @@ public final class NvContext implements Runnable {
             if (localFrameCount >= 30) {
                 float averageFps = localFpsSum / localFrameCount;
                 displayString = String.format("FPS: %.1f", averageFps);
-                gpuString = String.format(
-                        "GPU tot: %.2f ms | pass: %.2f ms | blit: %.2f ms",
-                        gpuTotalMs, gpuRenderPassMs, gpuBlitMs
-                );
                 localFrameCount = 0;
                 localFpsSum = 0;
                 NvContext.markSceneDirty();
@@ -390,7 +385,6 @@ public final class NvContext implements Runnable {
             g.drawRect(0, 0, 320, 130);
             g.setRGB(1, 1, 1);
             g.drawText(displayString, 10, 10);
-            g.drawText(gpuString, 10, 55);
         }
     };
 
