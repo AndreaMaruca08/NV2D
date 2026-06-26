@@ -2,8 +2,8 @@ package nv.utils.shapes.dynamic;
 
 import nv.core.annotations.ReadyComponent;
 import nv.core.collision.Collidable;
-import nv.core.graphic.NvGraphic;
 import nv.core.components.NvRgbComp;
+import nv.core.graphic.NvGraphic;
 
 /**
  * <p>Dynamic triangle with collisions</p>

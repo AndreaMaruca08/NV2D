@@ -20,7 +20,6 @@ import java.nio.ShortBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static nv.core.errors.NvLogger.logEngine;
 import static nv.core.errors.NvLogger.logErr;
 
 /**

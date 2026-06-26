@@ -1,7 +1,7 @@
 package nv.utils;
 
-import nv.core.annotations.ReadyComponent;
 import nv.core.NvContext;
+import nv.core.annotations.ReadyComponent;
 import nv.core.camera.NvCamera;
 import nv.core.collision.Collidable;
 import nv.core.components.NvComp;

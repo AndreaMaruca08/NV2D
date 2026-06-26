@@ -4,15 +4,13 @@ import nv.core.EmptyKeyboardListener;
 import nv.core.NvContext;
 import nv.core.annotations.EngineCore;
 import nv.core.components.NvComp;
-import nv.core.graphic.NvGraphic;
 import nv.core.components.Vector2D;
+import nv.core.graphic.NvGraphic;
 import nv.core.io.KeyboardListener;
 import nv.core.io.KeyboardSystem;
 import nv.utils.NvTimer;
 
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static nv.core.errors.NvLogger.logInfo;
 
 /**
  * Represents a camera that can be used to control the view of a 2D game.

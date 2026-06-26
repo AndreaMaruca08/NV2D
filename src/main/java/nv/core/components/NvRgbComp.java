@@ -1,7 +1,6 @@
 package nv.core.components;
 
 import nv.core.annotations.EngineCore;
-import nv.core.annotations.ReadyComponent;
 
 /**
  * <p>Ready component with rgb variables ready with getters and setters</p>

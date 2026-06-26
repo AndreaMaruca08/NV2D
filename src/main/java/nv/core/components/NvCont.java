@@ -1,7 +1,6 @@
 package nv.core.components;
 
 import nv.core.annotations.EngineCore;
-import nv.core.annotations.ReadyComponent;
 import nv.core.graphic.NvGraphic;
 
 import static nv.core.graphic.NvGraphic.camera;

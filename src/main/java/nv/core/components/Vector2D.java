@@ -1,7 +1,6 @@
 package nv.core.components;
 
 import nv.core.annotations.EngineCore;
-import nv.core.annotations.ReadyComponent;
 
 /**
  * Vectors constants for 16 directions

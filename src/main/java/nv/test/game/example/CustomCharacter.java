@@ -10,8 +10,6 @@ import nv.utils.NvCharacter;
 import nv.utils.shapes.dynamic.NvLabel;
 import org.lwjgl.glfw.GLFW;
 
-import static nv.core.errors.NvLogger.logInfo;
-
 public class CustomCharacter extends NvCharacter {
     //All images
     private final AtlasConverter.Atlas atlas;

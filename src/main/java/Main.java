@@ -1,21 +1,11 @@
 import nv.core.ContextBuilder;
 import nv.core.ScreenSize;
 import nv.core.components.NvCont;
-import nv.core.components.Vector2D;
 import nv.core.graphic.NvGraphic;
 import nv.core.io.AudioManager;
-import nv.test.DvdLogoBouncing;
-import nv.test.MovingComponent;
-import nv.test.WhenOverCollision;
 import nv.test.game.example.CustomCharacter;
-
-import nv.test.game.example.Portal;
 import nv.test.game.example.Wall;
-import nv.utils.NvTextField;
-import nv.utils.shapes.dynamic.DynamicCircle;
 import nv.utils.shapes.dynamic.DynamicSquare;
-
-import java.awt.*;
 
 void main() {
     // build the game

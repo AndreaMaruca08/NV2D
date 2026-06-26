@@ -1,6 +1,5 @@
 package nv.test.game.example;
 
-import nv.core.collision.CollisionSystem;
 import nv.utils.shapes.dynamic.DynamicSquare;
 
 public class Wall extends DynamicSquare {

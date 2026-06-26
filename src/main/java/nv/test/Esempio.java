@@ -5,7 +5,6 @@ import nv.core.components.NvComp;
 import nv.core.graphic.NvGraphic;
 import nv.core.io.Clickable;
 import nv.core.io.Hoverable;
-import nv.core.io.KeyboardListener;
 
 public class Esempio extends NvComp implements Collidable, Clickable, Hoverable {
     private float r = 1;

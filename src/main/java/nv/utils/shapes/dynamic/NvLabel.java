@@ -1,7 +1,6 @@
 package nv.utils.shapes.dynamic;
 
 import nv.core.NvContext;
-import nv.core.components.NvComp;
 import nv.core.components.NvRgbComp;
 import nv.core.graphic.NvGraphic;
 
