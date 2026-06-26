@@ -119,6 +119,11 @@ public final class NvContext implements Runnable {
     private float renderScale = 1.0f;
     private boolean pixelPerfect = false;
 
+    private long gpuSubmitTime = 0;
+    public float gpuTotalMs = 0f;
+    public float gpuRenderPassMs = 0f;
+    public float gpuBlitMs = 0f;
+
     public static final int UNLIMITED = -1;
     public void setFpsLimit(int fps) {
         this.targetFps = fps;
@@ -129,6 +134,13 @@ public final class NvContext implements Runnable {
         this.backgroundColor[1] = g;
         this.backgroundColor[2] = b;
         sceneDirty = true;
+    }
+
+    private boolean[] commandBufferDirty;
+
+    private void initCommandBufferDirtyFlags() {
+        commandBufferDirty = new boolean[swapchain.getImageCount()];
+        Arrays.fill(commandBufferDirty, true);
     }
 
     public void setVsync(boolean enabled) {
@@ -274,6 +286,7 @@ public final class NvContext implements Runnable {
         NvLogger.initialize(name, MAJOR_VERSION, MINOR_VERSION, PATCH);
         initWindow(name, windowDim);
 
+
         logEngine("Window initialized");
         initVulkan();
         logEngine("Vulkan initialized");
@@ -341,33 +354,43 @@ public final class NvContext implements Runnable {
     public static void markSceneDirty() {
         if (appInstance != null) {
             appInstance.sceneDirty = true;
+            if (appInstance.commandBufferDirty != null) {
+                Arrays.fill(appInstance.commandBufferDirty, true);
+            }
         }
     }
 
-    private final NvComp fpsDisplay = new NvComp(10,10,260,70){
+    private final NvComp fpsDisplay = new NvComp(10, 10, 320, 130) {
         private String displayString = "FPS: NONE";
-        private int localFrameCount = 0;
-        private float localFpsSum = 0;
+        private String gpuString     = "GPU: --";
+        private int localFrameCount  = 0;
+        private float localFpsSum    = 0;
 
         @Override
         public void update(float dt) {
             localFrameCount++;
             if (dt > 0) localFpsSum += (1.0f / dt);
-            if(localFrameCount >= 30){
+            if (localFrameCount >= 30) {
                 float averageFps = localFpsSum / localFrameCount;
-                displayString = String.format("FPS: %.2f", averageFps);
+                displayString = String.format("FPS: %.1f", averageFps);
+                gpuString = String.format(
+                        "GPU tot: %.2f ms | pass: %.2f ms | blit: %.2f ms",
+                        gpuTotalMs, gpuRenderPassMs, gpuBlitMs
+                );
                 localFrameCount = 0;
                 localFpsSum = 0;
                 NvContext.markSceneDirty();
             }
         }
+
         @Override
         public void drawIntern(NvGraphic g) {
             setHUD(true);
-            g.setRGB(0,0,0);
-            g.drawRect(0, 0, 260, 70);
-            g.setRGB(1,1,1);
+            g.setRGB(0, 0, 0);
+            g.drawRect(0, 0, 320, 130);
+            g.setRGB(1, 1, 1);
             g.drawText(displayString, 10, 10);
+            g.drawText(gpuString, 10, 55);
         }
     };
 
@@ -531,7 +554,7 @@ public final class NvContext implements Runnable {
         }
         logEngine("Swapchain created");
         currentImageCount = swapchain.getImageCount();
-
+        initCommandBufferDirtyFlags();
 
         createRenderPass();
 
@@ -699,6 +722,14 @@ public final class NvContext implements Runnable {
     private void drawFrame() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             vkWaitForFences(device, inFlightFence, true, Long.MAX_VALUE);
+
+            // Calcola il tempo GPU approssimato: quanto ha impiegato la GPU
+            // dall'ultimo submit al fence signaled (misurato lato CPU)
+            long fenceSignaledAt = System.nanoTime();
+            if (gpuSubmitTime > 0) {
+                gpuTotalMs = (fenceSignaledAt - gpuSubmitTime) / 1_000_000f;
+            }
+
             vkResetFences(device, inFlightFence);
 
             IntBuffer pImageIndex = stack.mallocInt(1);
@@ -715,41 +746,51 @@ public final class NvContext implements Runnable {
 
             int imageIndex = pImageIndex.get(0);
 
-            if (sceneDirty || framebufferResized) {
+            if (sceneDirty || framebufferResized || commandBufferDirty[imageIndex]) {
                 float[] renderSize = getEffectiveRenderSize();
                 rebuildScene();
                 ubo.update(imageIndex, 0f, renderSize[0], renderSize[1], 0f);
-            }
 
-            commandBuffers.recordOffscreen(backgroundColor,
-                    renderPass,
-                    internalRenderTarget.getFramebufferHandle(),
-                    pipeline.getHandle(),
-                    pipeline.getPipelineLayoutHandle(),
-                    texturePipeline.getHandle(),
-                    texturePipeline.getPipelineLayoutHandle(),
-                    dynamicVertexBuffer.getHandle(),
-                    dynamicIndexBuffer.getHandle(),
-                    graphicsIndexCount,
-                    imageIndexCount,
-                    imageIndexOffset,
-                    descriptorManager.getDescriptorSet(imageIndex),
-                    internalRenderTarget.getImageHandle(),
-                    swapchain.getImages()[imageIndex],
-                    internalRenderTarget.getWidth(),
-                    internalRenderTarget.getHeight(),
-                    swapchain.getWidth(),
-                    swapchain.getHeight(),
-                    pixelPerfect
-            );
+                commandBuffers.recordOffscreen(
+                        imageIndex,
+                        backgroundColor,
+                        renderPass,
+                        internalRenderTarget.getFramebufferHandle(),
+                        pipeline.getHandle(),
+                        pipeline.getPipelineLayoutHandle(),
+                        texturePipeline.getHandle(),
+                        texturePipeline.getPipelineLayoutHandle(),
+                        dynamicVertexBuffer.getHandle(),
+                        dynamicIndexBuffer.getHandle(),
+                        graphicsIndexCount,
+                        imageIndexCount,
+                        imageIndexOffset,
+                        descriptorManager.getDescriptorSet(imageIndex),
+                        internalRenderTarget.getImageHandle(),
+                        swapchain.getImages()[imageIndex],
+                        internalRenderTarget.getWidth(),
+                        internalRenderTarget.getHeight(),
+                        swapchain.getWidth(),
+                        swapchain.getHeight(),
+                        pixelPerfect
+                );
+
+                commandBufferDirty[imageIndex] = false;
+                boolean allClean = true;
+                for (boolean dirty : commandBufferDirty) {
+                    if (dirty) { allClean = false; break; }
+                }
+                if (allClean) sceneDirty = false;
+            }
 
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_SUBMIT_INFO)
                     .pWaitSemaphores(stack.longs(imageAvailableSemaphore))
                     .pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT))
-                    .pCommandBuffers(stack.pointers(commandBuffers.getCommandBuffer()))
+                    .pCommandBuffers(stack.pointers(commandBuffers.getCommandBuffer(imageIndex)))
                     .pSignalSemaphores(stack.longs(renderFinishedSemaphore));
 
+            gpuSubmitTime = System.nanoTime(); // ← segna quando submittiamo
             if (vkQueueSubmit(graphicsQueue, submitInfo, inFlightFence) != VK_SUCCESS) {
                 throw new EngineEx("Errore nel submit della lista comandi alla GPU.");
             }
@@ -817,18 +858,11 @@ public final class NvContext implements Runnable {
             IntBuffer pHeight = stack.mallocInt(1);
             glfwGetFramebufferSize(window, pWidth, pHeight);
             this.swapchain = new Swapchain(device, surface, pWidth.get(0), pHeight.get(0), vsync);
-            logEngine(swapchain.getWidth());
         }
 
         int newImageCount = swapchain.getImageCount();
 
         if (newImageCount != descriptorManager.getImageCount()) {
-            logEngine("ricreating descriptorManager, existing textures:");
-            for (int i = 0; i < loadedTextures.length; i++) {
-                if (loadedTextures[i] != null) {
-                    logEngine("  slot " + i + " = " + loadedTextures[i].getTextureImage());
-                }
-            }
             if (ubo != null) ubo.close();
             if (descriptorManager != null) descriptorManager.close();
 

@@ -256,8 +256,7 @@ public abstract class NvComp implements UpdateCycle {
 
     public void drawChildren(NvGraphic g){
         for (NvComp child : children) {
-            if(camera.isComponentInRendering(child))
-                child.draw(g);
+            child.draw(g);
         }
     }
 

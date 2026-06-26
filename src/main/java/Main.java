@@ -12,6 +12,7 @@ import nv.test.game.example.CustomCharacter;
 import nv.test.game.example.Portal;
 import nv.test.game.example.Wall;
 import nv.utils.NvTextField;
+import nv.utils.shapes.dynamic.DynamicCircle;
 import nv.utils.shapes.dynamic.DynamicSquare;
 
 import java.awt.*;
@@ -20,8 +21,8 @@ void main() {
     // build the game
     var context = new ContextBuilder("TEST")
             .setVsync(true)
-            .setInternalResolution(ScreenSize._1920x1080)
             .showFps()
+            .setInternalResolution(ScreenSize._1920x1080)
             .build();
 
     // first page
@@ -39,9 +40,6 @@ void main() {
     AudioManager.load("dialtone.mp3");
     AudioManager.setVolume("dialtone.mp3", 100);
 
-    DvdLogoBouncing d = new DvdLogoBouncing(500,500);
-    d.setWeight(100);
-
     var p = new Portal(2000,500,100,100);
 
     var moving = new MovingComponent(-300,-300,400,100,
@@ -49,12 +47,14 @@ void main() {
     var obj = new DynamicSquare(-500,1000,100,100);
     obj.setRgb(0.5f,0.5f,0);
 
+    var oval = new DynamicCircle(-1000,1,1000);
+
     var whenOver = new WhenOverCollision(-500, 0, 300, 300);
 
     var field = new NvTextField(-500, 500, 100, 100, Color.BLACK, Color.WHITE);
 
     // add components to the page
-    page.addChild(d);
+    page.addChild(oval);
     page.addChild(p);
     page.addChild(moving);
     page.addChild(whenOver);

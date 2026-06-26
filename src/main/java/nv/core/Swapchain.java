@@ -37,7 +37,7 @@ public final class Swapchain implements AutoCloseable {
             VkSwapchainCreateInfoKHR createInfo = VkSwapchainCreateInfoKHR.calloc(stack);
             createInfo.sType(VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
             createInfo.surface(surfaceHandle);
-            createInfo.minImageCount(vsync ? 2 : 3);
+            createInfo.minImageCount(3);
             createInfo.imageFormat(imageFormat);
             createInfo.imageColorSpace(VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
             createInfo.imageExtent().width(width);

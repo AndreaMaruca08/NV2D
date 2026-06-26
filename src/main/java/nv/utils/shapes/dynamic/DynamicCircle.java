@@ -21,7 +21,7 @@ public class DynamicCircle extends NvRgbComp implements Collidable {
 
     @Override
     public void drawIntern(NvGraphic g) {
-        g.drawOval(0,0,w, r,this.g,b);
+        g.drawOval(0,0,w,100000, r,this.g,b);
     }
 
     @Override

@@ -37,6 +37,14 @@ public class NvCont extends NvRgbComp {
         this.b = b;
     }
 
+    @Override
+    public void drawChildren(NvGraphic g){
+        for (NvComp child : getChildren()) {
+            if (camera.isComponentInRendering(child))
+                child.draw(g);
+        }
+    }
+
     public static NvCont newPage(){
         return new NvCont(0,0, 0,0, false);
     }

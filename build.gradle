@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'not specified' // to change
-version = '1.1'
+version = '1.2'
 
 project.ext.lwjglVersion = "3.4.1"
 

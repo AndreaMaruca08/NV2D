@@ -87,9 +87,9 @@ public class NvCamera {
         float viewW = context.getRenderWidth() / safeZoom;
         float viewH = context.getRenderHeight() / safeZoom;
 
-        return comp.getX() + comp.getW() >= this.x && 
+        return comp.getX() + comp.getW() >= this.x &&
                comp.getX() <= this.x + viewW &&
-               comp.getY() + comp.getH() >= this.y && 
+               comp.getY() + comp.getH() >= this.y &&
                comp.getY() <= this.y + viewH;
     }
 
