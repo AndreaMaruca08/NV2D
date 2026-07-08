@@ -15,7 +15,6 @@ void main() {
             .showFps()
             .setInternalResolution(ScreenSize._1920x1080)
             .build();
-
     // first page
 
     var page = context.addAndSetPage("NewPage", NvCont.newPage());

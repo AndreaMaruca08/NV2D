@@ -283,7 +283,20 @@ public final class NvContext implements Runnable {
         return appInstance;
     }
 
+    private void handleMacPath(){
+        if (System.getProperty("os.name").toLowerCase().contains("mac")) {
+            if (System.getProperty("org.lwjgl.librarypath") == null) {
+                System.setProperty(
+                        "org.lwjgl.librarypath",
+                        "/opt/homebrew/lib"
+                );
+            }
+        }
+    }
+
     private NvContext(String name, int maxVertices, int maxIndices, Dimension windowDim) {
+        handleMacPath();
+
         this.MAX_VERTICES = maxVertices;
         this.MAX_INDICES = maxIndices;
         this.currentCameraUpdateCycle = (_) -> {};
