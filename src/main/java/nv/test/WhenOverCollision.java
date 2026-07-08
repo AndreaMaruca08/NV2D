@@ -20,7 +20,7 @@ public class WhenOverCollision extends NvRgbComp implements Collidable {
     @Override
     public void drawIntern(NvGraphic g) {
         g.setRGB(r,this.g,b);
-        g.drawRect(0,0,w,h);
+        g.drawRect(0,0,getW(),getH());
     }
 
     @Override

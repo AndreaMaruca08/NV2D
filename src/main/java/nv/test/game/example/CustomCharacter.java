@@ -48,7 +48,7 @@ public class CustomCharacter extends NvCharacter {
         g.drawImageRegion(
                 atlas.image(),
                 0, 0,
-                w,h,
+                getW(),getH(),
                 character.u1(), character.v1(),
                 character.u2(), character.v2()
         );
@@ -59,11 +59,11 @@ public class CustomCharacter extends NvCharacter {
         super.update(dt);
         // Example of saving and loading
         if(keys[GLFW.GLFW_KEY_ESCAPE]){
-            GameSaveManager.save(new GameSave(x,y));
+            GameSaveManager.save(new GameSave(getX(),getY()));
         }else if(keys[GLFW.GLFW_KEY_R]){
             GameSave cha = GameSaveManager.get(GameSave.class);
-            this.x = cha.playerX();
-            this.y = cha.playerY();
+            setX(cha.playerX());
+            setY(cha.playerY());
             NvContext.markSceneDirty();
         }
         else if(keys[GLFW.GLFW_KEY_SPACE]){

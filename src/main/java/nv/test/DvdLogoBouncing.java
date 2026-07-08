@@ -36,7 +36,7 @@ public class DvdLogoBouncing extends NvComp {
     @Override
     public void drawIntern(NvGraphic g) {
         g.drawImageRegion(
-                atlas.image(), 0, 0, w, h,
+                atlas.image(), 0, 0, getW(), getH(),
                 region.u1(), region.v1(),
                 region.u2(), region.v2()
         );
@@ -53,23 +53,21 @@ public class DvdLogoBouncing extends NvComp {
         int amount = (int) (100 * dt);
 
         if (isGettingBigger) {
-            w += amount;
-            h += amount;
+            setW(getW() + amount);
+            setH(getH() + amount);
 
-            if (w >= 300) {
+            if (getW() >= 300) {
                 isGettingBigger = false;
             }
         } else {
-            w -= amount;
-            h -= amount;
+            setW(getW() - amount);
+            setH(getH() - amount);
 
-            if (w <= 150) {
+            if (getW() <= 150) {
                 isGettingBigger = true;
             }
         }
 
-        // The world is infinite, but we want to bounce within the current camera VIEWPORT.
-        // camera.x/y is the world position of the top-left corner of the screen.
         float zoom = Math.max(camera.zoom, 0.0001f);
         float viewW = app.getWidth() / zoom;
         float viewH = app.getHeight() / zoom;
@@ -82,21 +80,21 @@ public class DvdLogoBouncing extends NvComp {
         if (preciseX <= minX) {
             preciseX = minX;
             velocityX = Math.abs(velocityX);
-        } else if (preciseX + w >= maxX) {
-            preciseX = maxX - w;
+        } else if (preciseX + getW() >= maxX) {
+            preciseX = maxX - getW();
             velocityX = -Math.abs(velocityX);
         }
 
         if (preciseY <= minY) {
             preciseY = minY;
             velocityY = Math.abs(velocityY);
-        } else if (preciseY + h >= maxY) {
-            preciseY = maxY - h;
+        } else if (preciseY + getH() >= maxY) {
+            preciseY = maxY - getH();
             velocityY = -Math.abs(velocityY);
         }
 
-        x = Math.round(preciseX);
-        y = Math.round(preciseY);
+        setX(Math.round(preciseX));
+        setY(Math.round(preciseY));
         NvContext.markSceneDirty();
     }
 }

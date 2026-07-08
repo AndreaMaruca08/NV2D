@@ -29,7 +29,7 @@ public class StaticSquare extends NvStateless implements Collidable {
 
     @Override
     public void drawIntern(NvGraphic g) {
-        g.drawRect(0,0,w,h,r,this.g,b, this);
+        g.drawRect(0,0,getW(),getH(),r,this.g,b, this);
     }
 
     @Override

@@ -31,7 +31,7 @@ import static nv.core.graphic.NvGraphic.camera;
 public abstract class NvComp implements UpdateCycle {
     private NvComp parent;
     private final List<NvComp> children;
-    protected int x, y, w, h;
+    private int x, y, w, h;
     protected boolean isHovered;
     protected boolean childrenFirst;
     public float rotation = 0;
@@ -41,6 +41,7 @@ public abstract class NvComp implements UpdateCycle {
     protected boolean phaseThrough = false;
     protected int zIndex = 0;
     private boolean shouldGetDestroyed = false;
+    private boolean dirty = false;
 
     public NvComp(int x, int y, int w, int h) {
         children = new ArrayList<>();
@@ -57,6 +58,7 @@ public abstract class NvComp implements UpdateCycle {
 
     public void setPhaseThrough(boolean phaseThrough) {
         this.phaseThrough = phaseThrough;
+        markDirty();
     }
 
     public int getZIndex() {
@@ -65,8 +67,8 @@ public abstract class NvComp implements UpdateCycle {
 
     public void setZIndex(int zIndex) {
         this.zIndex = zIndex;
+        markDirty();
     }
-
 
     public boolean isHUD() {
         return isHUD;
@@ -77,7 +79,7 @@ public abstract class NvComp implements UpdateCycle {
             throw new NvLogicEx("Collidable readycomponents cannot be set as HUD");
         if (isHUD != HUD) {
             isHUD = HUD;
-            invalidate();
+            markDirty();
         }
     }
 
@@ -107,6 +109,7 @@ public abstract class NvComp implements UpdateCycle {
 
     public void setWeight(int weight) {
         this.weight = weight;
+        markDirty();
     }
 
     public int getH() {
@@ -123,30 +126,58 @@ public abstract class NvComp implements UpdateCycle {
 
     public void setChildrenFirst(boolean childrenFirst) {
         this.childrenFirst = childrenFirst;
+        markDirty();
     }
 
     public void setX(int x) {
-        this.x = x;
-        invalidate();
+        if (this.x != x) {
+            this.x = x;
+            markDirty();
+        }
     }
 
     public void setY(int y) {
-        this.y = y;
-        invalidate();
+        if (this.y != y) {
+            this.y = y;
+            markDirty();
+        }
     }
 
     public void setH(int h) {
-        this.h = h;
-        invalidate();
+        if (this.h != h) {
+            this.h = h;
+            markDirty();
+        }
     }
 
     public void setW(int w) {
-        this.w = w;
-        invalidate();
+        if (this.w != w) {
+            this.w = w;
+            markDirty();
+        }
     }
 
-    public void invalidate() {
-        NvContext.markSceneDirty();
+    public void markDirty() {
+        if (!this.dirty) {
+            this.dirty = true;
+            if (parent != null) {
+                parent.childIsDirty(this);
+            } else {
+                NvContext.markSceneDirty();
+            }
+        }
+    }
+
+    protected void childIsDirty(NvComp child) {
+        markDirty();
+    }
+
+    public boolean isDirty() {
+        return dirty;
+    }
+
+    public void cleanDirty() {
+        this.dirty = false;
     }
 
     private NvContext context;
@@ -161,7 +192,7 @@ public abstract class NvComp implements UpdateCycle {
             ClickSystem.addClickable(child);
         if(child instanceof Hoverable)
             HoverSystem.addHoverable(child);
-        invalidate();
+        markDirty();
     }
 
     public void removeChild(NvComp child){
@@ -174,7 +205,7 @@ public abstract class NvComp implements UpdateCycle {
             ClickSystem.removeClickable(child);
         if(child instanceof Hoverable)
             HoverSystem.removeHoverable(child);
-        invalidate();
+        markDirty();
     }
 
     protected void mouseEnter(){}
@@ -184,7 +215,7 @@ public abstract class NvComp implements UpdateCycle {
     public void translate(Vector2D v, float amount){
         this.x += (int) (v.x * amount);
         this.y += (int) (v.y * amount);
-        invalidate();
+        markDirty();
     }
 
     public void handleHover(int mouseX, int mouseY){
@@ -192,7 +223,7 @@ public abstract class NvComp implements UpdateCycle {
         if(!hoveredNow) {
             if (isHovered) {
                 isHovered = false;
-                invalidate();
+                markDirty();
             }
             return;
         }
@@ -200,7 +231,7 @@ public abstract class NvComp implements UpdateCycle {
             child.handleHover(mouseX, mouseY);
         if (!isHovered) {
             isHovered = true;
-            invalidate();
+            markDirty();
         }
     }
 
@@ -252,6 +283,8 @@ public abstract class NvComp implements UpdateCycle {
         }
         g.setComponent(this);
         g.applyTransformsToBatch(vStart, iStart);
+
+        cleanDirty();
     }
 
     public void drawChildren(NvGraphic g){
@@ -273,10 +306,12 @@ public abstract class NvComp implements UpdateCycle {
 
     protected void rotate(float angle, boolean clockwise) {
         rotation += clockwise ? angle : -angle;
+        markDirty(); // Marca come dirty quando ruotato
     }
 
     public void destroy(){
         this.shouldGetDestroyed = true;
+        markDirty(); // Marca come dirty quando deve essere distrutto
     }
     private void actualDestroy(){
         if(context == null)
@@ -298,6 +333,7 @@ public abstract class NvComp implements UpdateCycle {
             HoverSystem.removeHoverable(this);
 
         whenDestroyed();
+        markDirty();
     }
 
     /**

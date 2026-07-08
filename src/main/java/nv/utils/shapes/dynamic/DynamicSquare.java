@@ -20,7 +20,7 @@ public class DynamicSquare extends NvRgbComp implements Collidable {
     }
     @Override
     public void drawIntern(NvGraphic g) {
-        g.drawRect(0,0,w,h,r,this.g,b);
+        g.drawRect(0,0,getW(),getH(),r,this.g,b);
     }
 
     @Override

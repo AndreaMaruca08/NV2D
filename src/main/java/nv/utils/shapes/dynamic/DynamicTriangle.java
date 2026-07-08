@@ -19,7 +19,7 @@ public class DynamicTriangle extends NvRgbComp implements Collidable {
 
     @Override
     public void drawIntern(NvGraphic g) {
-        g.drawTri(x, x+w, y);
+        g.drawTri(getX(), getX()+getW(), getY());
     }
 
     @Override

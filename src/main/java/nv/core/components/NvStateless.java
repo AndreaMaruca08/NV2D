@@ -25,7 +25,7 @@ public abstract class NvStateless extends NvComp implements AppendableGeometry {
         this.weight = CollisionSystem.MAX_WEIGHT;
     }
     public void invalidate() {
-        super.invalidate();
+        super.markDirty();
         this.initialized = false;
         this.vertexFloatCount = 0;
         this.indexCount = 0;

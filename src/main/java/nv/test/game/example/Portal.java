@@ -13,7 +13,7 @@ public class Portal extends NvComp implements Collidable {
     @Override
     public void drawIntern(NvGraphic g) {
         g.setRGB(0,0,0);
-        g.drawRect(0,0, w, h);
+        g.drawRect(0,0, getW(), getH());
     }
 
     @Override

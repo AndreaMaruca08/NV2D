@@ -20,7 +20,7 @@ public class DynamicHexagon extends NvRgbComp implements Collidable {
 
     @Override
     public void drawIntern(NvGraphic g) {
-        g.drawHexagon(0,0,w, r,this.g,b);
+        g.drawHexagon(0,0,getW(), r,this.g,b);
     }
 
     @Override

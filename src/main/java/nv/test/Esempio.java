@@ -15,7 +15,7 @@ public class Esempio extends NvComp implements Collidable, Clickable, Hoverable 
     @Override
     public void drawIntern(NvGraphic g) {
         g.setRGB(r,0,0);
-        g.drawRect(0,0,w,h);
+        g.drawRect(0,0,getW(),getH());
     }
 
     @Override

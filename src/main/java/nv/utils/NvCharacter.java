@@ -1,6 +1,5 @@
 package nv.utils;
 
-import nv.core.NvContext;
 import nv.core.annotations.ReadyComponent;
 import nv.core.camera.NvCamera;
 import nv.core.collision.Collidable;
@@ -50,15 +49,13 @@ public class NvCharacter extends NvComp implements KeyboardListener, Collidable 
     @Override
     public void drawIntern(NvGraphic g) {
         g.setRGB(1,0,0);
-        g.drawRoundRect(0, 0, w, h, 40);
+        g.drawRoundRect(0, 0, getW(), getH(), 40);
     }
-
 
     @Override
     public void onKeyPressed(boolean[] key, int mods) {
         this.keys = key;
     }
-
 
     @Override
     public void onKeyReleased(boolean[] key, int mods) {
@@ -90,11 +87,14 @@ public class NvCharacter extends NvComp implements KeyboardListener, Collidable 
         int movX = (int) (dx * velocity * dt);
         int movY = (int) (dy * velocity * dt);
 
-        x += movX;
-        y += movY;
-        if(needCamera){
-            camera.setXYOnCenter(x, y);
+        boolean hasMoved = movX != 0 || movY != 0;
+
+        if (hasMoved){
+            setX(getX() + movX);
+            setY(getY() + movY);
         }
-        NvContext.markSceneDirty();
+        if(needCamera && hasMoved){
+            camera.setXYOnCenter(getX(), getY());
+        }
     }
 }

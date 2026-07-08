@@ -28,19 +28,19 @@ public class Projectile extends NvRgbComp implements Collidable {
 
     @Override
     public void drawIntern(NvGraphic g) {
-        g.drawOval(0, 0, w, r, this.g, b);
+        g.drawOval(0, 0, getW(), r, this.g, b);
     }
 
     @Override
     public void update(float dt) {
         floatX += direction.x * speed * dt;
         floatY += direction.y * speed * dt;
-        x = (int) floatX;
-        y = (int) floatY;
+        setX((int) floatX);
+        setY((int) floatY);
         NvContext.markSceneDirty();
         
-        if(x < -ctx.getWidth() || x > ctx.getWidth()*2 ||
-                y < -ctx.getHeight() || y > ctx.getHeight()*2){
+        if(getX() < -ctx.getWidth() || getX() > ctx.getWidth()*2 ||
+                getY() < -ctx.getHeight() || getY() > ctx.getHeight()*2){
             destroy();
         }
     }

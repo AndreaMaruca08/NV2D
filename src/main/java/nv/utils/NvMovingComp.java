@@ -39,9 +39,9 @@ public abstract class NvMovingComp extends NvComp {
         this.velocityX += accelerationX * dt;
         this.velocityY += accelerationY * dt * (gravity ? gravityMultiplier : 1);
 
-        x += Math.round(velocityX * direction.x * dt);
-        y += Math.round(velocityY * (gravity ? 1 : direction.y) * dt);
-        NvContext.markSceneDirty();
+        setX(getX() + Math.round(velocityX * direction.x * dt));
+        setY(getY() + Math.round(velocityY * (gravity ? 1 : direction.y) * dt));
+
     }
 
     public void setAccelerationX(float accelerationX) {

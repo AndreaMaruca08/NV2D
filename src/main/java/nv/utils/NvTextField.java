@@ -72,7 +72,7 @@ public class NvTextField extends NvComp implements KeyboardListener, Clickable {
 
     @Override
     public void drawIntern(NvGraphic g) {
-        g.drawRect(0,0,w,h, bR,bG,bB);
+        g.drawRect(0,0,getW(),getH(), bR,bG,bB);
         g.setRGB(tR,tG,tB);
         g.drawText(password ? "*".repeat(text.length()) : text, 10, 10);
     }

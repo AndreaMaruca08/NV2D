@@ -20,7 +20,7 @@ public class DynamicPentagon extends NvRgbComp implements Collidable {
 
     @Override
     public void drawIntern(NvGraphic g) {
-        g.drawPentagon(0,0,w, r,this.g,b);
+        g.drawPentagon(0,0,getW(), r,this.g,b);
     }
 
     @Override

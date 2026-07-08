@@ -32,6 +32,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static nv.core.errors.NvLogger.logEngine;
+import static nv.core.errors.NvLogger.logInfo;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.vulkan.KHRSurface.vkDestroySurfaceKHR;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
@@ -134,7 +135,7 @@ public final class NvContext implements Runnable {
         this.targetFps = fps;
     }
 
-        public void setBackgroundColor(float r, float g, float b) {
+    public void setBackgroundColor(float r, float g, float b) {
         this.backgroundColor[0] = r;
         this.backgroundColor[1] = g;
         this.backgroundColor[2] = b;
@@ -196,6 +197,9 @@ public final class NvContext implements Runnable {
     public void setShowFPS(boolean shouldShow) {
         this.showFPS = shouldShow;
         sceneDirty = true;
+        if (!updatable.contains(fpsDisplay)){
+            addUpdatable(fpsDisplay);
+        }
     }
 
     public NvCont getPage(String key){
@@ -303,8 +307,6 @@ public final class NvContext implements Runnable {
 
         NvLogger.initialize(name, MAJOR_VERSION, MINOR_VERSION, PATCH);
         initWindow(name, windowDim);
-
-
         logEngine("Window initialized");
         initVulkan();
         logEngine("Vulkan initialized");
@@ -407,10 +409,6 @@ public final class NvContext implements Runnable {
     };
 
     private void rebuildScene() {
-        if (!sceneDirty) {
-            return;
-        }
-
         float[] renderSize = getEffectiveRenderSize();
         final float w = renderSize[0];
         final float h = renderSize[1];
@@ -444,7 +442,7 @@ public final class NvContext implements Runnable {
 
         dynamicVertexBuffer.update(combinedVertices, combinedVertexFloatCount);
         dynamicIndexBuffer.update(combinedIndices, combinedIndexCount);
-        sceneDirty = false;
+        sceneDirty = false; // Reset sceneDirty after rebuilding
     }
 
     private void ensureCombinedVertexCapacity(int requiredFloatCount) {
@@ -509,6 +507,7 @@ public final class NvContext implements Runnable {
 
         glfwSetFramebufferSizeCallback(window, (windowHandle, width, height) -> {
             framebufferResized = true;
+            markSceneDirty(); // Mark scene dirty on resize
         });
 
         mouseButtonCallback = GLFWMouseButtonCallback.create(ClickSystem.inputCallback(window));
@@ -521,6 +520,7 @@ public final class NvContext implements Runnable {
             mouseX = (int) x;
             mouseY = (int) y;
             mouseMoved = true;
+            markSceneDirty(); // Mouse movement might change hover state, so mark dirty
         });
         try (MemoryStack stack = MemoryStack.stackPush()) {
             IntBuffer w = stack.mallocInt(1);
@@ -537,7 +537,9 @@ public final class NvContext implements Runnable {
             }
         }
 
-        addUpdatable(fpsDisplay);
+        if (showFPS){
+            addUpdatable(fpsDisplay);
+        }
     }
 
 
@@ -634,8 +636,8 @@ public final class NvContext implements Runnable {
             LongBuffer pFence    = stack.mallocLong(1);
 
             if (vkCreateSemaphore(device, semaphoreInfo, null, pImgAvail) != VK_SUCCESS ||
-                vkCreateSemaphore(device, semaphoreInfo, null, pRndDone)  != VK_SUCCESS ||
-                vkCreateFence(device, fenceInfo, null, pFence)            != VK_SUCCESS) {
+                    vkCreateSemaphore(device, semaphoreInfo, null, pRndDone)  != VK_SUCCESS ||
+                    vkCreateFence(device, fenceInfo, null, pFence)            != VK_SUCCESS) {
                 throw new EngineEx("Impossibile creare gli oggetti di sincronizzazione.");
             }
 
@@ -700,8 +702,6 @@ public final class NvContext implements Runnable {
     private void mainLoop() {
         double lastFrameTime = glfwGetTime();
         while (!glfwWindowShouldClose(window)) {
-
-
             double now = glfwGetTime();
             float deltaTime = (float) (now - lastFrameTime);
             lastFrameTime = now;
@@ -709,7 +709,14 @@ public final class NvContext implements Runnable {
             glfwPollEvents();
             tickHandler(deltaTime);
 
-            drawFrame();
+            // Only draw a frame if the scene is dirty or the framebuffer has been resized
+            if (sceneDirty || framebufferResized) {
+                drawFrame();
+            } else {
+                // If nothing changed and no resize, skip drawing to achieve 0% GPU load.
+                // The screen will freeze on the last rendered frame.
+            }
+
 
             if (targetFps > 0) {
                 double targetFrameTime = 1.0 / targetFps;
@@ -734,14 +741,6 @@ public final class NvContext implements Runnable {
     private void drawFrame() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             vkWaitForFences(device, inFlightFence, true, Long.MAX_VALUE);
-
-            // Calcola il tempo GPU approssimato: quanto ha impiegato la GPU
-            // dall'ultimo submit al fence signaled (misurato lato CPU)
-            long fenceSignaledAt = System.nanoTime();
-            if (gpuSubmitTime > 0) {
-                gpuTotalMs = (fenceSignaledAt - gpuSubmitTime) / 1_000_000f;
-            }
-
             vkResetFences(device, inFlightFence);
 
             IntBuffer pImageIndex = stack.mallocInt(1);
@@ -758,9 +757,15 @@ public final class NvContext implements Runnable {
 
             int imageIndex = pImageIndex.get(0);
 
+            // Only record new commands if the scene is dirty, framebuffer resized, or command buffer for this image is dirty
             if (sceneDirty || framebufferResized || commandBufferDirty[imageIndex]) {
+                long fenceSignaledAt = System.nanoTime();
+                if (gpuSubmitTime > 0) {
+                    gpuTotalMs = (fenceSignaledAt - gpuSubmitTime) / 1_000_000f;
+                }
+
                 float[] renderSize = getEffectiveRenderSize();
-                rebuildScene();
+                rebuildScene(); // This will set sceneDirty = false
                 ubo.update(imageIndex, 0f, renderSize[0], renderSize[1], 0f);
 
                 commandBuffers.recordOffscreen(
@@ -788,13 +793,9 @@ public final class NvContext implements Runnable {
                 );
 
                 commandBufferDirty[imageIndex] = false;
-                boolean allClean = true;
-                for (boolean dirty : commandBufferDirty) {
-                    if (dirty) { allClean = false; break; }
-                }
-                if (allClean) sceneDirty = false;
             }
 
+            // Always submit and present to keep the swapchain alive and display the latest recorded frame
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_SUBMIT_INFO)
                     .pWaitSemaphores(stack.longs(imageAvailableSemaphore))
@@ -802,7 +803,7 @@ public final class NvContext implements Runnable {
                     .pCommandBuffers(stack.pointers(commandBuffers.getCommandBuffer(imageIndex)))
                     .pSignalSemaphores(stack.longs(renderFinishedSemaphore));
 
-            gpuSubmitTime = System.nanoTime(); // ← segna quando submittiamo
+            gpuSubmitTime = System.nanoTime();
             if (vkQueueSubmit(graphicsQueue, submitInfo, inFlightFence) != VK_SUCCESS) {
                 throw new EngineEx("Errore nel submit della lista comandi alla GPU.");
             }
@@ -1135,7 +1136,7 @@ public final class NvContext implements Runnable {
                 loadedTextures[i] = null;
             }
         }
-        
+
         if (pipeline            != null) pipeline.close();
         if (renderPass          != 0)    vkDestroyRenderPass(device, renderPass, null);
         if (dynamicVertexBuffer != null) dynamicVertexBuffer.close();
