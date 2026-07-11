@@ -2,7 +2,7 @@
 
 layout(binding = 1) uniform sampler2D textures[15];
 
-layout(location = 0) in vec3 fragColor;
+layout(location = 0) in vec3 fragColor; // Questo input non verrà più usato per la moltiplicazione diretta
 layout(location = 1) in vec2 fragUV;
 layout(location = 2) flat in int fragTexIndex;
 
@@ -27,5 +27,5 @@ void main() {
     else if (fragTexIndex == 14) texColor = texture(textures[14], fragUV);
     else                         texColor = texture(textures[0], fragUV);
 
-    outColor = texColor * vec4(fragColor, 1.0);
+    outColor = texColor;
 }

@@ -46,7 +46,7 @@ public final class AtlasConverter {
             String path = resourceUrl.getPath();
             String jarPath = path.substring(5, path.indexOf("!")); // Remove "file:" prefix
             String resourcePath = path.substring(path.indexOf("!") + 2); // Remove "!/" prefix
-            
+
             // Decode the jarPath to handle spaces or special characters
             jarPath = URLDecoder.decode(jarPath, StandardCharsets.UTF_8);
 
@@ -72,7 +72,7 @@ public final class AtlasConverter {
                         }
                     }
                 }
-                
+
                 // Sort entries by name to ensure consistent atlas generation
                 imageEntries.sort(Comparator.comparing(JarEntry::getName));
 
