@@ -97,6 +97,7 @@ public class NvTextField extends NvComp implements KeyboardListener, Clickable {
             NvContext.getInstance().setKeyboardFocus(old);
         }
         updateText();
+        markDirty();
 
         if (keys != null) {
             if (prevKeys == null || prevKeys.length != keys.length) {

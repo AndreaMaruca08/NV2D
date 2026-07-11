@@ -1,6 +1,5 @@
 package nv.utils;
 
-import nv.core.NvContext;
 import nv.core.annotations.ReadyComponent;
 import nv.core.components.NvComp;
 import nv.core.components.Vector2D;

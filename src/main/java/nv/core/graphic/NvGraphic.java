@@ -89,21 +89,41 @@ public abstract class NvGraphic implements AppendableGeometry {
     public void applyTransformsToBatch(int vStart, int iStart) {
         if (component == null || component.rotation == 0) return;
 
-        float cos = (float) Math.cos(component.rotation);
-        float sin = (float) Math.sin(component.rotation);
+        float rotationRad = (float) Math.toRadians(component.rotation);
+        float cos = (float) Math.cos(rotationRad);
+        float sin = (float) Math.sin(rotationRad);
 
-        rotateVertArray(vStart, cos, sin, vertexFloatCount, vertices);
+        float pivotX, pivotY;
+        if (component.isHUD()) {
+            pivotX = component.getX() + component.getW() * component.pivotX;
+            pivotY = component.getY() + component.getH() * component.pivotY;
+        } else {
+            pivotX = (component.getX() + component.getW() * component.pivotX - camera.x) * camera.zoom;
+            pivotY = (component.getY() + component.getH() * component.pivotY - camera.y) * camera.zoom;
+        }
 
-        rotateVertArray(iStart, cos, sin, imageVertexFloatCount, imageVertices);
+        rotateVertArray(vStart, cos, sin, vertexFloatCount, vertices, pivotX, pivotY);
+
+        rotateVertArray(iStart, cos, sin, imageVertexFloatCount, imageVertices, pivotX, pivotY);
     }
 
-    private void rotateVertArray(int iStart, float cos, float sin, int vertexCount, float[] imageVertices) {
+    private void rotateVertArray(int iStart, float cos, float sin, int vertexCount, float[] targetVertices, float pivotX, float pivotY) {
         for (int i = iStart; i < vertexCount; i += FLOATS_PER_VERTEX) {
-            float lx = vertices[i] - (component.getX() + w+ component.getW()/2f);
-            float ly = vertices[i+1] - (component.getY() + component.getH()/2f);
+            // Get screen coordinates of vertex
+            float vx = targetVertices[i];
+            float vy = targetVertices[i+1];
 
-            imageVertices[i]     = (lx * cos - ly * sin) + component.getX();
-            imageVertices[i + 1] = (lx * sin + ly * cos) + component.getY();
+            // Translate vertex so pivot is at origin
+            float dx = vx - pivotX;
+            float dy = vy - pivotY;
+
+            // Apply rotation
+            float rotatedVx = dx * cos - dy * sin;
+            float rotatedVy = dx * sin + dy * cos;
+
+            // Translate vertex back from origin
+            targetVertices[i]     = rotatedVx + pivotX;
+            targetVertices[i + 1] = rotatedVy + pivotY;
         }
     }
 
@@ -272,15 +292,15 @@ public abstract class NvGraphic implements AppendableGeometry {
      *     0f, 200f,      // Vertex 1 (Bottom Left)
      *     200f, 200f     // Vertex 2 (Bottom Right)
      * };
-     * 
+     *
      * int[] indices = { 0, 1, 2 };
-     * 
+     *
      * float[] colors = {
      *     1.0f, 0.0f, 0.0f, // Red color for Vertex 0
      *     0.0f, 1.0f, 0.0f, // Green color for Vertex 1
      *     0.0f, 0.0f, 1.0f  // Blue color for Vertex 2
      * };
-     * 
+     *
      * g.drawPolygon(vertices, indices, colors);
      * }
      *

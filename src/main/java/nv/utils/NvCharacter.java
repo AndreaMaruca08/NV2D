@@ -1,5 +1,6 @@
 package nv.utils;
 
+import nv.core.NvContext;
 import nv.core.annotations.ReadyComponent;
 import nv.core.camera.NvCamera;
 import nv.core.collision.Collidable;
@@ -26,7 +27,7 @@ public class NvCharacter extends NvComp implements KeyboardListener, Collidable 
     protected final NvCamera camera;
     protected boolean needCamera;
 
-    protected float velocity;
+    public static float velocity;
 
     protected boolean[] keys = new boolean[GLFW_KEY_LAST];
 
@@ -69,14 +70,22 @@ public class NvCharacter extends NvComp implements KeyboardListener, Collidable 
         float dx = 0;
         float dy = 0;
 
-        if(keys[leftKey])
+        if(keys[leftKey]) {
             dx -= 1;
-        if(keys[rightKey])
+            NvContext.markSceneDirty();
+        }
+        if(keys[rightKey]) {
             dx += 1;
-        if(keys[upKey])
+            NvContext.markSceneDirty();
+        }
+        if(keys[upKey]) {
             dy -= 1;
-        if(keys[downKey])
+            NvContext.markSceneDirty();
+        }
+        if(keys[downKey]) {
             dy += 1;
+            NvContext.markSceneDirty();
+        }
 
         if(dx != 0 && dy != 0){
             float length = (float)Math.sqrt(dx * dx + dy * dy);

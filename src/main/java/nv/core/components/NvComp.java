@@ -35,6 +35,8 @@ public abstract class NvComp implements UpdateCycle {
     protected boolean isHovered;
     protected boolean childrenFirst;
     public float rotation = 0;
+    public float pivotX = 0.5f;
+    public float pivotY = 0.5f;
     protected int weight = CollisionSystem.NO_WEIGHT;
     public boolean border = false;
     protected boolean isHUD = false;
@@ -304,14 +306,14 @@ public abstract class NvComp implements UpdateCycle {
 
     public abstract void drawIntern(NvGraphic g);
 
-    protected void rotate(float angle, boolean clockwise) {
+    public void rotate(float angle, boolean clockwise) {
         rotation += clockwise ? angle : -angle;
-        markDirty(); // Marca come dirty quando ruotato
+        markDirty();
     }
 
     public void destroy(){
         this.shouldGetDestroyed = true;
-        markDirty(); // Marca come dirty quando deve essere distrutto
+        markDirty();
     }
     private void actualDestroy(){
         if(context == null)

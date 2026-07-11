@@ -5,7 +5,7 @@ import nv.core.components.NvComp;
 
 /**
  * <p>Implement {@link KeyboardListener} if you want a component or a class to listen to keyboard events</p>
- * <p>(if you implement it on a class not {@link NvComp} you need to register it with {@link nv.core.io.KeyboardSystem#(KeyboardListener)}</p>
+ * <p>(if you implement it on a class not {@link NvComp} you need to register it with {@link KeyboardSystem#(KeyboardListener)}</p>
  * @since 1.0
  * @author Andrea Maruca
  */
