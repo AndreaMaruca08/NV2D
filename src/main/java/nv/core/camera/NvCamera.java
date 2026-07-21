@@ -43,8 +43,9 @@ public class NvCamera {
         if(context == null){
             context = NvContext.getInstance();
         }
-        x += vector2D.x - context.getRenderWidth() / 2.0f + 50.0f;
-        y += vector2D.y - context.getRenderHeight() / 2.0f + 50.0f;
+        float safeZoom = Math.max(zoom, 0.0001f);
+        x += vector2D.x - context.getRenderWidth() / safeZoom / 2.0f + 50.0f;
+        y += vector2D.y - context.getRenderHeight() / safeZoom / 2.0f + 50.0f;
         NvContext.markSceneDirty();
     }
     public void translate(float x, float y){
@@ -56,8 +57,9 @@ public class NvCamera {
         if(context == null){
             context = NvContext.getInstance();
         }
-        this.x += x - context.getRenderWidth() / 2.0f + 50.0f;
-        this.y += y - context.getRenderHeight() / 2.0f + 50.0f;
+        float safeZoom = Math.max(zoom, 0.0001f);
+        this.x += x - context.getRenderWidth() / safeZoom / 2.0f + 50.0f;
+        this.y += y - context.getRenderHeight() / safeZoom / 2.0f + 50.0f;
         NvContext.markSceneDirty();
     }
     public void setXY(float x, float y){
@@ -69,16 +71,17 @@ public class NvCamera {
         if(context == null){
             context = NvContext.getInstance();
         }
-        this.x = x - context.getRenderWidth() / 2.0f + 50.0f;
-        this.y = y - context.getRenderHeight() / 2.0f + 50.0f;
+        float safeZoom = Math.max(zoom, 0.0001f);
+        this.x = x - context.getRenderWidth() / safeZoom / 2.0f + 50.0f;
+        this.y = y - context.getRenderHeight() / safeZoom / 2.0f + 50.0f;
         NvContext.markSceneDirty();
     }
     public boolean isComponentInRendering(NvComp comp) {
         if (context == null) context = NvContext.getInstance();
-        
+
         if (comp.isHUD()) {
             return comp.getX() + comp.getW() >= 0 && comp.getX() <= context.getRenderWidth() &&
-                   comp.getY() + comp.getH() >= 0 && comp.getY() <= context.getRenderHeight();
+                    comp.getY() + comp.getH() >= 0 && comp.getY() <= context.getRenderHeight();
         }
 
         float safeZoom = Math.max(zoom, 0.0001f);
@@ -86,13 +89,63 @@ public class NvCamera {
         float viewH = context.getRenderHeight() / safeZoom;
 
         return comp.getX() + comp.getW() >= this.x &&
-               comp.getX() <= this.x + viewW &&
-               comp.getY() + comp.getH() >= this.y &&
-               comp.getY() <= this.y + viewH;
+                comp.getX() <= this.x + viewW &&
+                comp.getY() + comp.getH() >= this.y &&
+                comp.getY() <= this.y + viewH;
     }
 
     public void zoom(float amount){
         zoom += amount;
+        NvContext.markSceneDirty();
+    }
+
+    /**
+     * Changes the zoom level while keeping the center of the current viewport fixed
+     * in world space, so the camera zooms "in place" instead of drifting towards the
+     * top-left corner (which is what happens with {@link #zoom(float)} because the
+     * viewport grows/shrinks only to the right and downwards from x,y).
+     * @param amount the delta to add to the current zoom
+     */
+    public void zoomOnCenter(float amount){
+        zoomOnCenter(amount, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY);
+    }
+
+    /**
+     * Same as {@link #zoomOnCenter(float)} but clamps the resulting zoom level between
+     * minZoom and maxZoom BEFORE recomputing x/y, so the viewport used to keep the
+     * center point fixed always matches the final, clamped zoom. Clamping zoom
+     * externally after calling zoomOnCenter causes a visible jump, because x/y would
+     * have been computed for the un-clamped zoom value.
+     * @param amount the delta to add to the current zoom
+     * @param minZoom minimum allowed zoom (inclusive)
+     * @param maxZoom maximum allowed zoom (inclusive)
+     */
+    public void zoomOnCenter(float amount, float minZoom, float maxZoom){
+        if(context == null){
+            context = NvContext.getInstance();
+        }
+
+        float safeOldZoom = Math.max(zoom, 0.0001f);
+        float oldViewW = context.getRenderWidth() / safeOldZoom;
+        float oldViewH = context.getRenderHeight() / safeOldZoom;
+
+        // punto in world space che attualmente si trova al centro della viewport
+        float centerX = x + oldViewW / 2.0f;
+        float centerY = y + oldViewH / 2.0f;
+
+        float newZoom = zoom + amount;
+        if(newZoom < minZoom) newZoom = minZoom;
+        if(newZoom > maxZoom) newZoom = maxZoom;
+        zoom = newZoom;
+
+        float safeNewZoom = Math.max(zoom, 0.0001f);
+        float newViewW = context.getRenderWidth() / safeNewZoom;
+        float newViewH = context.getRenderHeight() / safeNewZoom;
+
+        // ricalcolo x/y in modo che lo stesso punto resti centrato
+        x = centerX - newViewW / 2.0f;
+        y = centerY - newViewH / 2.0f;
+
         NvContext.markSceneDirty();
     }
 

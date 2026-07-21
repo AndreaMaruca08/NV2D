@@ -1,10 +1,7 @@
 package nv.core.io;
 
 import nv.core.annotations.EngineCore;
-import org.lwjgl.openal.AL;
-import org.lwjgl.openal.AL10;
-import org.lwjgl.openal.ALC;
-import org.lwjgl.openal.ALC10;
+import org.lwjgl.openal.*;
 import org.lwjgl.stb.STBVorbis;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -13,6 +10,7 @@ import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
@@ -129,6 +127,124 @@ public final class AudioManager {
         }
     }
 
+    public static void loadExternal(String filePath) {
+
+        String fullPath = new java.io.File(filePath)
+                .getAbsolutePath();
+
+        if (bufferCache.containsKey(fullPath)) {
+            return;
+        }
+
+        int bufferId = loadExternalJavaSound(fullPath);
+
+        if (bufferId != -1) {
+            bufferCache.put(fullPath, bufferId);
+
+        } else {
+            logErr("Failed to load external audio: " + fullPath);
+
+        }
+
+    }
+
+    private static int loadExternalJavaSound(String filePath) {
+
+        try {
+
+            File file = new File(filePath);
+
+            if (!file.exists()) {
+                logErr("File not found: " + filePath);
+                return -1;
+            }
+
+
+            try(AudioInputStream in =
+                        AudioSystem.getAudioInputStream(file)) {
+
+
+                AudioFormat baseFormat = in.getFormat();
+
+
+                AudioFormat decodedFormat =
+                        new AudioFormat(
+                                AudioFormat.Encoding.PCM_SIGNED,
+                                baseFormat.getSampleRate(),
+                                16,
+                                baseFormat.getChannels(),
+                                baseFormat.getChannels() * 2,
+                                baseFormat.getSampleRate(),
+                                false
+                        );
+
+
+                try(AudioInputStream decoded =
+                            AudioSystem.getAudioInputStream(
+                                    decodedFormat,
+                                    in
+                            )) {
+
+
+                    byte[] audioBytes =
+                            decoded.readAllBytes();
+
+
+                    ByteBuffer buffer =
+                            MemoryUtil.memAlloc(
+                                    audioBytes.length
+                            );
+
+
+                    buffer.put(audioBytes).flip();
+
+
+                    int format =
+                            decodedFormat.getChannels() == 1
+                                    ? AL10.AL_FORMAT_MONO16
+                                    : AL10.AL_FORMAT_STEREO16;
+
+
+                    int bufferId =
+                            AL10.alGenBuffers();
+
+
+                    AL10.alBufferData(
+                            bufferId,
+                            format,
+                            buffer,
+                            (int) decodedFormat.getSampleRate()
+                    );
+
+
+                    MemoryUtil.memFree(buffer);
+
+
+                    return bufferId;
+                }
+            }
+
+
+        } catch(Exception e) {
+
+            logErr(
+                    "External audio loading failed: "
+                            + e.getMessage()
+            );
+
+            return -1;
+        }
+    }
+    public static void playExternal(String filePath) {
+
+        String path = new File(filePath).getAbsolutePath();
+
+        int source = getOrCreateSource(path);
+
+        if(source != -1)
+            AL10.alSourcePlay(source);
+
+    }
     /**
      * Plays an audio file continuously on a loop.
      *
@@ -155,6 +271,160 @@ public final class AudioManager {
             AL10.alSourceStop(sourceId);
         }
     }
+    /**
+     * Stops playback for a specific external audio file.
+     */
+    public static void stopExternal(String filePath) {
+        String path = new File(filePath).getAbsolutePath();
+        Integer sourceId = activeSources.get(path);
+
+        if (sourceId != null) {
+            AL10.alSourceStop(sourceId);
+        }
+    }
+
+    /**
+     * Skips (seeks) to a given position in an internal audio file.
+     * The position is clamped between 0 and the total duration of the audio.
+     *
+     * @param filePath audio file (same one used with load/playLoop)
+     * @param ms       position in milliseconds from the start of the audio
+     */
+    public static void skip(String filePath, int ms) {
+        skipInternal(PREFIX + filePath, ms);
+    }
+
+    /**
+     * Skips (seeks) to a given position in an external audio file.
+     * The position is clamped between 0 and the total duration of the audio.
+     *
+     * @param filePath audio file (same one used with loadExternal/playExternal)
+     * @param ms       position in milliseconds from the start of the audio
+     */
+    public static void skipExternal(String filePath, int ms) {
+        skipInternal(new File(filePath).getAbsolutePath(), ms);
+    }
+
+    /**
+     * Returns how far playback has progressed in an internal audio file.
+     *
+     * @param filePath audio file
+     * @return a value between 0 and 100, or 0 if the file isn't playing/loaded
+     */
+    public static float getCurrentPercentage(String filePath) {
+        return getCurrentPercentageInternal(PREFIX + filePath);
+    }
+
+    /**
+     * Returns how far playback has progressed in an external audio file.
+     *
+     * @param filePath audio file
+     * @return a value between 0 and 100, or 0 if the file isn't playing/loaded
+     */
+    public static float getCurrentPercentageExternal(String filePath) {
+        return getCurrentPercentageInternal(new File(filePath).getAbsolutePath());
+    }
+
+    /**
+     * Returns the total duration of an internal audio file.
+     *
+     * @param filePath audio file
+     * @return duration in milliseconds, or -1 if the file isn't loaded
+     */
+    public static int getDuration(String filePath) {
+        return getDurationInternal(PREFIX + filePath);
+    }
+
+    /**
+     * Returns the total duration of an external audio file.
+     *
+     * @param filePath audio file
+     * @return duration in milliseconds, or -1 if the file isn't loaded
+     */
+    public static int getDurationExternal(String filePath) {
+        return getDurationInternal(new File(filePath).getAbsolutePath());
+    }
+
+    /**
+     * Seeks the source associated with the given cache key to the given position,
+     * clamping it between 0 and the buffer's total duration.
+     */
+    private static void skipInternal(String key, int ms) {
+        Integer sourceId = activeSources.get(key);
+        Integer bufferId = bufferCache.get(key);
+
+        if (sourceId == null || bufferId == null) {
+            logErr("Cannot skip, no active source/buffer for: " + key);
+            return;
+        }
+
+        float durationSec = getBufferDurationSeconds(bufferId);
+        float targetSec = ms / 1000f;
+
+        if (targetSec < 0) targetSec = 0;
+        if (targetSec > durationSec) targetSec = durationSec;
+
+        AL10.alSourcef(sourceId, AL11.AL_SEC_OFFSET, targetSec);
+    }
+
+    /**
+     * Computes current playback progress (0-100) for the source/buffer at the given cache key.
+     */
+    private static float getCurrentPercentageInternal(String key) {
+        Integer sourceId = activeSources.get(key);
+        Integer bufferId = bufferCache.get(key);
+
+        if (sourceId == null || bufferId == null) {
+            return 0f;
+        }
+
+        float durationSec = getBufferDurationSeconds(bufferId);
+
+        if (durationSec <= 0) {
+            return 0f;
+        }
+
+        float currentSec = AL10.alGetSourcef(sourceId, AL11.AL_SEC_OFFSET);
+        float percentage = (currentSec / durationSec) * 100f;
+
+        if (percentage < 0) percentage = 0;
+        if (percentage > 100) percentage = 100;
+
+        return percentage;
+    }
+
+    /**
+     * Returns the total duration in milliseconds of the buffer at the given cache key.
+     */
+    private static int getDurationInternal(String key) {
+        Integer bufferId = bufferCache.get(key);
+
+        if (bufferId == null) {
+            return -1;
+        }
+
+        return Math.round(getBufferDurationSeconds(bufferId) * 1000f);
+    }
+
+    /**
+     * Reads size/channels/bits/frequency directly from the OpenAL buffer to compute
+     * its duration in seconds, without needing to keep the raw PCM data around.
+     */
+    private static float getBufferDurationSeconds(int bufferId) {
+        int sizeInBytes = AL10.alGetBufferi(bufferId, AL10.AL_SIZE);
+        int channels = AL10.alGetBufferi(bufferId, AL10.AL_CHANNELS);
+        int bits = AL10.alGetBufferi(bufferId, AL10.AL_BITS);
+        int frequency = AL10.alGetBufferi(bufferId, AL10.AL_FREQUENCY);
+
+        if (channels <= 0 || bits <= 0 || frequency <= 0) {
+            return 0f;
+        }
+
+        int bytesPerSample = bits / 8;
+        int totalSamples = sizeInBytes / (channels * bytesPerSample);
+
+        return (float) totalSamples / frequency;
+    }
 
     /**
      * Changes volume of an audio source.
@@ -172,6 +442,29 @@ public final class AudioManager {
 
         volumeCache.put(path, gain);
         Integer source = activeSources.get(path);
+
+        if (source != null) {
+            AL10.alSourcef(source, AL10.AL_GAIN, gain);
+        }
+    }
+    /**
+     * Changes volume of an audio source.
+     *
+     * @param filePath audio file
+     * @param volume   value between 0 and 100
+     */
+    public static void setVolumeExternal(String filePath, int volume) {
+        if (volume < 0 || volume > 100) {
+            throw new IllegalArgumentException("Volume must be between 0 and 100");
+        }
+
+        String fullPath = new java.io.File(filePath)
+                .getAbsolutePath();
+
+        float gain = volume / 100f;
+
+        volumeCache.put(fullPath, gain);
+        Integer source = activeSources.get(fullPath);
 
         if (source != null) {
             AL10.alSourcef(source, AL10.AL_GAIN, gain);
