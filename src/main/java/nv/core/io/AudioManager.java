@@ -39,6 +39,20 @@ public final class AudioManager {
     private static final Map<String, Integer> bufferCache = new ConcurrentHashMap<>(10);
     private static final Map<String, Integer> activeSources = new ConcurrentHashMap<>(10);
 
+
+    /**
+     * Stores playback speed (OpenAL pitch) values.
+     * 1.0 = normal speed
+     * 2.0 = double speed (pitch raised one octave)
+     * 0.5 = half speed (pitch lowered one octave)
+     */
+    private static final Map<String, Float> speedCache = new ConcurrentHashMap<>(10);
+
+    private static final float DEFAULT_SPEED = 1.0f;
+    private static final float MIN_SPEED = 0.05f;
+    private static final float MAX_SPEED = 40f;
+
+
     /**
      * Stores volumes using OpenAL gain values.
      * 0.0 = mute
@@ -146,6 +160,61 @@ public final class AudioManager {
 
         }
 
+    }
+
+    /**
+     * Changes the playback speed of an internal audio source.
+     * Note: OpenAL's pitch control ties speed and pitch together —
+     * speeding up also raises the pitch, and slowing down lowers it.
+     *
+     * @param filePath audio file
+     * @param speed    value between 0.5 and 2.0 (1.0 = normal)
+     */
+    public static void setSpeed(String filePath, float speed) {
+        setSpeedInternal(PREFIX + filePath, speed);
+    }
+
+    /**
+     * Changes the playback speed of an external audio source.
+     *
+     * @param filePath audio file
+     * @param speed    value between 0.5 and 2.0 (1.0 = normal)
+     */
+    public static void setSpeedExternal(String filePath, float speed) {
+        String path = new File(filePath).getAbsolutePath();
+        setSpeedInternal(path, speed);
+    }
+
+    /**
+     * Returns the current playback speed (1.0 = normal) for an internal audio file.
+     */
+    public static float getSpeed(String filePath) {
+        return speedCache.getOrDefault(PREFIX + filePath, DEFAULT_SPEED);
+    }
+
+    /**
+     * Returns the current playback speed (1.0 = normal) for an external audio file.
+     */
+    public static float getSpeedExternal(String filePath) {
+        String path = new File(filePath).getAbsolutePath();
+        return speedCache.getOrDefault(path, DEFAULT_SPEED);
+    }
+
+    /**
+     * Applies and caches a pitch/speed value for the source at the given cache key.
+     */
+    private static void setSpeedInternal(String key, float speed) {
+        if (speed < MIN_SPEED || speed > MAX_SPEED) {
+            throw new IllegalArgumentException(
+                    "Speed must be between " + MIN_SPEED + " and " + MAX_SPEED);
+        }
+
+        speedCache.put(key, speed);
+        Integer sourceId = activeSources.get(key);
+
+        if (sourceId != null) {
+            AL10.alSourcef(sourceId, AL10.AL_PITCH, speed);
+        }
     }
 
     private static int loadExternalJavaSound(String filePath) {
@@ -503,6 +572,9 @@ public final class AudioManager {
 
             float volume = volumeCache.getOrDefault(path, DEFAULT_VOLUME);
             AL10.alSourcef(sourceId, AL10.AL_GAIN, volume);
+
+            float speed = speedCache.getOrDefault(path, DEFAULT_SPEED);
+            AL10.alSourcef(sourceId, AL10.AL_PITCH, speed);
 
             return sourceId;
         });
