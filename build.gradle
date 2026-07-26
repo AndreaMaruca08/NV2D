@@ -1,25 +1,32 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+}
+
 plugins {
     id 'java'
     id 'application'
     id 'com.gradleup.shadow' version '9.0.0'
+    id 'edu.sc.seis.launch4j' version '4.0.0'
 }
 
-group = 'not specified' // to change
+group = 'not specified'
 version = '1.2'
 
 project.ext.lwjglVersion = "3.4.1"
+project.ext.currentOs = org.gradle.internal.os.OperatingSystem.current()
 
 // Platform finder
 project.ext.lwjglNatives = {
-    def os = org.gradle.internal.os.OperatingSystem.current()
     def arch = System.getProperty("os.arch")
-    if (os.isMacOsX()) {
+    if (project.ext.currentOs.isMacOsX()) {
         return arch.startsWith("aarch64") ? "natives-macos-arm64" : "natives-macos"
-    } else if (os.isWindows()) {
+    } else if (project.ext.currentOs.isWindows()) {
         return arch.contains("64") ? "natives-windows" : "natives-windows-x86"
-    } else if (os.isLinux()) {
+    } else if (project.ext.currentOs.isLinux()) {
         return arch.startsWith("aarch64") ? "natives-linux-arm64"
                 : arch.startsWith("arm")     ? "natives-linux-arm32"
                 : "natives-linux"
@@ -29,6 +36,7 @@ project.ext.lwjglNatives = {
 
 application {
     mainClass = 'Main'
+    applicationDefaultJvmArgs = ['-Dkryo.unsafe=false']
 }
 
 repositories {
@@ -39,12 +47,10 @@ dependencies {
     //----Engine dependencies----
     implementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
 
-    // Core & Graphics
     implementation "org.lwjgl:lwjgl"
     implementation "org.lwjgl:lwjgl-glfw"
     implementation "org.lwjgl:lwjgl-vulkan"
 
-    // Audio & Audio Tools (OpenAL + STB for OGG decoding)
     implementation "org.lwjgl:lwjgl-openal"
     implementation "org.lwjgl:lwjgl-stb"
 
@@ -53,19 +59,11 @@ dependencies {
     runtimeOnly "org.lwjgl:lwjgl-openal::$lwjglNatives"
     runtimeOnly "org.lwjgl:lwjgl-stb::$lwjglNatives"
 
-    // MP3 SPI decoder provider for JavaSound AudioSystem
     implementation 'com.googlecode.soundlibs:mp3spi:1.9.5.4'
-
-    // Library to save game data
     implementation 'com.esotericsoftware:kryo:5.6.2'
-
-
     //----End engine dependencies----
 }
 
-application {
-    applicationDefaultJvmArgs = ['-Dkryo.unsafe=false']
-}
 sourceSets {
     main {
         resources {
@@ -74,9 +72,8 @@ sourceSets {
     }
 }
 
-// -XstartOnFirstThread only on mac due to restrictions of the OS
 tasks.withType(JavaExec) {
-    if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
+    if (project.ext.currentOs.isMacOsX()) {
         jvmArgs += ["-XstartOnFirstThread"]
     }
     jvmArgs += ["--enable-native-access=ALL-UNNAMED"]
@@ -88,20 +85,20 @@ tasks.named('jar') {
     }
 }
 
-def lwjglModules = ['lwjgl', 'lwjgl-glfw', 'lwjgl-openal', 'lwjgl-stb']
+project.ext.lwjglModules = ['lwjgl', 'lwjgl-glfw', 'lwjgl-openal', 'lwjgl-stb']
 
-def makeNativesConfig = { String platform ->
+Configuration makeNativesConfig(String platform) {
     def safeName = "natives_${platform.replace('-', '_')}"
     def cfg = configurations.findByName(safeName) ?: configurations.create(safeName)
     if (cfg.dependencies.empty) {
-        lwjglModules.each { mod ->
-            dependencies.add(safeName, "org.lwjgl:${mod}:${lwjglVersion}:natives-${platform}")
+        project.ext.lwjglModules.each { mod ->
+            dependencies.add(safeName, "org.lwjgl:${mod}:${project.ext.lwjglVersion}:natives-${platform}")
         }
     }
     return cfg
 }
 
-def registerNvBuild = { String taskName, String platform, Object extraCfg ->
+void registerNvBuild(String taskName, String platform, Object extraCfg) {
     tasks.register(taskName, ShadowJar) {
         group = 'nv build'
         description = "Build for $platform"
@@ -122,7 +119,6 @@ def registerNvBuild = { String taskName, String platform, Object extraCfg ->
     }
 }
 
-// Builds for the current platform
 tasks.register('nvBuildCurrent', ShadowJar) {
     group = 'nv build'
     description = "Build for the current platform (${project.ext.lwjglNatives})"
@@ -142,12 +138,10 @@ tasks.register('nvBuildCurrent', ShadowJar) {
     }
 }
 
-// Build option for each platform
 registerNvBuild('nvBuildMac',     'macos-arm64', makeNativesConfig('macos-arm64'))
 registerNvBuild('nvBuildWindows', 'windows',     makeNativesConfig('windows'))
 registerNvBuild('nvBuildLinux',   'linux',       makeNativesConfig('linux'))
 
-// Universal build working on every OS (8 MB heavier) SUGGESTED FOR AN EASIER DEPLOYMENT
 tasks.register('nvBuildAll', ShadowJar) {
     group = 'nv build'
     description = 'Universal build'
@@ -179,5 +173,322 @@ tasks.register('nvBuild') {
     doLast {
         println '✅ Build completed for every platform'
         println '📦 Output in: ' + layout.buildDirectory.dir('libs').get().asFile.absolutePath
+    }
+}
+
+tasks.register('generateIcns') {
+    group = 'nv package'
+    description = 'Genera icon.icns da /gameicon/gameIcon.png (solo su macOS, richiede sips + iconutil)'
+
+    def iconSourcePng = project.file('src/main/resources/gameicon/gameIcon.png')
+    def iconIcnsFile  = project.file('src/main/resources/gameicon/icon.icns')
+    def iconsetDir    = project.file("${buildDir}/iconset/icon.iconset")
+
+    onlyIf {
+        def shouldRun = project.ext.currentOs.isMacOsX() && iconSourcePng.exists() && !iconIcnsFile.exists()
+        if (!project.ext.currentOs.isMacOsX()) {
+            println "⚠️  [generateIcns] Salto: la generazione di .icns richiede macOS (sips/iconutil). Il pacchetto Mac verrà creato senza icona custom."
+        } else if (!iconSourcePng.exists()) {
+            println "⚠️  [generateIcns] Salto: non trovato ${iconSourcePng} — servirebbe un PNG sorgente per generare l'icona."
+        }
+        shouldRun
+    }
+
+    doLast {
+        delete iconsetDir
+        mkdir iconsetDir
+
+        def sizes = [
+                [16, '16x16'], [32, '16x16@2x'],
+                [32, '32x32'], [64, '32x32@2x'],
+                [128, '128x128'], [256, '128x128@2x'],
+                [256, '256x256'], [512, '256x256@2x'],
+                [512, '512x512'], [1024, '512x512@2x']
+        ]
+
+        def runCommand = { List cmd ->
+            def cmdStrings = cmd.collect { it.toString() }
+            def process = new ProcessBuilder(cmdStrings)
+                    .redirectErrorStream(true)
+                    .start()
+            def output = process.inputStream.text
+            def exitCode = process.waitFor()
+            if (exitCode != 0) {
+                throw new GradleException("Comando fallito (${cmdStrings.join(' ')}):\n${output}")
+            }
+        }
+
+        sizes.each { pair ->
+            def size = pair[0]
+            def label = pair[1]
+            runCommand([
+                    'sips', '-z', size.toString(), size.toString(),
+                    iconSourcePng.absolutePath,
+                    '--out', "${iconsetDir}/icon_${label}.png"
+            ])
+        }
+
+        runCommand(['iconutil', '-c', 'icns', iconsetDir.absolutePath, '-o', iconIcnsFile.absolutePath])
+
+        println "✅ [generateIcns] Creato ${iconIcnsFile.absolutePath}"
+    }
+}
+
+tasks.register('generateIco') {
+    group = 'nv package'
+    description = 'Genera un gameIcon.ico in formato BMP DIB per Launch4j/windres'
+
+    def iconSourcePng = project.file('src/main/resources/gameicon/gameIcon.png')
+    def iconIcoFile   = project.file('src/main/resources/gameicon/gameIcon.ico')
+
+    onlyIf {
+        def shouldRun = iconSourcePng.exists() && !iconIcoFile.exists()
+        if (!iconSourcePng.exists()) {
+            println "⚠️  [generateIco] Salto: non trovato ${iconSourcePng}"
+        }
+        shouldRun
+    }
+
+    doLast {
+        def srcImage = javax.imageio.ImageIO.read(iconSourcePng)
+        int size = 32 // Dimensione standard 32x32 per icone BMP Windows
+
+        def scaled = new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+        def g = scaled.createGraphics()
+        g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR)
+        g.drawImage(srcImage, 0, 0, size, size, null)
+        g.dispose()
+
+        iconIcoFile.parentFile.mkdirs()
+
+        iconIcoFile.withOutputStream { os ->
+            def dos = new DataOutputStream(os)
+
+            // Helper per scrivere numeri in Little-Endian (richiesto da formato BMP/ICO)
+            def writeShortLE = { int val -> dos.writeShort(Short.reverseBytes((short) val)) }
+            def writeIntLE   = { int val -> dos.writeInt(Integer.reverseBytes((int) val)) }
+
+            int xorSize = size * size * 4      // 4096 byte (pixel BGRA)
+            int andSize = size * (size / 8)    // 128 byte (maschera di trasparenza 1 bit)
+            int imageSize = 40 + xorSize + andSize // 4264 byte totali blocco immagine
+
+            // 1. ICONDIR (6 byte)
+            writeShortLE(0) // Reserved
+            writeShortLE(1) // Type = ICO
+            writeShortLE(1) // 1 Immagine
+
+            // 2. ICONDIRENTRY (16 byte)
+            dos.writeByte(size)  // Larghezza
+            dos.writeByte(size)  // Altezza
+            dos.writeByte(0)     // Color count (0 = >=256 colori)
+            dos.writeByte(0)     // Reserved
+            writeShortLE(1)      // Planes
+            writeShortLE(32)     // Bits per pixel (32-bit ARGB)
+            writeIntLE(imageSize)// Dimensione dati immagine
+            writeIntLE(22)       // Offset inizio dati (6 + 16 = 22)
+
+            // 3. BITMAPINFOHEADER (40 byte)
+            writeIntLE(40)       // Size dell'header
+            writeIntLE(size)     // Larghezza
+            writeIntLE(size * 2) // Altezza raddoppiata (standard ICO: XOR mask + AND mask)
+            writeShortLE(1)      // Planes
+            writeShortLE(32)     // Bit count
+            writeIntLE(0)        // Compressione (0 = BI_RGB non compresso)
+            writeIntLE(xorSize + andSize) // Size immagine
+            writeIntLE(0)        // XPelsPerMeter
+            writeIntLE(0)        // YPelsPerMeter
+            writeIntLE(0)        // ClrUsed
+            writeIntLE(0)        // ClrImportant
+
+            for (int y = size - 1; y >= 0; y--) {
+                for (int x = 0; x < size; x++) {
+                    int argb = scaled.getRGB(x, y)
+                    dos.writeByte(argb & 0xFF)         // Blue
+                    dos.writeByte((argb >> 8) & 0xFF)  // Green
+                    dos.writeByte((argb >> 16) & 0xFF) // Red
+                    dos.writeByte((argb >> 24) & 0xFF) // Alpha
+                }
+            }
+
+            for (int y = size - 1; y >= 0; y--) {
+                for (int xGroup = 0; xGroup < 4; xGroup++) {
+                    int maskByte = 0
+                    for (int bit = 0; bit < 8; bit++) {
+                        int x = xGroup * 8 + bit
+                        int argb = scaled.getRGB(x, y)
+                        int alpha = (argb >> 24) & 0xFF
+                        if (alpha < 128) {
+                            maskByte |= (1 << (7 - bit))
+                        }
+                    }
+                    dos.writeByte(maskByte)
+                }
+            }
+
+            dos.flush()
+        }
+
+        println "✅ [generateIco] Creato file ICO valido per windres: ${iconIcoFile.absolutePath}"
+    }
+}
+project.ext.jpackageBin = "${System.getProperty('java.home')}/bin/jpackage"
+project.ext.distDir = layout.buildDirectory.dir('dist').get().asFile
+
+void registerJpackageTask(String taskName, String platform, Task jarTask,
+                          boolean isTargetOs, String type, String iconPath) {
+
+    tasks.register(taskName, Exec) {
+        group = 'nv package'
+        description = "Genera l'eseguibile nativo per $platform (jpackage)"
+        dependsOn jarTask
+
+        onlyIf {
+            if (!isTargetOs) {
+                println "⚠️  [$taskName] Salto: jpackage non può creare un pacchetto $platform da questo OS (${project.ext.currentOs}). Uso il fallback jar+script."
+            }
+            isTargetOs
+        }
+
+        doFirst {
+            delete "${project.ext.distDir}/${project.name}.app"
+            delete "${project.ext.distDir}/${project.name}"
+            delete fileTree(project.ext.distDir) {
+                include "${project.name}*.msi", "${project.name}*.deb"
+            }
+
+            def jarFile = jarTask.archiveFile.get().asFile
+            mkdir "${buildDir}/jpackage-input"
+            copy {
+                from jarFile
+                into "${buildDir}/jpackage-input"
+            }
+
+            def jarName = jarFile.name
+
+            def args = [
+                    project.ext.jpackageBin,
+                    '--input', "${buildDir}/jpackage-input",
+                    '--name', project.name,
+                    '--main-jar', jarName,
+                    '--main-class', 'Main',
+                    '--type', type,
+                    '--dest', project.ext.distDir.absolutePath
+            ]
+
+            if (iconPath && file(iconPath).exists()) {
+                args << '--icon' << iconPath
+            } else if (iconPath) {
+                println "⚠️  [$taskName] Icona non trovata (${iconPath}) — procedo senza icona custom."
+            }
+
+            if (project.ext.currentOs.isMacOsX()) {
+                args << '--java-options' << '-XstartOnFirstThread'
+            }
+
+            args << '--java-options' << '--enable-native-access=ALL-UNNAMED'
+
+            commandLine args
+        }
+    }
+}
+
+registerJpackageTask('nvPackageLinux', 'linux', tasks.named('nvBuildLinux').get(),
+        project.ext.currentOs.isLinux(), 'deb', null)
+
+registerJpackageTask('nvPackageMac', 'macos-arm64', tasks.named('nvBuildMac').get(),
+        project.ext.currentOs.isMacOsX(), 'app-image', "${project.projectDir}/src/main/resources/gameicon/icon.icns")
+
+tasks.named('nvPackageMac').configure {
+    dependsOn 'generateIcns'
+}
+
+
+tasks.register('nvPackageMacFallback') {
+    group = 'nv package'
+    description = 'Fallback per Mac (jar + .sh) quando non si builda su macOS'
+    dependsOn 'nvBuildMac'
+
+    onlyIf { !project.ext.currentOs.isMacOsX() }
+
+    doLast {
+        def macJar = tasks.named('nvBuildMac').get().archiveFile.get().asFile
+        def outDir = project.ext.distDir
+        mkdirs(outDir)
+
+        copy {
+            from macJar
+            into outDir
+        }
+
+        def scriptFile = new File(outDir, 'run-mac.sh')
+        scriptFile.text = """#!/bin/bash
+cd "\$(dirname "\$0")"
+java -XstartOnFirstThread --enable-native-access=ALL-UNNAMED -jar ${macJar.name}
+"""
+        scriptFile.setExecutable(true)
+
+        println "✅ [nvPackageMacFallback] Creati: ${macJar.name} + run-mac.sh in ${outDir.absolutePath}"
+    }
+}
+
+def launch4jJarDir = "${buildDir}/launch4j-input"
+
+launch4j {
+    outfile = "${project.name}.exe"
+    mainClassName = 'Main'
+    icon = "${project.projectDir}/src/main/resources/gameicon/gameIcon.ico"
+    jvmOptions = ['--enable-native-access=ALL-UNNAMED']
+    outputDir = "dist/${project.name}"
+    libraryDir = '.'
+}
+
+tasks.named('createExe') {
+    group = 'nv package'
+    description = 'Genera MyApp.exe da nvBuildWindows tramite Launch4j (funziona da qualsiasi OS)'
+    dependsOn 'nvBuildWindows', 'generateIco'
+
+    doFirst {
+        mkdir launch4jJarDir
+        copy {
+            from tasks.named('nvBuildWindows').get().archiveFile
+            into launch4jJarDir
+            rename { 'app.jar' }
+        }
+
+        copyConfigurable.set(project.files("${launch4jJarDir}/app.jar"))
+    }
+
+    doLast {
+        println "✅ [createExe] Creato MyApp.exe in ${project.ext.distDir}"
+    }
+}
+tasks.register('zipWindowsDist', Zip) {
+    group = 'nv package'
+    description = "Comprime dist/${project.name} (exe+jar) in ${project.name}.zip"
+    dependsOn 'createExe'
+
+    archiveFileName.set("${project.name}.zip")
+    destinationDirectory.set(project.ext.distDir)
+
+    from("${project.ext.distDir}/${project.name}") {
+        into project.name
+    }
+
+    doLast {
+        println "✅ [zipWindowsDist] Creato ${archiveFile.get().asFile.absolutePath}"
+    }
+}
+
+tasks.register('nvPackage') {
+    group = 'nv package'
+    description = 'Crea i pacchetti nativi possibili per la piattaforma corrente + fallback Mac + zip Windows (Launch4j)'
+
+    dependsOn 'zipWindowsDist', 'nvPackageLinux', 'nvPackageMac', 'nvPackageMacFallback'
+
+    doLast {
+        println "📦 Pacchetti generati in: ${project.ext.distDir.absolutePath}"
+        println "ℹ️  Nota: jpackage crea solo il pacchetto nativo dell'OS corrente (${project.ext.currentOs})."
+        println "   L'exe Windows (Launch4j) viene invece generato sempre, indipendentemente dall'OS."
+        println "   Per il .deb Linux, esegui questa build anche su una macchina Linux (es. CI multi-runner)."
     }
 }
