@@ -33,7 +33,7 @@ public final class GameSaveManager {
     }
 
     public static <T>T get(Class<T> classToRead){
-        File file = new File(fileName);
+        File file = AppPathUtils.resolvePath(fileName).toFile();
 
         if (!file.exists()) {
             logWarn("File not found when trying to read save file: " + fileName);
@@ -48,7 +48,7 @@ public final class GameSaveManager {
     }
 
     public static void save(Object objectToSave){
-        File file = new File(fileName);
+        File file = AppPathUtils.resolvePath(fileName).toFile();
 
         File parent = file.getParentFile();
         if (parent != null) parent.mkdirs();
