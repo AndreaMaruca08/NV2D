@@ -26,5 +26,3 @@ jobs:
 
       - name: Build
         run: ./gradlew nvBuild
-      - name: Package
-        run: ./gradlew nvPackage
