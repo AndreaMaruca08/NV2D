@@ -8,8 +8,10 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/engine" />
           </set>
         </option>
+        <option name="resolveExternalAnnotations" value="true" />
         <option name="myGradleHome" value="/usr/local/Cellar/gradle/8.14/libexec" />
       </GradleProjectSettings>
     </option>

@@ -34,8 +34,18 @@ public final class NvLogger {
         NvLogger.majorVersion = majorVersion;
         NvLogger.minorVersion = minorVersion;
         NvLogger.patch = patch;
-        logEngine("Engine: NV2DLIB ver " + majorVersion + "." + minorVersion + "." + patch + " | Logger started successfully");
-        logEngine("Engine credit: https://github.com/AndreaMaruca08/NeverNester2dLib");
+
+        System.out.printf("""
+                %s
+                ███╗   ██╗██╗   ██╗██████╗ ██████╗
+                ████╗  ██║██║   ██║╚════██╗██╔══██╗
+                ██╔██╗ ██║██║   ██║ █████╔╝██║  ██║
+                ██║╚██╗██║╚██╗ ██╔╝██╔═══╝ ██║  ██║
+                ██║ ╚████║ ╚████╔╝ ███████╗██████╔╝
+                ╚═╝  ╚═══╝  ╚═══╝  ╚══════╝╚═════╝
+                %s""", RED, RESET);
+        logEngine("Engine: ver " + majorVersion + "." + minorVersion + "." + patch + " | Logger started successfully");
+        logEngine("Engine credit: https://github.com/AndreaMaruca08/NV2D");
     }
     public static void initialize(){
         NvLogger.initialize("NvGame", 0, 0, 0);

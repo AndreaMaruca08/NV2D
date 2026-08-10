@@ -1,0 +1,46 @@
+plugins {
+    id 'java'
+}
+
+group = 'not specified'
+version = '1.2'
+
+project.ext.lwjglVersion = "3.4.1"
+project.ext.currentOs = org.gradle.internal.os.OperatingSystem.current()
+
+project.ext.lwjglNatives = {
+    def arch = System.getProperty("os.arch")
+    if (project.ext.currentOs.isMacOsX()) {
+        return arch.startsWith("aarch64") ? "natives-macos-arm64" : "natives-macos"
+    } else if (project.ext.currentOs.isWindows()) {
+        return arch.contains("64") ? "natives-windows" : "natives-windows-x86"
+    } else if (project.ext.currentOs.isLinux()) {
+        return arch.startsWith("aarch64") ? "natives-linux-arm64"
+                : arch.startsWith("arm")     ? "natives-linux-arm32"
+                : "natives-linux"
+    }
+    throw new GradleException("Piattaforma non supportata")
+}()
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
+
+    implementation "org.lwjgl:lwjgl"
+    implementation "org.lwjgl:lwjgl-glfw"
+    implementation "org.lwjgl:lwjgl-vulkan"
+
+    implementation "org.lwjgl:lwjgl-openal"
+    implementation "org.lwjgl:lwjgl-stb"
+
+    runtimeOnly "org.lwjgl:lwjgl::$lwjglNatives"
+    runtimeOnly "org.lwjgl:lwjgl-glfw::$lwjglNatives"
+    runtimeOnly "org.lwjgl:lwjgl-openal::$lwjglNatives"
+    runtimeOnly "org.lwjgl:lwjgl-stb::$lwjglNatives"
+
+    implementation 'com.googlecode.soundlibs:mp3spi:1.9.5.4'
+    implementation 'com.esotericsoftware:kryo:5.6.2'
+}

@@ -1,1 +1,3 @@
 rootProject.name = 'NV2D' // change to the actual game name
+
+include 'engine'
