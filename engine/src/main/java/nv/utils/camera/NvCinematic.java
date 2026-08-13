@@ -63,6 +63,11 @@ public abstract class NvCinematic extends NvCamera implements UpdateCycle {
         }
     }
 
+    @Override
+    public boolean isActive() {
+        return started;
+    }
+
     public void stop(){
         started = false;
     }

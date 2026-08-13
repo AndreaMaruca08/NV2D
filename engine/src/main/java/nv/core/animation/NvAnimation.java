@@ -58,4 +58,9 @@ public class NvAnimation implements UpdateCycle {
         }
         timer.start();
     }
+
+    @Override
+    public boolean isActive() {
+        return going;
+    }
 }

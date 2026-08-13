@@ -64,6 +64,16 @@ public final class ContextBuilder {
         return this;
     }
 
+    public ContextBuilder setIdleFpsLimit(int idleFps){
+        ctx.setIdleFpsLimit(idleFps);
+        return this;
+    }
+
+    public ContextBuilder setIdleWhenUnfocused(boolean idleWhenUnfocused){
+        ctx.setIdleWhenUnfocused(idleWhenUnfocused);
+        return this;
+    }
+
     /**
      * Enables the display of the frames-per-second (FPS) counter in the application.
      * This is useful for debugging and performance monitoring purposes.

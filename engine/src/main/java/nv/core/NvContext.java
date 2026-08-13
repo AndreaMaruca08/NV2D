@@ -117,6 +117,10 @@ public final class NvContext implements Runnable {
     public float fps = -1;
     private boolean showFPS = false;
     public int targetFps = -1;
+    private int idleFps = 5;
+    private boolean idleWhenUnfocused = false;
+    private volatile boolean windowFocused = true;
+    private volatile boolean inputPending = false;
     private boolean vsync = true;
     private final float[] backgroundColor = {0.1f, 0.1f, 0.1f, 1.0f};
     private int internalResolutionWidth = -1;
@@ -132,6 +136,23 @@ public final class NvContext implements Runnable {
     public static final int UNLIMITED = -1;
     public void setFpsLimit(int fps) {
         this.targetFps = fps;
+    }
+
+    public void setIdleFpsLimit(int fps) {
+        if (fps <= 0) {
+            throw new EngineEx("Idle FPS limit must be greater than zero.");
+        }
+        this.idleFps = fps;
+    }
+
+    public void setIdleWhenUnfocused(boolean idleWhenUnfocused) {
+        this.idleWhenUnfocused = idleWhenUnfocused;
+    }
+
+    public static void notifyInputEvent() {
+        if (appInstance != null) {
+            appInstance.inputPending = true;
+        }
     }
 
     public void setBackgroundColor(float r, float g, float b) {
@@ -509,6 +530,14 @@ public final class NvContext implements Runnable {
             markSceneDirty(); // Mark scene dirty on resize
         });
 
+        glfwSetWindowFocusCallback(window, (windowHandle, focused) -> {
+            windowFocused = focused;
+            inputPending = true;
+            if (focused) {
+                markSceneDirty();
+            }
+        });
+
         mouseButtonCallback = GLFWMouseButtonCallback.create(ClickSystem.inputCallback(window));
         keyboardCallback = GLFWKeyCallback.create(KeyboardSystem.keyboardCallBack());
 
@@ -519,6 +548,7 @@ public final class NvContext implements Runnable {
             mouseX = (int) x;
             mouseY = (int) y;
             mouseMoved = true;
+            inputPending = true;
             markSceneDirty(); // Mouse movement might change hover state, so mark dirty
         });
         try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -701,40 +731,83 @@ public final class NvContext implements Runnable {
     private void mainLoop() {
         double lastFrameTime = glfwGetTime();
         while (!glfwWindowShouldClose(window)) {
-            double now = glfwGetTime();
-            float deltaTime = (float) (now - lastFrameTime);
-            lastFrameTime = now;
+            double frameStart = glfwGetTime();
+            float deltaTime = (float) (frameStart - lastFrameTime);
+            lastFrameTime = frameStart;
 
             glfwPollEvents();
+            boolean hadInput = inputPending;
+            inputPending = false;
             tickHandler(deltaTime);
 
-            // Only draw a frame if the scene is dirty or the framebuffer has been resized
-            if (sceneDirty || framebufferResized) {
+            boolean canRender = !idleWhenUnfocused || windowFocused;
+            boolean shouldDraw = canRender && (sceneDirty || framebufferResized);
+            if (shouldDraw) {
                 drawFrame();
-            } else {
-                // If nothing changed and no resize, skip drawing to achieve 0% GPU load.
-                // The screen will freeze on the last rendered frame.
             }
 
-
-            if (targetFps > 0) {
-                double targetFrameTime = 1.0 / targetFps;
-                while (glfwGetTime() - now < targetFrameTime) {
-                    double remaining = targetFrameTime - (glfwGetTime() - now);
-                    if (remaining > 0.001) {
-                        try {
-                            Thread.sleep((long) (remaining * 1000 - 1));
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                        }
-                    } else {
-                        // Busy-wait for precision during the last millisecond
-                        Thread.onSpinWait();
-                    }
-                }
+            throttleFrame(frameStart, !canRender || canThrottleIdle(shouldDraw, hadInput));
+            if (inputPending) {
+                lastFrameTime = glfwGetTime();
             }
         }
         vkDeviceWaitIdle(device);
+    }
+
+    private boolean canThrottleIdle(boolean frameHadWork, boolean hadInput) {
+        return !frameHadWork && !hadInput && !currentCameraUpdateCycle.isActive() && !hasActiveUpdatables();
+    }
+
+    private boolean hasActiveUpdatables() {
+        List<UpdateCycle> snapshot = new ArrayList<>(updatable);
+        for (UpdateCycle updateCycle : snapshot) {
+            if (updateCycle.isActive()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void throttleFrame(double frameStart, boolean idle) {
+        int frameLimit = getEffectiveFrameLimit(idle);
+        if (frameLimit <= 0) {
+            return;
+        }
+
+        double targetFrameTime = 1.0 / frameLimit;
+        boolean preciseLimit = !idle;
+        while (glfwGetTime() - frameStart < targetFrameTime) {
+            double remaining = targetFrameTime - (glfwGetTime() - frameStart);
+            if (remaining > 0.001) {
+                if (preciseLimit) {
+                    try {
+                        Thread.sleep(Math.max(1, (long) (remaining * 1000 - 1)));
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                } else {
+                    glfwWaitEventsTimeout(remaining);
+                    if (inputPending) {
+                        return;
+                    }
+                }
+            } else if (preciseLimit) {
+                Thread.onSpinWait();
+            } else {
+                return;
+            }
+        }
+    }
+
+    private int getEffectiveFrameLimit(boolean idle) {
+        if (!idle) {
+            return targetFps;
+        }
+        if (targetFps > 0) {
+            return Math.min(targetFps, idleFps);
+        }
+        return idleFps;
     }
 
     private void drawFrame() {

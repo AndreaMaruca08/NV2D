@@ -435,6 +435,20 @@ public final class AudioManager {
 
         AL10.alSourcef(sourceId, AL11.AL_SEC_OFFSET, targetSec);
     }
+    /**
+     * Plays an audio
+     *
+     * @param filePath audio file
+     */
+    public static void play(String filePath) {
+        int sourceId = getOrCreateSource(PREFIX + filePath);
+
+        if (sourceId == -1) {
+            return;
+        }
+        AL10.alSourcePlay(sourceId);
+    }
+
 
     /**
      * Computes current playback progress (0-100) for the source/buffer at the given cache key.

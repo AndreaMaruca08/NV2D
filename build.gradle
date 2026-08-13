@@ -7,7 +7,7 @@ buildscript {
 }
 
 plugins {
-    id 'java'
+    id 'java-library'
     id 'application'
     id 'com.gradleup.shadow' version '9.0.0'
     id 'edu.sc.seis.launch4j' version '4.0.0'
@@ -43,8 +43,9 @@ repositories {
     mavenCentral()
 }
 
+//Put your project dependencies here
 dependencies {
-    implementation project(':engine')
+    implementation project(':engine') //do not remove or change
 }
 
 sourceSets {

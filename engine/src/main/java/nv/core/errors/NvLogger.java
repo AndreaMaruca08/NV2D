@@ -42,8 +42,8 @@ public final class NvLogger {
                 ██╔██╗ ██║██║   ██║ █████╔╝██║  ██║
                 ██║╚██╗██║╚██╗ ██╔╝██╔═══╝ ██║  ██║
                 ██║ ╚████║ ╚████╔╝ ███████╗██████╔╝
-                ╚═╝  ╚═══╝  ╚═══╝  ╚══════╝╚═════╝
-                %s""", RED, RESET);
+                ╚═╝  ╚═══╝  ╚═══╝  ╚══════╝╚═════╝%s
+                """, RED, RESET);
         logEngine("Engine: ver " + majorVersion + "." + minorVersion + "." + patch + " | Logger started successfully");
         logEngine("Engine credit: https://github.com/AndreaMaruca08/NV2D");
     }

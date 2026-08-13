@@ -1,6 +1,7 @@
 package nv.core.io;
 
 import nv.core.EmptyKeyboardListener;
+import nv.core.NvContext;
 import org.lwjgl.glfw.GLFWKeyCallbackI;
 
 import static org.lwjgl.glfw.GLFW.*;
@@ -17,6 +18,7 @@ public final class KeyboardSystem {
 
     public static GLFWKeyCallbackI keyboardCallBack(){
         return (_, key, _, action, mods) -> {
+            NvContext.notifyInputEvent();
             if(action == GLFW_PRESS || action == GLFW_REPEAT){
                 keys[key] = true;
                 focused.onKeyPressed(keys, mods);

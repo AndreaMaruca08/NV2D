@@ -143,6 +143,65 @@ public class NvPixelGraphic extends NvGraphic {
     }
 
     @Override
+    public void drawLine(
+            float x1,
+            float y1,
+            float x2,
+            float y2,
+            float thickness,
+            float r,
+            float g,
+            float b,
+            AppendableGeometry comp
+    ) {
+        x1 = tx(component.getX() + x1);
+        y1 = ty(component.getY() + y1);
+        x2 = tx(component.getX() + x2);
+        y2 = ty(component.getY() + y2);
+
+        float dx = x2 - x1;
+        float dy = y2 - y1;
+
+        float length = (float)Math.sqrt(dx * dx + dy * dy);
+
+        if(length == 0)
+            return;
+
+        float nx = -dy / length;
+        float ny = dx / length;
+
+
+        float half = thickness * 0.5f;
+
+        nx *= half;
+        ny *= half;
+
+        float[] lineVerts = {
+                x1 + nx, y1 + ny,
+                r, g, b, wu, wv, a,
+
+                x2 + nx, y2 + ny,
+                r, g, b, wu, wv, a,
+
+                x2 - nx, y2 - ny,
+                r, g, b, wu, wv, a,
+
+
+                x1 - nx, y1 - ny,
+                r, g, b, wu, wv, a
+        };
+
+
+        int[] lineIndices = {
+                0,1,2,
+                2,3,0
+        };
+
+
+        comp.append(lineVerts, lineIndices);
+    }
+
+    @Override
     public void drawRect(float x, float y, float w, float h,
                          float r, float g, float b,
                          AppendableGeometry comp) {
@@ -166,7 +225,7 @@ public class NvPixelGraphic extends NvGraphic {
     @Override
     public void drawRoundRect(float x, float y, float w, float h, float radius, float r, float g, float b, AppendableGeometry comp) {
         int segments = 8;
-        
+
         float x1 = tx(component.getX() + x);
         float y1 = ty(component.getY() + y);
         float x2 = tx(component.getX() + x + w);
@@ -178,12 +237,12 @@ public class NvPixelGraphic extends NvGraphic {
 
         int numVerts = 4 + 4 * (segments + 1);
         float[] verts = new float[numVerts * FLOATS_PER_VERTEX];
-        
+
         float[][] corners = {
-            {x1 + rScaled, y1 + rScaled}, // Top-Left
-            {x2 - rScaled, y1 + rScaled}, // Top-Right
-            {x2 - rScaled, y2 - rScaled}, // Bottom-Right
-            {x1 + rScaled, y2 - rScaled}  // Bottom-Left
+                {x1 + rScaled, y1 + rScaled}, // Top-Left
+                {x2 - rScaled, y1 + rScaled}, // Top-Right
+                {x2 - rScaled, y2 - rScaled}, // Bottom-Right
+                {x1 + rScaled, y2 - rScaled}  // Bottom-Left
         };
 
         int numIndices = 30 + 12 * segments;
@@ -191,12 +250,12 @@ public class NvPixelGraphic extends NvGraphic {
 
         int vIdx = 0;
         float[] inner = {
-            x1 + rScaled, y1 + rScaled,
-            x2 - rScaled, y1 + rScaled,
-            x2 - rScaled, y2 - rScaled,
-            x1 + rScaled, y2 - rScaled
+                x1 + rScaled, y1 + rScaled,
+                x2 - rScaled, y1 + rScaled,
+                x2 - rScaled, y2 - rScaled,
+                x1 + rScaled, y2 - rScaled
         };
-        
+
         for(int i=0; i<4; i++) {
             int off = vIdx * 8;
             verts[off] = inner[i*2];
@@ -229,7 +288,7 @@ public class NvPixelGraphic extends NvGraphic {
                 verts[off + 5] = wu;
                 verts[off + 6] = wv;
                 verts[off + 7] = a;
-                
+
                 if(s > 0) {
                     inds[iIdx++] = cornerCenterIdx;
                     inds[iIdx++] = vIdx - 1;
@@ -238,13 +297,13 @@ public class NvPixelGraphic extends NvGraphic {
                 vIdx++;
             }
         }
-        
+
         // Side rectangles
         int a0_end = 4 + segments;
         int a1_start = 4 + segments + 1;
         inds[iIdx++] = 0; inds[iIdx++] = 1; inds[iIdx++] = a1_start;
         inds[iIdx++] = a1_start; inds[iIdx++] = a0_end; inds[iIdx++] = 0;
-        
+
         int a1_end = 4 + 2*segments + 1;
         int a2_start = 4 + 2*segments + 2;
         inds[iIdx++] = 1; inds[iIdx++] = 2; inds[iIdx++] = a2_start;

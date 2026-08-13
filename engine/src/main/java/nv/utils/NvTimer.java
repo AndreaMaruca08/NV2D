@@ -89,6 +89,11 @@ public class NvTimer implements UpdateCycle {
     }
 
     @Override
+    public boolean isActive() {
+        return started && !finished;
+    }
+
+    @Override
     public String toString(){
         return "NvTimer{" +
                 "remaining=" + remaining +

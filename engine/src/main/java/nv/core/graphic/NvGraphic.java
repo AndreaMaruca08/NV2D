@@ -267,6 +267,17 @@ public abstract class NvGraphic implements AppendableGeometry {
         drawHexagon(x, y, radius, r, g, b, comp);
     };
 
+    public abstract void drawLine(float x1, float y1, float x2, float y2, float thickness, float r, float g, float b, AppendableGeometry comp);
+
+    public void drawLine(float x1, float y1, float x2, float y2, float thickness){
+        drawLine(x1, y1, x2, y2, thickness, r, g, b, this);
+    }
+
+    public void drawLine(float x1, float y1, float x2, float y2, float thickness, float r, float g, float b){
+        drawLine(x1, y1, x2, y2, thickness, r, g, b, this);
+    }
+
+
 
     public abstract void drawTri(float base1, float base2, float y, float r, float g, float b, AppendableGeometry comp);
 

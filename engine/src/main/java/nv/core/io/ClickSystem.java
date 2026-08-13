@@ -44,6 +44,7 @@ public final class ClickSystem {
 
     public static GLFWMouseButtonCallbackI inputCallback(long window){
         return (_, button, action, mods) -> {
+            NvContext.notifyInputEvent();
             if (button == GLFW_MOUSE_BUTTON_LEFT) {
                 var correctedCoords = getMappedCoords(window);
                 handleMouseClick(correctedCoords[0], correctedCoords[1], action == GLFW_PRESS);

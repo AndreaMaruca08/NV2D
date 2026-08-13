@@ -6,10 +6,12 @@ import nv.test.game.example.AnimationTest;
 import nv.test.game.example.CustomCharacter;
 import nv.test.game.example.Wall;
 
+//TEST
 void main() {
     // build the game
     var context = new ContextBuilder("TEST")
             .setVsync(true)
+            .setIdleWhenUnfocused(true)
             .build();
     // first page
 
