@@ -14,9 +14,9 @@ plugins {
 }
 
 group = 'not specified'
-version = '1.2'
+version = '1.6'
 
-project.ext.lwjglVersion = "3.4.1"
+project.ext.lwjglVersion = "3.4.2"
 project.ext.currentOs = org.gradle.internal.os.OperatingSystem.current()
 
 // Platform finder
@@ -36,7 +36,9 @@ project.ext.lwjglNatives = {
 
 application {
     mainClass = 'Main'
-    applicationDefaultJvmArgs = ['-Dkryo.unsafe=false']
+    applicationDefaultJvmArgs = [
+            '--add-opens=jdk.unsupported/sun.misc=ALL-UNNAMED'
+    ]
 }
 
 repositories {
@@ -55,14 +57,18 @@ sourceSets {
         }
     }
 }
-
 tasks.withType(JavaExec) {
     if (project.ext.currentOs.isMacOsX()) {
         jvmArgs += ["-XstartOnFirstThread"]
     }
-    jvmArgs += ["--enable-native-access=ALL-UNNAMED"]
+    jvmArgs += [
+            "--enable-native-access=ALL-UNNAMED",
+            "--sun-misc-unsafe-memory-access=allow"
+    ]
+//    systemProperty 'org.lwjgl.util.Debug', 'true'
+//    systemProperty 'org.lwjgl.util.DebugLoader', 'true'
+//    systemProperty 'org.lwjgl.system.linker.debug', 'true'
 }
-
 tasks.named('jar') {
     manifest {
         attributes('Main-Class': 'Main')
@@ -412,7 +418,10 @@ tasks.register('nvPackageMacFallback') {
         def scriptFile = new File(outDir, 'run-mac.sh')
         scriptFile.text = """#!/bin/bash
 cd "\$(dirname "\$0")"
-java -XstartOnFirstThread --enable-native-access=ALL-UNNAMED -jar ${macJar.name}
+java -XstartOnFirstThread --enable-native-access=ALL-UNNAMED \\
+     --add-opens java.base/java.lang=ALL-UNNAMED \\
+     --add-opens java.base/sun.misc=ALL-UNNAMED \\
+     -jar ${macJar.name}
 """
         scriptFile.setExecutable(true)
 
@@ -426,7 +435,11 @@ launch4j {
     outfile = "${project.name}.exe"
     mainClassName = 'Main'
     icon = "${project.projectDir}/src/main/resources/gameicon/gameIcon.ico"
-    jvmOptions = ['--enable-native-access=ALL-UNNAMED']
+    jvmOptions = [
+            '--enable-native-access=ALL-UNNAMED',
+            '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
+            '--add-opens', 'java.base/sun.misc=ALL-UNNAMED'
+    ]
     outputDir = "dist/${project.name}"
     libraryDir = '.'
 }

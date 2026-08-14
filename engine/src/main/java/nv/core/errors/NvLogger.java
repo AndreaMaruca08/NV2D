@@ -57,10 +57,14 @@ public final class NvLogger {
     private static String baseText = null;
     private static String getDefaultMessage(){
         if(baseText != null)
-            return baseText;
+            return getFormattedTime() + baseText;
         checkInitialized();
-        baseText = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) +" | " + appName + " | ";
-        return baseText;
+        baseText =  " | " + appName + " | ";
+        return getFormattedTime() + baseText;
+    }
+
+    private static String getFormattedTime(){
+        return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
     }
 
     private static void checkInitialized(){

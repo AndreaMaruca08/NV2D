@@ -45,7 +45,7 @@ import static org.lwjgl.vulkan.VK10.*;
  * @author Andrea Maruca
  */
 @EngineCore
-@SuppressWarnings("unused")
+@SuppressWarnings("all")
 public final class NvContext implements Runnable {
     private static final int MAJOR_VERSION = 1;
     private static final int MINOR_VERSION = 6;
@@ -325,6 +325,7 @@ public final class NvContext implements Runnable {
 
     private NvContext(String name, int maxVertices, int maxIndices, Dimension windowDim) {
         handleMacPath();
+        MoltenVKBootstrap.setup();
 
         this.MAX_VERTICES = maxVertices;
         this.MAX_INDICES = maxIndices;

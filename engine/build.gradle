@@ -3,9 +3,9 @@ plugins {
 }
 
 group = 'not specified'
-version = '1.2'
+version = '1.6'
 
-project.ext.lwjglVersion = "3.4.1"
+project.ext.lwjglVersion = "3.4.2"
 project.ext.currentOs = org.gradle.internal.os.OperatingSystem.current()
 
 project.ext.lwjglNatives = {
@@ -32,7 +32,6 @@ dependencies {
     api "org.lwjgl:lwjgl"
     api "org.lwjgl:lwjgl-glfw"
     api "org.lwjgl:lwjgl-vulkan"
-
     api "org.lwjgl:lwjgl-openal"
     api "org.lwjgl:lwjgl-stb"
 
