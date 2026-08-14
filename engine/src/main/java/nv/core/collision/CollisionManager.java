@@ -25,6 +25,7 @@ public final class CollisionManager {
     private static final List<NvComp> canCollide = new ArrayList<>(20);
 
     private static final CellMultiMap spatialGrid = new CellMultiMap(256);
+    private static final PairSet checkedPairs = new PairSet(1024);
 
     public static void addCanCollide(NvComp component){
         canCollide.add(component);
@@ -43,8 +44,10 @@ public final class CollisionManager {
         CollisionManager.collisionSystem = collisionSystem;
     }
 
+    /** Updated in 1.6. */
     public static void handleCollisions() {
         spatialGrid.clear();
+        checkedPairs.clear();
 
         int n = canCollide.size();
         for (int idx = 0; idx < n; idx++) {
@@ -77,6 +80,11 @@ public final class CollisionManager {
             for (int i = 0; i < cellSize; i++) {
                 NvComp a = canCollide.get(indices[i]);
                 for (int j = i + 1; j < cellSize; j++) {
+                    int aIndex = indices[i];
+                    int bIndex = indices[j];
+                    if (!checkedPairs.add(aIndex, bIndex)) {
+                        continue;
+                    }
                     NvComp b = canCollide.get(indices[j]);
                     if (a.getZIndex() != b.getZIndex())
                         continue;
@@ -88,6 +96,93 @@ public final class CollisionManager {
                         collisionSystem.resolveCollision(a, b);
                     }
                 }
+            }
+        }
+    }
+
+    /** Reusable primitive set that prevents a pair spanning multiple cells from being processed repeatedly. */
+    private static final class PairSet {
+        private long[] keys;
+        private boolean[] used;
+        private int[] touched;
+        private int mask;
+        private int size;
+        private int touchedCount;
+
+        /** @since 1.6 */
+        PairSet(int initialCapacity) {
+            allocate(initialCapacity);
+        }
+
+        /** @since 1.6 */
+        void clear() {
+            for (int i = 0; i < touchedCount; i++) {
+                used[touched[i]] = false;
+            }
+            size = 0;
+            touchedCount = 0;
+        }
+
+        /** @since 1.6 */
+        boolean add(int first, int second) {
+            if ((size << 1) >= keys.length) {
+                grow();
+            }
+
+            int min = Math.min(first, second);
+            int max = Math.max(first, second);
+            long key = ((long) min << 32) | (max & 0xFFFF_FFFFL);
+            int slot = indexFor(key);
+            if (used[slot]) {
+                return false;
+            }
+
+            used[slot] = true;
+            keys[slot] = key;
+            touched[touchedCount++] = slot;
+            size++;
+            return true;
+        }
+
+        /** @since 1.6 */
+        private void allocate(int requestedCapacity) {
+            int capacity = Integer.highestOneBit(Math.max(16, requestedCapacity - 1)) << 1;
+            keys = new long[capacity];
+            used = new boolean[capacity];
+            touched = new int[capacity];
+            mask = capacity - 1;
+            size = 0;
+            touchedCount = 0;
+        }
+
+        /** @since 1.6 */
+        private int indexFor(long key) {
+            int slot = (int) (mix(key) & mask);
+            while (used[slot] && keys[slot] != key) {
+                slot = (slot + 1) & mask;
+            }
+            return slot;
+        }
+
+        /** @since 1.6 */
+        private void grow() {
+            long[] oldKeys = keys;
+            boolean[] oldUsed = used;
+            int[] oldTouched = touched;
+            int oldTouchedCount = touchedCount;
+            allocate(keys.length << 1);
+
+            for (int i = 0; i < oldTouchedCount; i++) {
+                int oldSlot = oldTouched[i];
+                if (!oldUsed[oldSlot]) {
+                    continue;
+                }
+                long key = oldKeys[oldSlot];
+                int newSlot = indexFor(key);
+                used[newSlot] = true;
+                keys[newSlot] = key;
+                touched[touchedCount++] = newSlot;
+                size++;
             }
         }
     }
@@ -194,5 +289,12 @@ public final class CollisionManager {
             z = (z ^ (z >>> 27)) * 0x94d049bb133111ebL;
             return z ^ (z >>> 31);
         }
+    }
+
+    /** @since 1.6 */
+    private static long mix(long z) {
+        z = (z ^ (z >>> 30)) * 0xbf58476d1ce4e5b9L;
+        z = (z ^ (z >>> 27)) * 0x94d049bb133111ebL;
+        return z ^ (z >>> 31);
     }
 }

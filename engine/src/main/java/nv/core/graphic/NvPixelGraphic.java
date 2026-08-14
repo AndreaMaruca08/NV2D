@@ -5,6 +5,8 @@ import nv.core.Scene;
 import nv.core.annotations.DefaultChose;
 import nv.core.data.NvImage;
 
+import java.util.Arrays;
+
 /**
  * concrete implementation of NvGraphic
  * that specializes in rendering geometric shapes and text as direct pixel graphics.
@@ -12,6 +14,13 @@ import nv.core.data.NvImage;
 @DefaultChose
 @SuppressWarnings("unused")
 public class NvPixelGraphic extends NvGraphic {
+
+    private static final int[] TRIANGLE_INDICES = {0, 1, 2};
+    private static final int[] QUAD_INDICES = {0, 1, 2, 2, 3, 0};
+    private final float[] triangleVertices = new float[3 * FLOATS_PER_VERTEX];
+    private final float[] quadVertices = new float[4 * FLOATS_PER_VERTEX];
+    private float[] dynamicVertices = new float[0];
+    private int[] dynamicIndices = new int[0];
 
     private float tx(float worldX) {
         if(component.isHUD())
@@ -25,6 +34,7 @@ public class NvPixelGraphic extends NvGraphic {
         return (worldY - camera.y) * camera.zoom;
     }
 
+    /** Updated in 1.6. */
     @Override
     public void drawTri(float base1, float base2, float y,
                         float r, float g, float b,
@@ -35,20 +45,18 @@ public class NvPixelGraphic extends NvGraphic {
         float y1 = ty(component.getY() + y);
         float apexY = ty(component.getY() + y - component.getH());
 
-        float[] triVerts = {
-                x1, y1, r, g, b, wu, wv, 0f,
-                x2, y1, r, g, b, wu, wv, 0f,
-                (x1 + x2) * 0.5f, apexY, r, g, b, wu, wv, 0f,
-        };
-
-        int[] triInds = {0, 1, 2};
-        comp.append(triVerts, triInds);
+        setVertex(triangleVertices, 0, x1, y1, r, g, b, wu, wv, 0f);
+        setVertex(triangleVertices, 1, x2, y1, r, g, b, wu, wv, 0f);
+        setVertex(triangleVertices, 2, (x1 + x2) * 0.5f, apexY, r, g, b, wu, wv, 0f);
+        comp.append(triangleVertices, TRIANGLE_INDICES);
     }
 
+    /** Updated in 1.6. */
     @Override
     public void drawPolygon(float[] vertices, int[] indices, float[] colors, AppendableGeometry comp) {
         int numVertices = vertices.length / 2;
-        float[] polyVerts = new float[numVertices * FLOATS_PER_VERTEX];
+        int vertexFloatCount = numVertices * FLOATS_PER_VERTEX;
+        ensureDynamicCapacity(vertexFloatCount, indices.length);
 
         for (int i = 0; i < numVertices; i++) {
             float vx = tx(component.getX() + vertices[i * 2]);
@@ -71,27 +79,21 @@ public class NvPixelGraphic extends NvGraphic {
                 }
             }
 
-            int off = i * FLOATS_PER_VERTEX;
-            polyVerts[off]     = vx;
-            polyVerts[off + 1] = vy;
-            polyVerts[off + 2] = vr;
-            polyVerts[off + 3] = vg;
-            polyVerts[off + 4] = vb;
-            polyVerts[off + 5] = wu;
-            polyVerts[off + 6] = wv;
-            polyVerts[off + 7] = 0f;
+            setVertex(dynamicVertices, i, vx, vy, vr, vg, vb, wu, wv, 0f);
         }
 
-        comp.append(polyVerts, indices);
+        comp.append(dynamicVertices, vertexFloatCount, indices, indices.length);
     }
 
+    /** Updated in 1.6. */
     @Override
     public void drawOval(float x, float y, float radius, int accuracy,
                          float r, float g, float b,
                          AppendableGeometry comp) {
 
-        float[] ovalVerts = new float[(accuracy + 1) * FLOATS_PER_VERTEX];
-        int[] ovalInds = new int[accuracy * 3];
+        int vertexFloatCount = (accuracy + 1) * FLOATS_PER_VERTEX;
+        int indexCount = accuracy * 3;
+        ensureDynamicCapacity(vertexFloatCount, indexCount);
 
         x += radius/2;
         y += radius/2;
@@ -102,46 +104,30 @@ public class NvPixelGraphic extends NvGraphic {
         float rScaled = radius * camera.zoom;
 
         // center
-        ovalVerts[0] = cx;
-        ovalVerts[1] = cy;
-        ovalVerts[2] = r;
-        ovalVerts[3] = g;
-        ovalVerts[4] = b;
-        ovalVerts[5] = wu;
-        ovalVerts[6] = wv;
-        ovalVerts[7] = 0f;
+        setVertex(dynamicVertices, 0, cx, cy, r, g, b, wu, wv, 0f);
 
         for (int i = 0; i < accuracy; i++) {
 
             float angle = (float) (i * 2 * Math.PI / accuracy);
 
             int vi = i + 1;
-            int off = vi * FLOATS_PER_VERTEX;
-
             float lx = (float) Math.cos(angle) * rScaled;
             float ly = (float) Math.sin(angle) * rScaled;
-
-            ovalVerts[off]     = cx + lx;
-            ovalVerts[off + 1] = cy + ly;
-            ovalVerts[off + 2] = r;
-            ovalVerts[off + 3] = g;
-            ovalVerts[off + 4] = b;
-            ovalVerts[off + 5] = wu;
-            ovalVerts[off + 6] = wv;
-            ovalVerts[off + 7] = 0f;
+            setVertex(dynamicVertices, vi, cx + lx, cy + ly, r, g, b, wu, wv, 0f);
 
             int idx = i * 3;
             int cur = i + 1;
             int next = (i + 1) % accuracy + 1;
 
-            ovalInds[idx] = 0;
-            ovalInds[idx + 1] = cur;
-            ovalInds[idx + 2] = next;
+            dynamicIndices[idx] = 0;
+            dynamicIndices[idx + 1] = cur;
+            dynamicIndices[idx + 2] = next;
         }
 
-        comp.append(ovalVerts, ovalInds);
+        comp.append(dynamicVertices, vertexFloatCount, dynamicIndices, indexCount);
     }
 
+    /** Updated in 1.6. */
     @Override
     public void drawLine(
             float x1,
@@ -176,31 +162,14 @@ public class NvPixelGraphic extends NvGraphic {
         nx *= half;
         ny *= half;
 
-        float[] lineVerts = {
-                x1 + nx, y1 + ny,
-                r, g, b, wu, wv, a,
-
-                x2 + nx, y2 + ny,
-                r, g, b, wu, wv, a,
-
-                x2 - nx, y2 - ny,
-                r, g, b, wu, wv, a,
-
-
-                x1 - nx, y1 - ny,
-                r, g, b, wu, wv, a
-        };
-
-
-        int[] lineIndices = {
-                0,1,2,
-                2,3,0
-        };
-
-
-        comp.append(lineVerts, lineIndices);
+        setVertex(quadVertices, 0, x1 + nx, y1 + ny, r, g, b, wu, wv, a);
+        setVertex(quadVertices, 1, x2 + nx, y2 + ny, r, g, b, wu, wv, a);
+        setVertex(quadVertices, 2, x2 - nx, y2 - ny, r, g, b, wu, wv, a);
+        setVertex(quadVertices, 3, x1 - nx, y1 - ny, r, g, b, wu, wv, a);
+        comp.append(quadVertices, QUAD_INDICES);
     }
 
+    /** Updated in 1.6. */
     @Override
     public void drawRect(float x, float y, float w, float h,
                          float r, float g, float b,
@@ -211,15 +180,11 @@ public class NvPixelGraphic extends NvGraphic {
         float x2 = tx(component.getX() + x + w);
         float y2 = ty(component.getY() + y + h);
 
-        float[] quadVerts = {
-                x1, y1, r, g, b, wu, wv, a,
-                x2, y1, r, g, b, wu, wv, a,
-                x2, y2, r, g, b, wu, wv, a,
-                x1, y2, r, g, b, wu, wv, a,
-        };
-
-        int[] quadInds = {0, 1, 2, 2, 3, 0};
-        comp.append(quadVerts, quadInds);
+        setVertex(quadVertices, 0, x1, y1, r, g, b, wu, wv, a);
+        setVertex(quadVertices, 1, x2, y1, r, g, b, wu, wv, a);
+        setVertex(quadVertices, 2, x2, y2, r, g, b, wu, wv, a);
+        setVertex(quadVertices, 3, x1, y2, r, g, b, wu, wv, a);
+        comp.append(quadVertices, QUAD_INDICES);
     }
 
     @Override
@@ -322,14 +287,39 @@ public class NvPixelGraphic extends NvGraphic {
         comp.append(verts, inds);
     }
 
+    /** Updated in 1.6. */
     @Override
     public void drawText(String text, float textX, float textY,
                          AppendableGeometry comp) {
 
-        float x = tx(component.getX() + textX);
-        float y = ty(component.getY() + textY);
-        Scene textGeo = generateTextGeometry(text, x, y, fontAtlas, r,g,b);
-        comp.append(textGeo.vertices(), textGeo.indices());
+        int charCount = text.length();
+        int vertexFloatCount = charCount * 4 * FLOATS_PER_VERTEX;
+        int indexCount = charCount * 6;
+        ensureDynamicCapacity(vertexFloatCount, indexCount);
+
+        float cursorX = tx(component.getX() + textX);
+        float startY = ty(component.getY() + textY);
+        for (int i = 0; i < charCount; i++) {
+            var glyph = fontAtlas.getGlyph(text.charAt(i));
+            float x0 = cursorX;
+            float x1 = cursorX + glyph.width;
+            float y1 = startY + glyph.height;
+            int vertex = i * 4;
+            setVertex(dynamicVertices, vertex, x0, startY, r, g, b, glyph.uMin, glyph.vMin, 0f);
+            setVertex(dynamicVertices, vertex + 1, x1, startY, r, g, b, glyph.uMax, glyph.vMin, 0f);
+            setVertex(dynamicVertices, vertex + 2, x1, y1, r, g, b, glyph.uMax, glyph.vMax, 0f);
+            setVertex(dynamicVertices, vertex + 3, x0, y1, r, g, b, glyph.uMin, glyph.vMax, 0f);
+
+            int index = i * 6;
+            dynamicIndices[index] = vertex;
+            dynamicIndices[index + 1] = vertex + 1;
+            dynamicIndices[index + 2] = vertex + 2;
+            dynamicIndices[index + 3] = vertex + 2;
+            dynamicIndices[index + 4] = vertex + 3;
+            dynamicIndices[index + 5] = vertex;
+            cursorX += glyph.advance;
+        }
+        comp.append(dynamicVertices, vertexFloatCount, dynamicIndices, indexCount);
     }
 
     @Override
@@ -337,6 +327,7 @@ public class NvPixelGraphic extends NvGraphic {
         drawImageRegion(image, x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f);
     }
 
+    /** Updated in 1.6. */
     @Override
     public void drawImageRegion(NvImage image,
                                 float x, float y, float w, float h,
@@ -354,15 +345,35 @@ public class NvPixelGraphic extends NvGraphic {
             dr = dg = db = 1f;
         }
 
-        float[] quadVerts = {
-                x1, y1, dr, dg, db, u0, v0, texIndex,
-                x2, y1, dr, dg, db, u1, v0, texIndex,
-                x2, y2, dr, dg, db, u1, v1, texIndex,
-                x1, y2, dr, dg, db, u0, v1, texIndex,
-        };
+        setVertex(quadVertices, 0, x1, y1, dr, dg, db, u0, v0, texIndex);
+        setVertex(quadVertices, 1, x2, y1, dr, dg, db, u1, v0, texIndex);
+        setVertex(quadVertices, 2, x2, y2, dr, dg, db, u1, v1, texIndex);
+        setVertex(quadVertices, 3, x1, y2, dr, dg, db, u0, v1, texIndex);
+        appendImageGeometry(quadVertices, QUAD_INDICES);
+    }
 
-        int[] quadInds = {0, 1, 2, 2, 3, 0};
+    /** @since 1.6 */
+    private static void setVertex(float[] target, int vertexIndex,
+                                  float x, float y, float r, float g, float b,
+                                  float u, float v, float textureIndex) {
+        int offset = vertexIndex * FLOATS_PER_VERTEX;
+        target[offset] = x;
+        target[offset + 1] = y;
+        target[offset + 2] = r;
+        target[offset + 3] = g;
+        target[offset + 4] = b;
+        target[offset + 5] = u;
+        target[offset + 6] = v;
+        target[offset + 7] = textureIndex;
+    }
 
-        appendImageGeometry(quadVerts, quadInds);
+    /** @since 1.6 */
+    private void ensureDynamicCapacity(int vertexFloatCount, int indexCount) {
+        if (dynamicVertices.length < vertexFloatCount) {
+            dynamicVertices = Arrays.copyOf(dynamicVertices, vertexFloatCount);
+        }
+        if (dynamicIndices.length < indexCount) {
+            dynamicIndices = Arrays.copyOf(dynamicIndices, indexCount);
+        }
     }
 }

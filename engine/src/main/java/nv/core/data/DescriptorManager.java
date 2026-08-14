@@ -184,8 +184,6 @@ public final class DescriptorManager implements AutoCloseable {
         if (textureIndex < 0 || textureIndex >= 15) return;
         textures[textureIndex] = texture;
 
-        logEngine("updateTexture slot=" + textureIndex + " su " + descriptorSetHandles.length + " sets");
-
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkDescriptorImageInfo.Buffer imageInfo = VkDescriptorImageInfo.calloc(1, stack)
                     .imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)

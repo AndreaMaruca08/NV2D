@@ -95,36 +95,31 @@ public final class OrthoUBO implements AutoCloseable {
      * @param bottom      bordo inferiore (tipicamente altezza finestra, asse Y verso il basso)
      * @param top         bordo superiore (tipicamente 0)
      */
+    /** Updated in 1.6. */
     public void update(int imageIndex, float left, float right, float bottom, float top) {
-        // Matrice ortografica column-major (convenzione GLSL/Vulkan)
-        // Mappa il rettangolo [left,right] x [top,bottom] nel cubo NDC [-1,1]^3
-        float[] ortho = buildOrthoMatrix(left, right, bottom, top);
-
-        // Scrittura diretta in memoria GPU tramite indirizzo mappato (zero-copy)
-        org.lwjgl.system.MemoryUtil.memFloatBuffer(mappedAddresses[imageIndex], 16)
-                .put(ortho)
-                .flip();
-    }
-
-    /**
-     * Costruisce una matrice di proiezione ortografica 4x4 column-major.
-     * Mappa [left, right] -> [-1, 1] e [top, bottom] -> [-1, 1].
-     * In Vulkan NDC: Y=-1 è TOP, Y=1 è BOTTOM.
-     */
-    private float[] buildOrthoMatrix(float left, float right, float bottom, float top) {
         float near = 0.0f;
         float far  = 1.0f;
-
         float rml = right - left;
-        float bmt = bottom - top; // Bottom minus Top
+        float bmt = bottom - top;
         float fmn = far - near;
+        long address = mappedAddresses[imageIndex];
 
-        return new float[] {
-                2.0f / rml,           0.0f,                 0.0f,          0.0f,
-                0.0f,                 2.0f / bmt,           0.0f,          0.0f,
-                0.0f,                 0.0f,                 1.0f / fmn,    0.0f,
-                -(right + left) / rml, -(bottom + top) / bmt, -near / fmn, 1.0f
-        };
+        org.lwjgl.system.MemoryUtil.memPutFloat(address,      2.0f / rml);
+        org.lwjgl.system.MemoryUtil.memPutFloat(address +  4, 0.0f);
+        org.lwjgl.system.MemoryUtil.memPutFloat(address +  8, 0.0f);
+        org.lwjgl.system.MemoryUtil.memPutFloat(address + 12, 0.0f);
+        org.lwjgl.system.MemoryUtil.memPutFloat(address + 16, 0.0f);
+        org.lwjgl.system.MemoryUtil.memPutFloat(address + 20, 2.0f / bmt);
+        org.lwjgl.system.MemoryUtil.memPutFloat(address + 24, 0.0f);
+        org.lwjgl.system.MemoryUtil.memPutFloat(address + 28, 0.0f);
+        org.lwjgl.system.MemoryUtil.memPutFloat(address + 32, 0.0f);
+        org.lwjgl.system.MemoryUtil.memPutFloat(address + 36, 0.0f);
+        org.lwjgl.system.MemoryUtil.memPutFloat(address + 40, 1.0f / fmn);
+        org.lwjgl.system.MemoryUtil.memPutFloat(address + 44, 0.0f);
+        org.lwjgl.system.MemoryUtil.memPutFloat(address + 48, -(right + left) / rml);
+        org.lwjgl.system.MemoryUtil.memPutFloat(address + 52, -(bottom + top) / bmt);
+        org.lwjgl.system.MemoryUtil.memPutFloat(address + 56, -near / fmn);
+        org.lwjgl.system.MemoryUtil.memPutFloat(address + 60, 1.0f);
     }
 
     public long getBuffer(int imageIndex) {

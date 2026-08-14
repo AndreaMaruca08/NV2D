@@ -226,6 +226,7 @@ public final class CommandBuffers {
         }
     }
 
+    /** Updated in 1.6. */
     public void recordOffscreen(int imageIndex,
                                 float[] bgColor,
                                 long renderPass,
@@ -246,7 +247,8 @@ public final class CommandBuffers {
                                 int height,
                                 int swapchainWidth,
                                 int swapchainHeight,
-                                boolean pixelPerfect) {
+                                boolean pixelPerfect,
+                                boolean sourceImageInitialized) {
 
         VkCommandBuffer commandBuffer = commandBuffers[imageIndex];
 
@@ -259,6 +261,27 @@ public final class CommandBuffers {
             if (err != VK_SUCCESS) {
                 throw new EngineEx("Error starting vkBeginCommandBuffer: " + err);
             }
+
+            VkImageMemoryBarrier.Buffer targetBarrier = VkImageMemoryBarrier.calloc(1, stack)
+                    .sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER)
+                    .oldLayout(sourceImageInitialized
+                            ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
+                            : VK_IMAGE_LAYOUT_UNDEFINED)
+                    .newLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+                    .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                    .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                    .image(sourceImageHandle)
+                    .subresourceRange(r -> r
+                            .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                            .baseMipLevel(0).levelCount(1)
+                            .baseArrayLayer(0).layerCount(1))
+                    .srcAccessMask(sourceImageInitialized ? VK_ACCESS_TRANSFER_READ_BIT : 0)
+                    .dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+
+            vkCmdPipelineBarrier(commandBuffer,
+                    sourceImageInitialized ? VK_PIPELINE_STAGE_TRANSFER_BIT : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                    0, null, null, targetBarrier);
 
             VkClearValue.Buffer clearValues = VkClearValue.calloc(1, stack);
             clearValues.color()
@@ -357,21 +380,6 @@ public final class CommandBuffers {
                         VK_PIPELINE_STAGE_TRANSFER_BIT,
                         0, null, null, dstBarrier);
             }
-
-            // Clear della swapchain image
-            VkClearColorValue clearColor = VkClearColorValue.calloc(stack);
-            clearColor.float32(0, bgColor[0]);
-            clearColor.float32(1, bgColor[1]);
-            clearColor.float32(2, bgColor[2]);
-            clearColor.float32(3, bgColor[3]);
-            VkImageSubresourceRange clearRange = VkImageSubresourceRange.calloc(stack)
-                    .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
-                    .baseMipLevel(0).levelCount(1)
-                    .baseArrayLayer(0).layerCount(1);
-            vkCmdClearColorImage(commandBuffer,
-                    destinationImageHandle,
-                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    clearColor, clearRange);
 
             // Blit: internal → swapchain
             int filter = pixelPerfect ? VK_FILTER_NEAREST : VK_FILTER_LINEAR;

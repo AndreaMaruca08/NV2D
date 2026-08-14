@@ -30,8 +30,12 @@ public abstract class NvStateless extends NvComp implements AppendableGeometry {
         this.vertexFloatCount = 0;
         this.indexCount = 0;
     }
+    /** Updated in 1.6. */
     @Override
     public void draw(NvGraphic g) {
+        if (getChildren().isEmpty() && rotation == 0 && !NvGraphic.camera.isComponentInRendering(this)) {
+            return;
+        }
         if (!initialized) {
             super.draw(g);
             initialized = true;

@@ -27,6 +27,7 @@ import java.nio.LongBuffer;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -47,7 +48,7 @@ import static org.lwjgl.vulkan.VK10.*;
 @SuppressWarnings("unused")
 public final class NvContext implements Runnable {
     private static final int MAJOR_VERSION = 1;
-    private static final int MINOR_VERSION = 2;
+    private static final int MINOR_VERSION = 6;
     private static final int PATCH = 0;
     private static final String ENGINE_NAME = "NV2D";
 
@@ -63,6 +64,7 @@ public final class NvContext implements Runnable {
     private VkQueue graphicsQueue;
     private long renderPass;
     private InternalRenderTarget internalRenderTarget;
+    private boolean internalRenderTargetInitialized;
     private UpdateCycle currentCameraUpdateCycle;
 
     private final int MAX_VERTICES;
@@ -110,7 +112,8 @@ public final class NvContext implements Runnable {
 
     private final Map<String, NvCont> pages = new HashMap<>(10);
 
-    private final List<UpdateCycle> updatable = new ArrayList<>(10);
+    private static final int PARALLEL_UPDATE_THRESHOLD = 4;
+    private final List<UpdateCycle> updatable = new CopyOnWriteArrayList<>();
 
     public static NvCont rootComponent;
 
@@ -238,12 +241,14 @@ public final class NvContext implements Runnable {
         return swapchain.getHeight();
     }
 
+    /** Updated in 1.6. */
     public float getRenderWidth() {
-        return getEffectiveRenderSize()[0];
+        return getEffectiveRenderWidth();
     }
 
+    /** Updated in 1.6. */
     public float getRenderHeight() {
-        return getEffectiveRenderSize()[1];
+        return getEffectiveRenderHeight();
     }
 
     public NvCont getCurrentPage() {
@@ -428,10 +433,10 @@ public final class NvContext implements Runnable {
         }
     };
 
+    /** Updated in 1.6. */
     private void rebuildScene() {
-        float[] renderSize = getEffectiveRenderSize();
-        final float w = renderSize[0];
-        final float h = renderSize[1];
+        final float w = getEffectiveRenderWidth();
+        final float h = getEffectiveRenderHeight();
         final float wu = 8.0f / 512.0f;
         final float wv = 8.0f / 512.0f;
 
@@ -693,20 +698,22 @@ public final class NvContext implements Runnable {
         }
     }
 
+    /** Updated in 1.6. */
     private void runUpdatablesParallel(float dt) {
-        List<UpdateCycle> snapshot = new ArrayList<>(updatable);
-        int size = snapshot.size();
+        int size = updatable.size();
         if (size == 0) {
             return;
         }
-        if (size == 1) {
-            snapshot.get(0).update(dt);
+        if (size < PARALLEL_UPDATE_THRESHOLD) {
+            for (int i = 0; i < size; i++) {
+                updatable.get(i).update(dt);
+            }
             return;
         }
 
         List<Future<?>> futures = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
-            UpdateCycle updateCycle = snapshot.get(i);
+            UpdateCycle updateCycle = updatable.get(i);
             futures.add(updatePool.submit(() -> updateCycle.update(dt)));
         }
 
@@ -758,10 +765,11 @@ public final class NvContext implements Runnable {
         return !frameHadWork && !hadInput && !currentCameraUpdateCycle.isActive() && !hasActiveUpdatables();
     }
 
+    /** Updated in 1.6. */
     private boolean hasActiveUpdatables() {
-        List<UpdateCycle> snapshot = new ArrayList<>(updatable);
-        for (UpdateCycle updateCycle : snapshot) {
-            if (updateCycle.isActive()) {
+        int size = updatable.size();
+        for (int i = 0; i < size; i++) {
+            if (updatable.get(i).isActive()) {
                 return true;
             }
         }
@@ -810,6 +818,7 @@ public final class NvContext implements Runnable {
         return idleFps;
     }
 
+    /** Updated in 1.6. */
     private void drawFrame() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             vkWaitForFences(device, inFlightFence, true, Long.MAX_VALUE);
@@ -836,9 +845,8 @@ public final class NvContext implements Runnable {
                     gpuTotalMs = (fenceSignaledAt - gpuSubmitTime) / 1_000_000f;
                 }
 
-                float[] renderSize = getEffectiveRenderSize();
                 rebuildScene(); // This will set sceneDirty = false
-                ubo.update(imageIndex, 0f, renderSize[0], renderSize[1], 0f);
+                ubo.update(imageIndex, 0f, getEffectiveRenderWidth(), getEffectiveRenderHeight(), 0f);
 
                 commandBuffers.recordOffscreen(
                         imageIndex,
@@ -861,9 +869,11 @@ public final class NvContext implements Runnable {
                         internalRenderTarget.getHeight(),
                         swapchain.getWidth(),
                         swapchain.getHeight(),
-                        pixelPerfect
+                        pixelPerfect,
+                        internalRenderTargetInitialized
                 );
 
+                internalRenderTargetInitialized = true;
                 commandBufferDirty[imageIndex] = false;
             }
 
@@ -898,27 +908,26 @@ public final class NvContext implements Runnable {
         }
     }
 
-    private float[] getEffectiveRenderSize() {
-        int windowWidth = swapchain.getWidth();
-        int windowHeight = swapchain.getHeight();
-
+    /** @since 1.6 */
+    private float getEffectiveRenderWidth() {
         if (internalResolutionWidth > 0 && internalResolutionHeight > 0) {
-            return new float[]{internalResolutionWidth, internalResolutionHeight};
+            return internalResolutionWidth;
         }
+        return Math.max(1.0f, swapchain.getWidth() * getEffectiveRenderScale());
+    }
 
-        float scale = renderScale;
-        if (scale <= 0.0f) {
-            scale = 1.0f;
+    /** @since 1.6 */
+    private float getEffectiveRenderHeight() {
+        if (internalResolutionWidth > 0 && internalResolutionHeight > 0) {
+            return internalResolutionHeight;
         }
+        return Math.max(1.0f, swapchain.getHeight() * getEffectiveRenderScale());
+    }
 
-        if (pixelPerfect) {
-            scale = Math.max(1.0f, Math.round(scale));
-        }
-
-        return new float[]{
-                Math.max(1.0f, windowWidth * scale),
-                Math.max(1.0f, windowHeight * scale)
-        };
+    /** @since 1.6 */
+    private float getEffectiveRenderScale() {
+        float scale = renderScale <= 0.0f ? 1.0f : renderScale;
+        return pixelPerfect ? Math.max(1.0f, Math.round(scale)) : scale;
     }
 
 
@@ -1102,6 +1111,7 @@ public final class NvContext implements Runnable {
         }
     }
 
+    /** Updated in 1.6. */
     private void createRenderPass() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkAttachmentDescription.Buffer colorAttachment = VkAttachmentDescription.calloc(1, stack)
@@ -1111,7 +1121,7 @@ public final class NvContext implements Runnable {
                     .storeOp(VK_ATTACHMENT_STORE_OP_STORE)
                     .stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
                     .stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
-                    .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+                    .initialLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
                     .finalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
             VkAttachmentReference.Buffer colorRef = VkAttachmentReference.calloc(1, stack)
@@ -1150,32 +1160,34 @@ public final class NvContext implements Runnable {
         descriptorManager.updateTexture(slot, image.getTextureImage());
     }
 
+    /** Updated in 1.6. */
     private void createInternalRenderTarget() {
         if (internalRenderTarget != null) {
             internalRenderTarget.close();
         }
 
-        float[] renderSize = getEffectiveRenderSize();
         this.internalRenderTarget = new InternalRenderTarget(
                 device,
                 physicalDevice,
                 renderPass,
-                Math.max(1, Math.round(renderSize[0])),
-                Math.max(1, Math.round(renderSize[1])),
+                Math.max(1, Math.round(getEffectiveRenderWidth())),
+                Math.max(1, Math.round(getEffectiveRenderHeight())),
                 swapchain.getFormat()
         );
+        this.internalRenderTargetInitialized = false;
     }
 
+    /** Updated in 1.6. */
     private void syncRootSizeToRenderTarget() {
         if (rootComponent == null) {
             return;
         }
-        float[] renderSize = getEffectiveRenderSize();
-        rootComponent.setW(Math.max(1, Math.round(renderSize[0])));
-        rootComponent.setH(Math.max(1, Math.round(renderSize[1])));
+        rootComponent.setW(Math.max(1, Math.round(getEffectiveRenderWidth())));
+        rootComponent.setH(Math.max(1, Math.round(getEffectiveRenderHeight())));
     }
 
     private void cleanup() {
+        logEngine("-----------Clean up-----------");
         logEngine("Cleaning up allocated memory before exiting");
         if (mouseButtonCallback != null) {
             mouseButtonCallback.free();
@@ -1223,6 +1235,7 @@ public final class NvContext implements Runnable {
 
         glfwDestroyWindow(window);
         logEngine("Memory cleaned up successfully");
+        logEngine("-----------Program ended successfully-----------");
         glfwTerminate();
     }
 

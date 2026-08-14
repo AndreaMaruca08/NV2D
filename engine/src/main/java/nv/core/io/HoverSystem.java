@@ -28,10 +28,26 @@ public final class HoverSystem {
         hoverableComponents.remove(comp);
     }
 
+    /** Updated in 1.6. */
     public static void handleHover(long window, NvComp rootComponent){
-        var correctedCoords = ClickSystem.getMappedCoords(window);
+        long correctedCoords = ClickSystem.getPackedMappedCoords(window);
+        int mouseX = ClickSystem.unpackX(correctedCoords);
+        int mouseY = ClickSystem.unpackY(correctedCoords);
         for(NvComp comp : hoverableComponents){
-            comp.handleHover(correctedCoords[0], correctedCoords[1]);
+            if (hasHoverableAncestor(comp)) {
+                continue;
+            }
+            comp.handleHover(mouseX, mouseY);
         }
+    }
+
+    /** @since 1.6 */
+    private static boolean hasHoverableAncestor(NvComp component) {
+        for (NvComp parent = component.getParent(); parent != null; parent = parent.getParent()) {
+            if (parent instanceof Hoverable) {
+                return true;
+            }
+        }
+        return false;
     }
 }

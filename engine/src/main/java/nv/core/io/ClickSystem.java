@@ -5,7 +5,10 @@ import nv.core.annotations.EngineCore;
 import nv.core.components.NvComp;
 import nv.core.errors.ex.NvLogicEx;
 import org.lwjgl.glfw.GLFWMouseButtonCallbackI;
+import org.lwjgl.system.MemoryStack;
 
+import java.nio.DoubleBuffer;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,41 +45,57 @@ public final class ClickSystem {
         }
     }
 
+    /** Updated in 1.6. */
     public static GLFWMouseButtonCallbackI inputCallback(long window){
         return (_, button, action, mods) -> {
             NvContext.notifyInputEvent();
             if (button == GLFW_MOUSE_BUTTON_LEFT) {
-                var correctedCoords = getMappedCoords(window);
-                handleMouseClick(correctedCoords[0], correctedCoords[1], action == GLFW_PRESS);
+                long correctedCoords = getPackedMappedCoords(window);
+                handleMouseClick(unpackX(correctedCoords), unpackY(correctedCoords), action == GLFW_PRESS);
             }
         };
     }
 
+    /** Updated in 1.6. */
     public static int[] getMappedCoords(long window) {
-        double[] cx = new double[1];
-        double[] cy = new double[1];
-        glfwGetCursorPos(window, cx, cy);
+        long coords = getPackedMappedCoords(window);
+        return new int[]{unpackX(coords), unpackY(coords)};
+    }
 
-        int[] windowWidth  = new int[1];
-        int[] windowHeight = new int[1];
-        int[] fbWidth      = new int[1];
-        int[] fbHeight     = new int[1];
+    /** @since 1.6 */
+    static long getPackedMappedCoords(long window) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            DoubleBuffer cursorX = stack.mallocDouble(1);
+            DoubleBuffer cursorY = stack.mallocDouble(1);
+            IntBuffer windowWidth = stack.mallocInt(1);
+            IntBuffer windowHeight = stack.mallocInt(1);
+            IntBuffer fbWidth = stack.mallocInt(1);
+            IntBuffer fbHeight = stack.mallocInt(1);
 
-        glfwGetWindowSize(window, windowWidth, windowHeight);
-        glfwGetFramebufferSize(window, fbWidth, fbHeight);
+            glfwGetCursorPos(window, cursorX, cursorY);
+            glfwGetWindowSize(window, windowWidth, windowHeight);
+            glfwGetFramebufferSize(window, fbWidth, fbHeight);
 
-        // Step 1: cursore → framebuffer fisico (DPI scaling)
-        double physX = cx[0] * fbWidth[0]  / windowWidth[0];
-        double physY = cy[0] * fbHeight[0] / windowHeight[0];
+            // Step 1: cursore → framebuffer fisico (DPI scaling)
+            double physX = cursorX.get(0) * fbWidth.get(0) / windowWidth.get(0);
+            double physY = cursorY.get(0) * fbHeight.get(0) / windowHeight.get(0);
 
-        // Step 2: framebuffer fisico → spazio render target interna
-        NvContext ctx = NvContext.getInstance();
-        float renderW = ctx.getRenderWidth();
-        float renderH = ctx.getRenderHeight();
+            // Step 2: framebuffer fisico → spazio render target interna
+            NvContext ctx = NvContext.getInstance();
+            int logicalX = (int) (physX * ctx.getRenderWidth() / fbWidth.get(0));
+            int logicalY = (int) (physY * ctx.getRenderHeight() / fbHeight.get(0));
 
-        int logicalX = (int) (physX * renderW / fbWidth[0]);
-        int logicalY = (int) (physY * renderH / fbHeight[0]);
+            return ((long) logicalX << 32) | (logicalY & 0xFFFF_FFFFL);
+        }
+    }
 
-        return new int[]{logicalX, logicalY};
+    /** @since 1.6 */
+    static int unpackX(long packedCoords) {
+        return (int) (packedCoords >> 32);
+    }
+
+    /** @since 1.6 */
+    static int unpackY(long packedCoords) {
+        return (int) packedCoords;
     }
 }
