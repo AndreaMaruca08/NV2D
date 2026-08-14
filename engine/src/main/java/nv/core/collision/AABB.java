@@ -26,8 +26,8 @@ public final class AABB implements CollisionSystem{
 
     @Override
     public void resolveCollision(NvComp a, NvComp b) {
-        int dx1 = (a.getX() + a.getW()) - b.getX(); // quanto a sfora a destra di b
-        int dx2 = (b.getX() + b.getW()) - a.getX(); // quanto b sfora a destra di a
+        int dx1 = (a.getX() + a.getW()) - b.getX();
+        int dx2 = (b.getX() + b.getW()) - a.getX();
         int dy1 = (a.getY() + a.getH()) - b.getY();
         int dy2 = (b.getY() + b.getH()) - a.getY();
 
@@ -50,7 +50,6 @@ public final class AABB implements CollisionSystem{
             ratioB = totalWeight <= 0 ? 0.5f : (float) wA / totalWeight;
         }
 
-        // Usa float per la correzione, non int — evita troncamenti su oggetti piccoli
         if (ox < oy) {
             float correctionA = ox * ratioA;
             float correctionB = ox * ratioB;

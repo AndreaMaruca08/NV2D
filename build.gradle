@@ -171,6 +171,17 @@ tasks.register('nvBuild') {
     }
 }
 
+tasks.register('testEngine') {
+    group = 'verification'
+    description = 'Esegue i test JUnit del modulo engine'
+    dependsOn ':engine:test'
+}
+
+tasks.register('nvTest') {
+    group = 'nv test'
+    dependsOn ':engine:test'
+}
+
 tasks.register('generateIcns') {
     group = 'nv package'
     description = 'Genera icon.icns da /gameicon/gameIcon.png (solo su macOS, richiede sips + iconutil)'
