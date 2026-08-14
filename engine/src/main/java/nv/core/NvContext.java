@@ -277,6 +277,38 @@ public final class NvContext implements Runnable {
         return page;
     }
 
+    /**
+     * creates and set a new page by passing a name
+     * @return the new page
+     * @since 1.6
+     */
+    public NvCont newPage(String name){
+        var page = NvCont.newPage();
+        pages.put(name, page);
+        rootComponent = page;
+        syncRootSizeToRenderTarget();
+        sceneDirty = true;
+        return page;
+    }
+
+    int pageNum = 0;
+
+    /**
+     * creates and set a new page<br>
+     * a new page will have the name "page" + pageNum starting from 1
+     * @return the new page
+     * @since 1.6
+     */
+    public NvCont newPage(){
+        pageNum++;
+        var page = NvCont.newPage();
+        pages.put("page" + pageNum, page);
+        rootComponent = page;
+        syncRootSizeToRenderTarget();
+        sceneDirty = true;
+        return page;
+    }
+
     public NvCont addAndSetPage(String key, NvCont page){
         pages.put(key, page);
         rootComponent = page;
