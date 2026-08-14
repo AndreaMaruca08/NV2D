@@ -330,6 +330,8 @@ public final class NvContext implements Runnable {
         this.MAX_INDICES = maxIndices;
         this.currentCameraUpdateCycle = (_) -> {};
 
+        var nano = System.nanoTime();
+
         NvLogger.initialize(name, MAJOR_VERSION, MINOR_VERSION, PATCH);
         initWindow(name, windowDim);
         logEngine("Window initialized");
@@ -342,8 +344,9 @@ public final class NvContext implements Runnable {
         GameSaveManager.initialize("save/"+name + "_save.bin");
         logEngine("GameSaveManager initialized successfully");
 
-
-        logEngine("-----------Game started successfully-------------");
+        float finish = (System.nanoTime() - nano) / 1_000_000f;
+        logEngine("STARTED in " + finish + " milliseconds");
+        logEngine("-----------Program started successfully-------------");
     }
 
     private NvContext(String name) {

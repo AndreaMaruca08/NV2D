@@ -3,6 +3,9 @@ package nv.core.errors;
 import nv.core.annotations.EngineCore;
 import nv.core.components.NvComp;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 /**
  * <p>Specific Logger class for the NV2DLIB</p>
  * @since 1.0
@@ -43,7 +46,7 @@ public final class NvLogger {
                 ██║╚██╗██║╚██╗ ██╔╝██╔═══╝ ██║  ██║
                 ██║ ╚████║ ╚████╔╝ ███████╗██████╔╝
                 ╚═╝  ╚═══╝  ╚═══╝  ╚══════╝╚═════╝%s
-                """, RED, RESET);
+                """, MAGENTA, RESET);
         logEngine("Engine: ver " + majorVersion + "." + minorVersion + "." + patch + " | Logger started successfully");
         logEngine("Engine credit: https://github.com/AndreaMaruca08/NV2D");
     }
@@ -56,7 +59,7 @@ public final class NvLogger {
         if(baseText != null)
             return baseText;
         checkInitialized();
-        baseText = appName + " | ";
+        baseText = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) +" | " + appName + " | ";
         return baseText;
     }
 
