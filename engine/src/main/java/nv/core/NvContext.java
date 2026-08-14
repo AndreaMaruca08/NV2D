@@ -108,7 +108,18 @@ public final class NvContext implements Runnable {
 
     private boolean framebufferResized = false;
 
-    private static final Dimension SCREEN = Toolkit.getDefaultToolkit().getScreenSize();
+    private static final Dimension SCREEN;
+    static {
+        Dimension s;
+        try {
+            s = java.awt.GraphicsEnvironment.isHeadless()
+                    ? new Dimension(1920, 1080)
+                    : Toolkit.getDefaultToolkit().getScreenSize();
+        } catch (Throwable e) {
+            s = new Dimension(1920, 1080);
+        }
+        SCREEN = s;
+    }
 
     private final Map<String, NvCont> pages = new HashMap<>(10);
 

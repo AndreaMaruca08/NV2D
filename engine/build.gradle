@@ -55,6 +55,7 @@ test {
     testClassesDirs = sourceSets.main.output.classesDirs + sourceSets.test.output.classesDirs
     classpath = sourceSets.main.runtimeClasspath + sourceSets.test.runtimeClasspath
 
+    systemProperty 'java.awt.headless', 'true'
     outputs.upToDateWhen { false }
 
     testLogging {
