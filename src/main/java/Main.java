@@ -1,5 +1,6 @@
 import nv.core.ContextBuilder;
 import nv.core.NvContext;
+import nv.test.benchmark.Benchmark;
 
 //Example
 void main() {
@@ -11,6 +12,8 @@ void main() {
     // first page
     var page = context.newPage();
     page.setBackground(0,0,0);
+
+    page.addChild(new Benchmark(1000, 2));
 
     // run the game
     context.run();
