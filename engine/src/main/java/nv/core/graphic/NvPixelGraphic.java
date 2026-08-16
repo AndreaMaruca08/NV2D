@@ -95,14 +95,10 @@ public class NvPixelGraphic extends NvGraphic {
         int indexCount = accuracy * 3;
         ensureDynamicCapacity(vertexFloatCount, indexCount);
 
-        x += radius/2;
-        y += radius/2;
-
         float cx = tx(component.getX() + x);
         float cy = ty(component.getY() + y);
 
         float rScaled = radius * camera.zoom;
-
         // center
         setVertex(dynamicVertices, 0, cx, cy, r, g, b, wu, wv, 0f);
 
