@@ -9,6 +9,7 @@ import nv.core.graphic.NvGraphic;
 import nv.core.io.KeyboardListener;
 import nv.core.io.KeyboardSystem;
 import nv.utils.NvTimer;
+import nv.utils.camera.NvControlledCamera;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -16,6 +17,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Represents a camera that can be used to control the view of a 2D game.
  * <p>Using the translation methods, you can move the camera position and zoom level.</p>
  * <p>To set the current camera you need to call {@link NvGraphic#setCurrentCamera(NvCamera)}.</p>
+ *
+ * SEE ALSO {@link NvControlledCamera}
  * @since 1.0
  * @author Andrea Maruca
  */
@@ -31,7 +34,7 @@ public class NvCamera {
     public NvCamera(float x, float y, float zoom) {
         this.x = x;
         this.y = y;
-        this.zoom = zoom/100;
+        this.zoom = zoom;
     }
 
     public void translate(Vector2D vector2D){

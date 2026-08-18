@@ -2,6 +2,7 @@ package nv.core;
 
 import nv.core.annotations.EngineCore;
 import nv.core.assets.AssetsManager;
+import nv.core.camera.NvCamera;
 import nv.core.collision.CollisionManager;
 import nv.core.components.NvComp;
 import nv.core.components.NvCont;
@@ -70,8 +71,8 @@ public final class NvContext implements Runnable {
     private final int MAX_VERTICES;
     private final int MAX_INDICES;
 
-    private static final int DEF_MAX_VERTICES = 500_000;
-    private static final int DEF_MAX_INDICES  = 850_000;
+    private static final int DEF_MAX_VERTICES = 1_000_000;
+    private static final int DEF_MAX_INDICES  = 1_300_000;
 
     private static final int MAX_TEXTURES = 15;
     private final NvImage[] loadedTextures = new NvImage[MAX_TEXTURES];
@@ -629,6 +630,9 @@ public final class NvContext implements Runnable {
         KeyboardSystem.focused = focused;
     }
 
+    public void setCamera(NvCamera camera){
+        NvGraphic.setCurrentCamera(camera);
+    }
 
     private void initVulkan() {
         createInstance();

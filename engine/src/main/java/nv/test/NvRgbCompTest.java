@@ -53,7 +53,7 @@ public class NvRgbCompTest {
         assertEquals(400, cont.getH());
         assertEquals(1.0f, cont.getR(), 0.0001f);
 
-        cont.setBackground(0.1f, 0.2f, 0.3f);
+        cont.setBackgroundColor(0.1f, 0.2f, 0.3f);
         assertEquals(0.1f, cont.getR(), 0.0001f);
         assertEquals(0.2f, cont.getG(), 0.0001f);
         assertEquals(0.3f, cont.getB(), 0.0001f);

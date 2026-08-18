@@ -7,7 +7,7 @@ import java.util.Random;
 
 public class BlackHole extends NvComp {
 
-    private static final int MAX_PARTICLES = 150_000;
+    private static final int MAX_PARTICLES = 300_000;
     private static final int START_PARTICLES = 500;
     private static final int SPAWN_PER_SECOND = 5_000;
 

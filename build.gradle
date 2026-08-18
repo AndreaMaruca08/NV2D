@@ -171,6 +171,24 @@ tasks.register('nvBuild') {
     }
 }
 
+tasks.register('nvBenchmark', JavaExec) {
+    group = 'nv bench'
+    description = 'Avvia il benchmark da engine/src/main/java/nv/test/benchmark/BenchmarkMain.java'
+
+    classpath = sourceSets.main.runtimeClasspath + project(':engine').sourceSets.main.output
+
+    mainClass = 'BenchmarkMain'
+
+    if (project.ext.currentOs.isMacOsX()) {
+        jvmArgs += ['-XstartOnFirstThread']
+    }
+
+    jvmArgs += [
+            '--enable-native-access=ALL-UNNAMED',
+            '--sun-misc-unsafe-memory-access=allow'
+    ]
+}
+
 tasks.register('testEngine') {
     group = 'verification'
     description = 'Esegue i test JUnit del modulo engine'

@@ -30,7 +30,7 @@ public class NvCont extends NvRgbComp {
         this.b = 1;
     }
 
-    public void setBackground(float r, float g, float b) {
+    public void setBackgroundColor(float r, float g, float b) {
         this.r = r;
         this.g = g;
         this.b = b;

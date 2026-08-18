@@ -27,13 +27,13 @@ public class NvCharacter extends NvComp implements KeyboardListener, Collidable 
     protected final NvCamera camera;
     protected boolean needCamera;
 
-    public static float velocity;
+    public float velocity;
 
     protected boolean[] keys = new boolean[GLFW_KEY_LAST];
 
     public NvCharacter(int x, int y, int w, int h, float velocity) {
         super(x, y, w,h);
-        camera = new NvCamera(x, y, 100);
+        camera = new NvCamera(x, y, 1);
         needCamera = false;
         this.velocity = velocity;
     }
