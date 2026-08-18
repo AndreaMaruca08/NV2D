@@ -193,20 +193,10 @@ public class NvCont extends NvRgbComp {
         }
     }
 
-    /**
-     * Draws all components contained in this page.
-     *
-     * <p>
-     * Camera culling is performed before drawing each component.
-     * </p>
-     *
-     * @param g graphics context
-     */
     public void drawAllComponents(NvGraphic g) {
-        int n = allComponents.size();
         draw(g);
 
-        for (int i = 0; i < n; i++) {
+        for (int i = 0; i < allComponents.size(); i++) {
             NvComp comp = allComponents.get(i);
 
             if (camera.isComponentInRendering(comp)) {

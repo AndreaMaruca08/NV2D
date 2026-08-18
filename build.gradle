@@ -14,7 +14,7 @@ plugins {
 }
 
 group = 'not specified'
-version = '1.6'
+version = '1.6.2'
 
 project.ext.lwjglVersion = "3.4.2"
 project.ext.currentOs = org.gradle.internal.os.OperatingSystem.current()

@@ -193,35 +193,49 @@ public abstract class NvComp implements UpdateCycle, Drawable {
         this.rootComponentList = rootList;
     }
 
-    public void addChild(NvComp child){
-        if(context == null)
+    public void addChild(NvComp child) {
+        if (child == null) {
+            throw new IllegalArgumentException("Child cannot be null");
+        }
+
+        if (context == null) {
             context = NvContext.getInstance();
+        }
+
+        if (children.contains(child)) {
+            return;
+        }
 
         children.add(child);
         child.setParent(this);
 
-        // Propagate root list reference to child and all its descendants
-        if(rootComponentList != null) {
-            propagateRootList(child, rootComponentList);
-            rootComponentList.add(child);
+        if (rootComponentList != null) {
+            addSubtreeToFlatList(child, rootComponentList);
         }
 
-        if(child instanceof Collidable)
+        if (child instanceof Collidable)
             CollisionManager.addCanCollide(child);
-        if(child instanceof Clickable)
+
+        if (child instanceof Clickable)
             ClickSystem.addClickable(child);
-        if(child instanceof Hoverable)
+
+        if (child instanceof Hoverable)
             HoverSystem.addHoverable(child);
+
         markDirty();
     }
+    private void addSubtreeToFlatList(
+            NvComp component,
+            List<NvComp> rootList
+    ) {
+        component.setRootComponentList(rootList);
 
-    /**
-     * Recursively set rootComponentList for child and all descendants
-     */
-    private void propagateRootList(NvComp comp, List<NvComp> rootList) {
-        comp.setRootComponentList(rootList);
-        for(NvComp grandchild : comp.getChildren()) {
-            propagateRootList(grandchild, rootList);
+        if (!rootList.contains(component)) {
+            rootList.add(component);
+        }
+
+        for (NvComp child : component.getChildren()) {
+            addSubtreeToFlatList(child, rootList);
         }
     }
 
@@ -297,11 +311,7 @@ public abstract class NvComp implements UpdateCycle, Drawable {
         }else{
             mouseOut();
         }
-        if(!childrenFirst){
-            drawIntern(g);
-        }else{
-            drawIntern(g);
-        }
+        drawIntern(g);
         if(border){
             g.setComponent(this);
             if(this instanceof AppendableGeometry comp){

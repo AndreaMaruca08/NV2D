@@ -158,10 +158,10 @@ public class NvPixelGraphic extends NvGraphic {
         nx *= half;
         ny *= half;
 
-        setVertex(quadVertices, 0, x1 + nx, y1 + ny, r, g, b, wu, wv, a);
-        setVertex(quadVertices, 1, x2 + nx, y2 + ny, r, g, b, wu, wv, a);
-        setVertex(quadVertices, 2, x2 - nx, y2 - ny, r, g, b, wu, wv, a);
-        setVertex(quadVertices, 3, x1 - nx, y1 - ny, r, g, b, wu, wv, a);
+        setVertex(quadVertices, 0, x1 + nx, y1 + ny, r, g, b, wu, wv, 0f);
+        setVertex(quadVertices, 1, x2 + nx, y2 + ny, r, g, b, wu, wv, 0f);
+        setVertex(quadVertices, 2, x2 - nx, y2 - ny, r, g, b, wu, wv, 0f);
+        setVertex(quadVertices, 3, x1 - nx, y1 - ny, r, g, b, wu, wv, 0f);
         comp.append(quadVertices, QUAD_INDICES);
     }
 
@@ -176,10 +176,10 @@ public class NvPixelGraphic extends NvGraphic {
         float x2 = tx(component.getX() + x + w);
         float y2 = ty(component.getY() + y + h);
 
-        setVertex(quadVertices, 0, x1, y1, r, g, b, wu, wv, a);
-        setVertex(quadVertices, 1, x2, y1, r, g, b, wu, wv, a);
-        setVertex(quadVertices, 2, x2, y2, r, g, b, wu, wv, a);
-        setVertex(quadVertices, 3, x1, y2, r, g, b, wu, wv, a);
+        setVertex(quadVertices, 0, x1, y1, r, g, b, wu, wv, 0f);
+        setVertex(quadVertices, 1, x2, y1, r, g, b, wu, wv, 0f);
+        setVertex(quadVertices, 2, x2, y2, r, g, b, wu, wv, 0f);
+        setVertex(quadVertices, 3, x1, y2, r, g, b, wu, wv, 0f);
         comp.append(quadVertices, QUAD_INDICES);
     }
 

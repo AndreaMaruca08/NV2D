@@ -79,7 +79,7 @@ public final class AudioManager {
             return;
         }
 
-        org.lwjgl.openal.ALCCapabilities alcCapabilities = ALC.createCapabilities(audioDevice);
+        ALCCapabilities alcCapabilities = ALC.createCapabilities(audioDevice);
         audioContext = ALC10.alcCreateContext(audioDevice, (int[]) null);
 
         if (audioContext == 0) {
@@ -143,7 +143,7 @@ public final class AudioManager {
 
     public static void loadExternal(String filePath) {
 
-        String fullPath = new java.io.File(filePath)
+        String fullPath = new File(filePath)
                 .getAbsolutePath();
 
         if (bufferCache.containsKey(fullPath)) {
@@ -541,7 +541,7 @@ public final class AudioManager {
             throw new IllegalArgumentException("Volume must be between 0 and 100");
         }
 
-        String fullPath = new java.io.File(filePath)
+        String fullPath = new File(filePath)
                 .getAbsolutePath();
 
         float gain = volume / 100f;

@@ -11,6 +11,8 @@ import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.List;
 
+import static nv.core.errors.NvLogger.logInfo;
+
 @Example
 public class Benchmark extends NvComp {
     private final List<NvComp> phases;
@@ -147,7 +149,7 @@ public class Benchmark extends NvComp {
     private void printFullReport() {
         System.out.println("========== BENCHMARK REPORT ==========");
         for (PhaseStats s : statsHistory) {
-            System.out.println(s.report());
+            logInfo(s.report());
         }
         System.out.println("=======================================");
     }
@@ -175,6 +177,7 @@ public class Benchmark extends NvComp {
         if(!ended) {
             current.draw(g);
         }
+        g.setRGB(0,0,0);
         g.drawText("Benchmark " + (currentPhaseIndex+1) + "/" + requestedCycles, textX, 0);
 
         if (!ended) {

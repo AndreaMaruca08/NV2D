@@ -15,7 +15,6 @@ import static org.lwjgl.vulkan.VK10.*;
 @SuppressWarnings("unused")
 public final class OrthoUBO implements AutoCloseable {
 
-    // Dimensione del payload: mat4 = 16 float = 64 byte
     public static final int SIZE_BYTES = 16 * Float.BYTES;
 
     private final VkDevice device;
@@ -24,7 +23,6 @@ public final class OrthoUBO implements AutoCloseable {
     private final long[] bufferHandles;
     private final long[] memoryHandles;
 
-    // Indirizzi mappati in memoria host-visible (scrittura diretta senza staging)
     private final long[] mappedAddresses;
 
     public OrthoUBO(VkDevice device, VkPhysicalDevice physicalDevice, int imageCount) {

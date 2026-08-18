@@ -41,7 +41,7 @@ public abstract class NvGraphic implements AppendableGeometry {
 
     protected float r=0, g=0, b=0, a=0;
 
-    public static NvCamera camera = new NvCamera(0,0,100);
+    public static NvCamera camera = new NvCamera(0,0,1);
     public static void setCurrentCamera(NvCamera camera){
         NvGraphic.camera = camera;
     }
@@ -480,12 +480,12 @@ public abstract class NvGraphic implements AppendableGeometry {
             vertices[v + 29] = glyph.uMin; vertices[v + 30] = glyph.vMax; vertices[v + 31] = 0f;
 
             int idx = i * 6, base = i * 4;
-            indices[idx]     = (short)  base;
-            indices[idx + 1] = (short) (base + 1);
-            indices[idx + 2] = (short) (base + 2);
-            indices[idx + 3] = (short) (base + 2);
-            indices[idx + 4] = (short) (base + 3);
-            indices[idx + 5] = (short)  base;
+            indices[idx]     = base;
+            indices[idx + 1] = (base + 1);
+            indices[idx + 2] = (base + 2);
+            indices[idx + 3] = (base + 2);
+            indices[idx + 4] = (base + 3);
+            indices[idx + 5] = base;
 
             cursorX += glyph.advance;
         }

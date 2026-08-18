@@ -1,6 +1,6 @@
 package nv.core.camera;
 
-import nv.core.EmptyKeyboardListener;
+import nv.core.io.EmptyKeyboardListener;
 import nv.core.NvContext;
 import nv.core.annotations.EngineCore;
 import nv.core.components.NvComp;
