@@ -1,10 +1,15 @@
 package nv.test.benchmark;
 
+import nv.core.annotations.EngineCore;
 import nv.core.components.NvComp;
 import nv.core.graphic.NvGraphic;
 
 import java.util.Random;
 
+/**
+ * Black hole benchmark.
+ */
+@EngineCore
 public class BlackHole extends NvComp {
 
     private static final int MAX_PARTICLES = 300_000;
@@ -13,7 +18,7 @@ public class BlackHole extends NvComp {
 
     private static final float GRAVITY = 3_000_000f;
     private static final float EVENT_HORIZON = 50f;
-    private static final float SPAWN_RADIUS_MIN = 50f;
+    private static final float SPAWN_RADIUS_MIN = 100f;
     private static final float SPAWN_RADIUS_MAX = 1000f;
 
     private final float[] px, py, vx, vy;

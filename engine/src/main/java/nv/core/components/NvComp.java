@@ -1,6 +1,7 @@
 package nv.core.components;
 
 import nv.core.AppendableGeometry;
+import nv.core.Drawable;
 import nv.core.NvContext;
 import nv.core.UpdateCycle;
 import nv.core.annotations.EngineCore;
@@ -21,16 +22,17 @@ import static nv.core.graphic.NvGraphic.camera;
 
 /**
  * <h3>Root of the component tree</h3>
- * <p>Base class for all components in the component tree, by updating or drawing a component you draw every child with it</p>
+ * <p>Base class for all components in the component tree. Uses a flat array per page for efficient iteration.</p>
  *
  * @since 1.0
  * @author Andrea Maruca
  */
 @EngineCore
 @SuppressWarnings("unused")
-public abstract class NvComp implements UpdateCycle {
+public abstract class NvComp implements UpdateCycle, Drawable {
     private NvComp parent;
     private final List<NvComp> children;
+    private List<NvComp> rootComponentList;
     private int x, y, w, h;
     protected boolean isHovered;
     protected boolean childrenFirst;
@@ -42,7 +44,7 @@ public abstract class NvComp implements UpdateCycle {
     protected boolean isHUD = false;
     protected boolean phaseThrough = false;
     protected int zIndex = 0;
-    private boolean shouldGetDestroyed = false;
+    boolean shouldGetDestroyed = false;
     private boolean dirty = false;
 
     public NvComp(int x, int y, int w, int h) {
@@ -78,7 +80,7 @@ public abstract class NvComp implements UpdateCycle {
 
     public void setHUD(boolean HUD) {
         if(this instanceof Collidable)
-            throw new NvLogicEx("Collidable readycomponents cannot be set as HUD");
+            throw new NvLogicEx("Collidable components cannot be set as HUD");
         if (isHUD != HUD) {
             isHUD = HUD;
             markDirty();
@@ -183,11 +185,27 @@ public abstract class NvComp implements UpdateCycle {
     }
 
     private NvContext context;
+
+    /**
+     * Set the root component list reference (called by NvCont)
+     */
+    public void setRootComponentList(List<NvComp> rootList) {
+        this.rootComponentList = rootList;
+    }
+
     public void addChild(NvComp child){
         if(context == null)
             context = NvContext.getInstance();
+
         children.add(child);
         child.setParent(this);
+
+        // Propagate root list reference to child and all its descendants
+        if(rootComponentList != null) {
+            propagateRootList(child, rootComponentList);
+            rootComponentList.add(child);
+        }
+
         if(child instanceof Collidable)
             CollisionManager.addCanCollide(child);
         if(child instanceof Clickable)
@@ -197,10 +215,27 @@ public abstract class NvComp implements UpdateCycle {
         markDirty();
     }
 
+    /**
+     * Recursively set rootComponentList for child and all descendants
+     */
+    private void propagateRootList(NvComp comp, List<NvComp> rootList) {
+        comp.setRootComponentList(rootList);
+        for(NvComp grandchild : comp.getChildren()) {
+            propagateRootList(grandchild, rootList);
+        }
+    }
+
     public void removeChild(NvComp child){
         if(context == null)
             context = NvContext.getInstance();
+
         children.remove(child);
+
+        // Remove child and all descendants from flat list
+        if(rootComponentList != null) {
+            removeFromFlatList(child);
+        }
+
         if(child instanceof Collidable)
             CollisionManager.removeCanCollide(child);
         if(child instanceof Clickable)
@@ -208,6 +243,16 @@ public abstract class NvComp implements UpdateCycle {
         if(child instanceof Hoverable)
             HoverSystem.removeHoverable(child);
         markDirty();
+    }
+
+    /**
+     * Recursively remove component and all descendants from flat list
+     */
+    private void removeFromFlatList(NvComp comp) {
+        rootComponentList.remove(comp);
+        for(NvComp child : comp.getChildren()) {
+            removeFromFlatList(child);
+        }
     }
 
     protected void mouseEnter(){}
@@ -237,27 +282,11 @@ public abstract class NvComp implements UpdateCycle {
         }
     }
 
-
     public void tick(float dt){
-        updateChildren(dt);
         update(dt);
     }
 
-    private void updateChildren(float dt){
-        int n = children.size();
-        for (int i = 0; i < n; i++) {
-            children.get(i).tick(dt);
-        }
-
-        children.removeIf(child -> {
-            if (child.shouldGetDestroyed) {
-                child.actualDestroy();
-                return true;
-            }
-            return false;
-        });
-    }
-
+    @Override
     public void draw(NvGraphic g){
         int vStart = g.getVertexFloatCount();
         int iStart = g.getImageVertexFloatCount();
@@ -270,10 +299,7 @@ public abstract class NvComp implements UpdateCycle {
         }
         if(!childrenFirst){
             drawIntern(g);
-            drawChildren(g);
         }else{
-            drawChildren(g);
-            g.setComponent(this);
             drawIntern(g);
         }
         if(border){
@@ -287,12 +313,6 @@ public abstract class NvComp implements UpdateCycle {
         g.applyTransformsToBatch(vStart, iStart);
 
         cleanDirty();
-    }
-
-    public void drawChildren(NvGraphic g){
-        for (NvComp child : children) {
-            child.draw(g);
-        }
     }
 
     public boolean isInside(int x, int y){
@@ -315,7 +335,8 @@ public abstract class NvComp implements UpdateCycle {
         this.shouldGetDestroyed = true;
         markDirty();
     }
-    private void actualDestroy(){
+
+    protected void actualDestroy(){
         if(context == null)
             context = NvContext.getInstance();
 

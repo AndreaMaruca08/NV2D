@@ -126,6 +126,7 @@ public final class NvContext implements Runnable {
 
     private static final int PARALLEL_UPDATE_THRESHOLD = 4;
     private final List<UpdateCycle> updatable = new CopyOnWriteArrayList<>();
+    private final List<Drawable> drawables = new CopyOnWriteArrayList<>();
 
     public static NvCont rootComponent;
 
@@ -405,11 +406,37 @@ public final class NvContext implements Runnable {
     private NvContext(String name, Dimension windowDimension) {
         this(name, DEF_MAX_VERTICES, DEF_MAX_INDICES, windowDimension);
     }
+
+    /**
+     * Adds an updatable object to the context.
+     * @param updateCycle
+     */
     public void addUpdatable(UpdateCycle updateCycle){
         updatable.add(updateCycle);
     }
+
+    /**
+     * Removes an updatable object from the context.
+     * @param updateCycle
+     */
     public void removeUpdatable(UpdateCycle updateCycle){
         updatable.remove(updateCycle);
+    }
+
+    /**
+     * Adds a drawable object to the context.
+     * @param drawable
+     */
+    public void addDrawable(Drawable drawable){
+        drawables.add(drawable);
+    }
+
+    /**
+     * Removes a drawable object from the context.
+     * @param drawable
+     */
+    public void removeDrawable(Drawable drawable){
+        drawables.remove(drawable);
     }
 
     /**
@@ -481,7 +508,7 @@ public final class NvContext implements Runnable {
         }
     };
 
-    /** Updated in 1.6. */
+    /** Updated in 1.6.2 */
     private void rebuildScene() {
         final float w = getEffectiveRenderWidth();
         final float h = getEffectiveRenderHeight();
@@ -492,7 +519,9 @@ public final class NvContext implements Runnable {
 
         CollisionManager.handleCollisions();
 
-        rootComponent.draw(graphic);
+        rootComponent.drawAllComponents(graphic);
+        for(Drawable drawable : drawables)
+            drawable.draw(graphic);
 
         if(showFPS)
             fpsDisplay.draw(graphic);
@@ -515,7 +544,7 @@ public final class NvContext implements Runnable {
 
         dynamicVertexBuffer.update(combinedVertices, combinedVertexFloatCount);
         dynamicIndexBuffer.update(combinedIndices, combinedIndexCount);
-        sceneDirty = false; // Reset sceneDirty after rebuilding
+        sceneDirty = false;
     }
 
     private void ensureCombinedVertexCapacity(int requiredFloatCount) {
@@ -665,7 +694,7 @@ public final class NvContext implements Runnable {
         );
         logEngine("Font texture created");
 
-        int imageCount = swapchain.getImageCount(); // usa il conteggio reale
+        int imageCount = swapchain.getImageCount();
         this.ubo               = new OrthoUBO(device, physicalDevice, imageCount);
         this.descriptorManager = new DescriptorManager(device, ubo, fontTexture, imageCount);
 
@@ -737,7 +766,7 @@ public final class NvContext implements Runnable {
 
     private void tickHandler(float dt) {
         currentCameraUpdateCycle.update(dt);
-        rootComponent.tick(dt);
+        rootComponent.tickAllComponents(dt);
         runUpdatablesParallel(dt);
         if (mouseMoved) {
             HoverSystem.handleHover(window, rootComponent);
