@@ -1,49 +1,78 @@
 package nv.core.graphic;
 
 import nv.core.AppendableGeometry;
-import nv.core.Scene;
 import nv.core.annotations.DefaultChose;
+import nv.core.annotations.EngineCore;
 import nv.core.data.NvImage;
 
 import java.util.Arrays;
 
 /**
- * concrete implementation of NvGraphic
- * that specializes in rendering geometric shapes and text as direct pixel graphics.
+ * Default implementation of {@link NvGraphic} that uses pixel as coordinates.
+ * @since 1.0
+ * @author Andrea Maruca
  */
 @DefaultChose
+@EngineCore
 @SuppressWarnings("unused")
 public class NvPixelGraphic extends NvGraphic {
 
     private static final int[] TRIANGLE_INDICES = {0, 1, 2};
     private static final int[] QUAD_INDICES = {0, 1, 2, 2, 3, 0};
+    private static final double TWO_PI = 2.0 * Math.PI;
+
     private final float[] triangleVertices = new float[3 * FLOATS_PER_VERTEX];
     private final float[] quadVertices = new float[4 * FLOATS_PER_VERTEX];
     private float[] dynamicVertices = new float[0];
     private int[] dynamicIndices = new int[0];
 
+    private float cachedCompX;
+    private float cachedCompY;
+    private float cachedCompW;
+    private float cachedCompH;
+    private boolean cachedIsHUD;
+    private float cachedTransformX;
+    private float cachedTransformY;
+
+    private void cacheComponentTransforms() {
+        if (component == null) return;
+        cachedCompX = component.getX();
+        cachedCompY = component.getY();
+        cachedCompW = component.getW();
+        cachedCompH = component.getH();
+        cachedIsHUD = component.isHUD();
+        if (cachedIsHUD) {
+            cachedTransformX = 0;
+            cachedTransformY = 0;
+        } else {
+            cachedTransformX = camera.x;
+            cachedTransformY = camera.y;
+        }
+    }
+
     private float tx(float worldX) {
-        if(component.isHUD())
+        if (cachedIsHUD)
             return worldX;
-        return (worldX - camera.x) * camera.zoom;
+        return (worldX - cachedTransformX) * camera.zoom;
     }
 
     private float ty(float worldY) {
-        if(component.isHUD())
+        if (cachedIsHUD)
             return worldY;
-        return (worldY - camera.y) * camera.zoom;
+        return (worldY - cachedTransformY) * camera.zoom;
     }
 
-    /** Updated in 1.6. */
     @Override
     public void drawTri(float base1, float base2, float y,
                         float r, float g, float b,
                         AppendableGeometry comp) {
 
-        float x1 = tx(component.getX() + base1);
-        float x2 = tx(component.getX() + base2);
-        float y1 = ty(component.getY() + y);
-        float apexY = ty(component.getY() + y - component.getH());
+        cacheComponentTransforms();
+
+        float x1 = tx(cachedCompX + base1);
+        float x2 = tx(cachedCompX + base2);
+        float y1 = ty(cachedCompY + y);
+        float apexY = ty(cachedCompY + y - cachedCompH);
 
         setVertex(triangleVertices, 0, x1, y1, r, g, b, wu, wv, 0f);
         setVertex(triangleVertices, 1, x2, y1, r, g, b, wu, wv, 0f);
@@ -51,16 +80,17 @@ public class NvPixelGraphic extends NvGraphic {
         comp.append(triangleVertices, TRIANGLE_INDICES);
     }
 
-    /** Updated in 1.6. */
     @Override
     public void drawPolygon(float[] vertices, int[] indices, float[] colors, AppendableGeometry comp) {
+        cacheComponentTransforms();
+
         int numVertices = vertices.length / 2;
         int vertexFloatCount = numVertices * FLOATS_PER_VERTEX;
         ensureDynamicCapacity(vertexFloatCount, indices.length);
 
         for (int i = 0; i < numVertices; i++) {
-            float vx = tx(component.getX() + vertices[i * 2]);
-            float vy = ty(component.getY() + vertices[i * 2 + 1]);
+            float vx = tx(cachedCompX + vertices[i * 2]);
+            float vy = ty(cachedCompY + vertices[i * 2 + 1]);
 
             float vr = r, vg = g, vb = b;
             if (colors != null) {
@@ -85,26 +115,25 @@ public class NvPixelGraphic extends NvGraphic {
         comp.append(dynamicVertices, vertexFloatCount, indices, indices.length);
     }
 
-    /** Updated in 1.6. */
     @Override
     public void drawOval(float x, float y, float radius, int accuracy,
                          float r, float g, float b,
                          AppendableGeometry comp) {
 
+        cacheComponentTransforms();
+
         int vertexFloatCount = (accuracy + 1) * FLOATS_PER_VERTEX;
         int indexCount = accuracy * 3;
         ensureDynamicCapacity(vertexFloatCount, indexCount);
 
-        float cx = tx(component.getX() + x);
-        float cy = ty(component.getY() + y);
+        float cx = tx(cachedCompX + x);
+        float cy = ty(cachedCompY + y);
 
         float rScaled = radius * camera.zoom;
-        // center
         setVertex(dynamicVertices, 0, cx, cy, r, g, b, wu, wv, 0f);
 
         for (int i = 0; i < accuracy; i++) {
-
-            float angle = (float) (i * 2 * Math.PI / accuracy);
+            float angle = (float) (i * TWO_PI / accuracy);
 
             int vi = i + 1;
             float lx = (float) Math.cos(angle) * rScaled;
@@ -123,7 +152,6 @@ public class NvPixelGraphic extends NvGraphic {
         comp.append(dynamicVertices, vertexFloatCount, dynamicIndices, indexCount);
     }
 
-    /** Updated in 1.6. */
     @Override
     public void drawLine(
             float x1,
@@ -136,10 +164,12 @@ public class NvPixelGraphic extends NvGraphic {
             float b,
             AppendableGeometry comp
     ) {
-        x1 = tx(component.getX() + x1);
-        y1 = ty(component.getY() + y1);
-        x2 = tx(component.getX() + x2);
-        y2 = ty(component.getY() + y2);
+        cacheComponentTransforms();
+
+        x1 = tx(cachedCompX + x1);
+        y1 = ty(cachedCompY + y1);
+        x2 = tx(cachedCompX + x2);
+        y2 = ty(cachedCompY + y2);
 
         float dx = x2 - x1;
         float dy = y2 - y1;
@@ -151,7 +181,6 @@ public class NvPixelGraphic extends NvGraphic {
 
         float nx = -dy / length;
         float ny = dx / length;
-
 
         float half = thickness * 0.5f;
 
@@ -165,16 +194,17 @@ public class NvPixelGraphic extends NvGraphic {
         comp.append(quadVertices, QUAD_INDICES);
     }
 
-    /** Updated in 1.6. */
     @Override
     public void drawRect(float x, float y, float w, float h,
                          float r, float g, float b,
                          AppendableGeometry comp) {
 
-        float x1 = tx(component.getX() + x);
-        float y1 = ty(component.getY() + y);
-        float x2 = tx(component.getX() + x + w);
-        float y2 = ty(component.getY() + y + h);
+        cacheComponentTransforms();
+
+        float x1 = tx(cachedCompX + x);
+        float y1 = ty(cachedCompY + y);
+        float x2 = tx(cachedCompX + x + w);
+        float y2 = ty(cachedCompY + y + h);
 
         setVertex(quadVertices, 0, x1, y1, r, g, b, wu, wv, 0f);
         setVertex(quadVertices, 1, x2, y1, r, g, b, wu, wv, 0f);
@@ -185,12 +215,14 @@ public class NvPixelGraphic extends NvGraphic {
 
     @Override
     public void drawRoundRect(float x, float y, float w, float h, float radius, float r, float g, float b, AppendableGeometry comp) {
+        cacheComponentTransforms();
+
         int segments = 8;
 
-        float x1 = tx(component.getX() + x);
-        float y1 = ty(component.getY() + y);
-        float x2 = tx(component.getX() + x + w);
-        float y2 = ty(component.getY() + y + h);
+        float x1 = tx(cachedCompX + x);
+        float y1 = ty(cachedCompY + y);
+        float x2 = tx(cachedCompX + x + w);
+        float y2 = ty(cachedCompY + y + h);
         float rScaled = radius * camera.zoom;
 
         float maxR = Math.min(w, h) / 2f * camera.zoom;
@@ -200,10 +232,10 @@ public class NvPixelGraphic extends NvGraphic {
         float[] verts = new float[numVerts * FLOATS_PER_VERTEX];
 
         float[][] corners = {
-                {x1 + rScaled, y1 + rScaled}, // Top-Left
-                {x2 - rScaled, y1 + rScaled}, // Top-Right
-                {x2 - rScaled, y2 - rScaled}, // Bottom-Right
-                {x1 + rScaled, y2 - rScaled}  // Bottom-Left
+                {x1 + rScaled, y1 + rScaled},
+                {x2 - rScaled, y1 + rScaled},
+                {x2 - rScaled, y2 - rScaled},
+                {x1 + rScaled, y2 - rScaled}
         };
 
         int numIndices = 30 + 12 * segments;
@@ -259,7 +291,6 @@ public class NvPixelGraphic extends NvGraphic {
             }
         }
 
-        // Side rectangles
         int a0_end = 4 + segments;
         int a1_start = 4 + segments + 1;
         inds[iIdx++] = 0; inds[iIdx++] = 1; inds[iIdx++] = a1_start;
@@ -283,23 +314,27 @@ public class NvPixelGraphic extends NvGraphic {
         comp.append(verts, inds);
     }
 
-    /** Updated in 1.6. */
     @Override
-    public void drawText(String text, float textX, float textY,
+    public void drawText(String text, float textX, float textY, float fontScale,
                          AppendableGeometry comp) {
+
+        cacheComponentTransforms();
 
         int charCount = text.length();
         int vertexFloatCount = charCount * 4 * FLOATS_PER_VERTEX;
         int indexCount = charCount * 6;
         ensureDynamicCapacity(vertexFloatCount, indexCount);
 
-        float cursorX = tx(component.getX() + textX);
-        float startY = ty(component.getY() + textY);
+        float cursorX = tx(cachedCompX + textX);
+        float startY = ty(cachedCompY + textY);
+
         for (int i = 0; i < charCount; i++) {
             var glyph = fontAtlas.getGlyph(text.charAt(i));
+            float scaledWidth = glyph.width * fontScale;
+            float scaledHeight = glyph.height * fontScale;
             float x0 = cursorX;
-            float x1 = cursorX + glyph.width;
-            float y1 = startY + glyph.height;
+            float x1 = cursorX + scaledWidth;
+            float y1 = startY + scaledHeight;
             int vertex = i * 4;
             setVertex(dynamicVertices, vertex, x0, startY, r, g, b, glyph.uMin, glyph.vMin, 0f);
             setVertex(dynamicVertices, vertex + 1, x1, startY, r, g, b, glyph.uMax, glyph.vMin, 0f);
@@ -313,7 +348,7 @@ public class NvPixelGraphic extends NvGraphic {
             dynamicIndices[index + 3] = vertex + 2;
             dynamicIndices[index + 4] = vertex + 3;
             dynamicIndices[index + 5] = vertex;
-            cursorX += glyph.advance;
+            cursorX += glyph.advance * fontScale;
         }
         comp.append(dynamicVertices, vertexFloatCount, dynamicIndices, indexCount);
     }
@@ -323,16 +358,17 @@ public class NvPixelGraphic extends NvGraphic {
         drawImageRegion(image, x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f);
     }
 
-    /** Updated in 1.6. */
     @Override
     public void drawImageRegion(NvImage image,
                                 float x, float y, float w, float h,
                                 float u0, float v0, float u1, float v1) {
 
-        float x1 = tx(component.getX() + x);
-        float y1 = ty(component.getY() + y);
-        float x2 = tx(component.getX() + x + w);
-        float y2 = ty(component.getY() + y + h);
+        cacheComponentTransforms();
+
+        float x1 = tx(cachedCompX + x);
+        float y1 = ty(cachedCompY + y);
+        float x2 = tx(cachedCompX + x + w);
+        float y2 = ty(cachedCompY + y + h);
 
         float texIndex = (float) image.getTextureIndex();
 
@@ -348,7 +384,6 @@ public class NvPixelGraphic extends NvGraphic {
         appendImageGeometry(quadVertices, QUAD_INDICES);
     }
 
-    /** @since 1.6 */
     private static void setVertex(float[] target, int vertexIndex,
                                   float x, float y, float r, float g, float b,
                                   float u, float v, float textureIndex) {
@@ -363,7 +398,6 @@ public class NvPixelGraphic extends NvGraphic {
         target[offset + 7] = textureIndex;
     }
 
-    /** @since 1.6 */
     private void ensureDynamicCapacity(int vertexFloatCount, int indexCount) {
         if (dynamicVertices.length < vertexFloatCount) {
             dynamicVertices = Arrays.copyOf(dynamicVertices, vertexFloatCount);

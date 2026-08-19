@@ -14,9 +14,9 @@ public class BlackHole extends NvComp {
 
     private static final int MAX_PARTICLES = 300_000;
     private static final int START_PARTICLES = 500;
-    private static final int SPAWN_PER_SECOND = 5_000;
+    private static final int SPAWN_PER_SECOND = 10_000;
 
-    private static final float GRAVITY = 3_000_000f;
+    private static final float GRAVITY = 6_000_000f;
     private static final float EVENT_HORIZON = 50f;
     private static final float SPAWN_RADIUS_MIN = 100f;
     private static final float SPAWN_RADIUS_MAX = 1000f;
@@ -172,19 +172,16 @@ public class BlackHole extends NvComp {
 
     @Override
     public void drawIntern(NvGraphic g) {
-        // alone esterno (accretion glow), dal più grande/debole al più piccolo/intenso
         g.drawOval(centerX, centerY, EVENT_HORIZON * 6f, 32, 0.5f, 0.15f, 0.05f);
         g.drawOval(centerX, centerY, EVENT_HORIZON * 3.5f, 32, 0.7f, 0.25f, 0.05f);
         g.drawOval(centerX, centerY, EVENT_HORIZON * 1.8f, 32, 0.9f, 0.4f, 0.1f);
 
-        // particelle
+        g.beginBatch();
         for (int i = 0; i < activeCount; i++) {
-            float drawX = centerX + px[i];
-            float drawY = centerY + py[i];
-            g.drawOval(drawX, drawY, size[i], 6, pr[i], pg[i], pb[i]);
+            g.batchDrawOval(centerX + px[i], centerY + py[i], size[i], 6, pr[i], pg[i], pb[i]);
         }
+        g.endBatch();
 
-        // orizzonte degli eventi: disco nero pieno sopra tutto il resto
         g.drawOval(centerX, centerY, EVENT_HORIZON, 32, 0f, 0f, 0f);
     }
 }

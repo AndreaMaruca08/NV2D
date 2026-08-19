@@ -9,7 +9,7 @@ public class GalaxyPhase extends NvComp {
 
     private static final int MAX_PARTICLES = 300_000;
     private static final int START_PARTICLES = 1_500;
-    private static final int SPAWN_PER_SECOND = 3_500;
+    private static final int SPAWN_PER_SECOND = 10_000;
 
     private static final float GALAXY_RADIUS = 1100f;
     private static final float CORE_RADIUS = 40f;

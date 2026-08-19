@@ -9,7 +9,7 @@ public class SaturnPhase extends NvComp {
 
     private static final int MAX_PARTICLES = 100_000;
     private static final int START_PARTICLES = 2_000;
-    private static final int SPAWN_PER_SECOND = 4_000;
+    private static final int SPAWN_PER_SECOND = 10_000;
 
     private static final float GRAVITY = 80000f;
     private static final float PLANET_RADIUS = 300f;
