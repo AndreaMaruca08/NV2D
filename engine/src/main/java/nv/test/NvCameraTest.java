@@ -16,8 +16,8 @@ public class NvCameraTest {
 
     @BeforeEach
     void setUp() {
-        // Constructor converts zoom from percentage (100 -> 1.0f)
-        camera = new NvCamera(100f, 200f, 100f);
+        // Constructor converts zoom from percentage (
+        camera = new NvCamera(100f, 200f, 1f);
         NvGraphic.camera = camera;
     }
 

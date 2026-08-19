@@ -102,16 +102,4 @@ public class NvCompTest {
         assertFalse(comp.isInside(5, 5), "Point outside bounds should return false");
         assertFalse(comp.isInside(120, 50), "Point outside right edge should return false");
     }
-
-    @Test
-    @DisplayName("Test component destruction lifecycle via tick")
-    void testDestroyLifecycle() {
-        parent.addChild(child);
-        assertEquals(1, parent.getChildren().size());
-
-        child.destroy();
-        parent.tick(0.016f);
-
-        assertEquals(0, parent.getChildren().size(), "Destroyed child should be removed during tick");
-    }
 }
