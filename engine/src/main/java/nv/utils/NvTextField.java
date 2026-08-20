@@ -161,12 +161,12 @@ public class NvTextField extends NvComp implements KeyboardListener, Clickable {
     }
 
     @Override
-    public void onClick() {
+    public void onClick(int x, int y) {
         KeyboardSystem.setKeyboardFocus(this);
     }
 
     @Override
-    public void onClickRelease() {
+    public void onClickRelease(int x, int y) {
         KeyboardSystem.setKeyboardFocus(this);
     }
 }

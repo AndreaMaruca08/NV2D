@@ -9,7 +9,7 @@ import nv.core.annotations.EngineCore;
  * @author Andrea Maruca
  */
 @EngineCore
-public interface UpdateCycle {
+public interface Updatable {
     void update(float dt);
 
     default boolean isActive() {

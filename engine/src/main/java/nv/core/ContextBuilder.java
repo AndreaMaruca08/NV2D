@@ -92,7 +92,7 @@ public final class ContextBuilder {
      *
      * @since 1.0
      */
-    public ContextBuilder addUpdatable(UpdateCycle updatable) {
+    public ContextBuilder addUpdatable(Updatable updatable) {
         ctx.addUpdatable(updatable);
         return this;
     }

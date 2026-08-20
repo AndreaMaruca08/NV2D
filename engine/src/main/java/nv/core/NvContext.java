@@ -70,7 +70,7 @@ public final class NvContext implements Runnable {
     private long renderPass;
     private InternalRenderTarget internalRenderTarget;
     private boolean internalRenderTargetInitialized;
-    private UpdateCycle currentCameraUpdateCycle;
+    private Updatable currentCameraUpdatable;
 
     private final int MAX_VERTICES;
     private final int MAX_INDICES;
@@ -129,7 +129,7 @@ public final class NvContext implements Runnable {
     private final Map<String, NvCont> pages = new HashMap<>(10);
 
     private static final int PARALLEL_UPDATE_THRESHOLD = 4;
-    private final List<UpdateCycle> updatable = new CopyOnWriteArrayList<>();
+    private final List<Updatable> updatable = new CopyOnWriteArrayList<>();
     private final List<Drawable> drawables = new CopyOnWriteArrayList<>();
 
     public static NvCont rootComponent;
@@ -197,8 +197,8 @@ public final class NvContext implements Runnable {
         }
     }
 
-    public void setCurrentCameraUpdateCycle(UpdateCycle updateCycle){
-        currentCameraUpdateCycle = updateCycle;
+    public void setCurrentCameraUpdateCycle(Updatable updatable){
+        currentCameraUpdatable = updatable;
     }
 
     public void setInternalResolution(int width, int height) {
@@ -378,7 +378,7 @@ public final class NvContext implements Runnable {
 
         this.MAX_VERTICES = maxVertices;
         this.MAX_INDICES = maxIndices;
-        this.currentCameraUpdateCycle = (_) -> {};
+        this.currentCameraUpdatable = (_) -> {};
 
         var nano = System.nanoTime();
 
@@ -413,18 +413,18 @@ public final class NvContext implements Runnable {
 
     /**
      * Adds an updatable object to the context.
-     * @param updateCycle
+     * @param updatable
      */
-    public void addUpdatable(UpdateCycle updateCycle){
-        updatable.add(updateCycle);
+    public void addUpdatable(Updatable updatable){
+        this.updatable.add(updatable);
     }
 
     /**
      * Removes an updatable object from the context.
-     * @param updateCycle
+     * @param updatable
      */
-    public void removeUpdatable(UpdateCycle updateCycle){
-        updatable.remove(updateCycle);
+    public void removeUpdatable(Updatable updatable){
+        this.updatable.remove(updatable);
     }
 
     /**
@@ -769,7 +769,7 @@ public final class NvContext implements Runnable {
     private boolean mouseMoved;
 
     private void tickHandler(float dt) {
-        currentCameraUpdateCycle.update(dt);
+        currentCameraUpdatable.update(dt);
         rootComponent.tickAllComponents(dt);
         runUpdatablesParallel(dt);
         if (mouseMoved) {
@@ -797,8 +797,8 @@ public final class NvContext implements Runnable {
 
         List<Future<?>> futures = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
-            UpdateCycle updateCycle = updatable.get(i);
-            futures.add(updatePool.submit(() -> updateCycle.update(dt)));
+            Updatable updatable = this.updatable.get(i);
+            futures.add(updatePool.submit(() -> updatable.update(dt)));
         }
 
         for (Future<?> future : futures) {
@@ -846,7 +846,7 @@ public final class NvContext implements Runnable {
     }
 
     private boolean canThrottleIdle(boolean frameHadWork, boolean hadInput) {
-        return !frameHadWork && !hadInput && !currentCameraUpdateCycle.isActive() && !hasActiveUpdatables();
+        return !frameHadWork && !hadInput && !currentCameraUpdatable.isActive() && !hasActiveUpdatables();
     }
 
     /** Updated in 1.6. */

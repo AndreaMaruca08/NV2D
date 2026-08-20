@@ -39,8 +39,8 @@ public final class ClickSystem {
         for (NvComp comp : clickable) {
             if (comp.isInside(x, y)) {
                 var clickable = (Clickable) comp;
-                if (press) clickable.onClick();
-                else clickable.onClickRelease();
+                if (press) clickable.onClick(x,y);
+                else clickable.onClickRelease(x,y);
             }
         }
     }

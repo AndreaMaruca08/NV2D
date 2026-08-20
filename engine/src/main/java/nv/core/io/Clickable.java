@@ -5,6 +5,6 @@ import nv.core.annotations.EngineCore;
 @EngineCore
 @SuppressWarnings("unused")
 public interface Clickable {
-    void onClick();
-    void onClickRelease();
+    void onClick(int x, int y);
+    void onClickRelease(int x, int y);
 }

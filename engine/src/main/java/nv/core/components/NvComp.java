@@ -3,7 +3,7 @@ package nv.core.components;
 import nv.core.AppendableGeometry;
 import nv.core.Drawable;
 import nv.core.NvContext;
-import nv.core.UpdateCycle;
+import nv.core.Updatable;
 import nv.core.annotations.EngineCore;
 import nv.core.collision.Collidable;
 import nv.core.collision.CollisionManager;
@@ -29,7 +29,7 @@ import static nv.core.graphic.NvGraphic.camera;
  */
 @EngineCore
 @SuppressWarnings("unused")
-public abstract class NvComp implements UpdateCycle, Drawable {
+public abstract class NvComp implements Updatable, Drawable {
     private NvComp parent;
     private final List<NvComp> children;
     private List<NvComp> rootComponentList;
@@ -39,6 +39,8 @@ public abstract class NvComp implements UpdateCycle, Drawable {
     public float rotation = 0;
     public float pivotX = 0.5f;
     public float pivotY = 0.5f;
+    protected int hoveredX = -1;
+    protected int hoveredY = -1;
     protected int weight = CollisionSystem.NO_WEIGHT;
     public boolean border = false;
     protected boolean isHUD = false;
@@ -288,6 +290,8 @@ public abstract class NvComp implements UpdateCycle, Drawable {
             }
             return;
         }
+        this.hoveredX = mouseX;
+        this.hoveredY = mouseY;
         for(NvComp child : children)
             child.handleHover(mouseX, mouseY);
         if (!isHovered) {

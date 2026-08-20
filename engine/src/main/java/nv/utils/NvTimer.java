@@ -1,7 +1,7 @@
 package nv.utils;
 
 import nv.core.NvContext;
-import nv.core.UpdateCycle;
+import nv.core.Updatable;
 import nv.core.annotations.ReadyComponent;
 
 /**
@@ -12,7 +12,7 @@ import nv.core.annotations.ReadyComponent;
  */
 @ReadyComponent
 @SuppressWarnings("unused")
-public class NvTimer implements UpdateCycle {
+public class NvTimer implements Updatable {
     private float remaining;
     private float fullRemaining;
     private boolean finished;

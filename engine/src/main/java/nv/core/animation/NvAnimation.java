@@ -1,7 +1,7 @@
 package nv.core.animation;
 
 import nv.core.NvContext;
-import nv.core.UpdateCycle;
+import nv.core.Updatable;
 import nv.core.annotations.EngineCore;
 import nv.utils.NvTimer;
 
@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @EngineCore
 @SuppressWarnings("unused")
-public class NvAnimation implements UpdateCycle {
+public class NvAnimation implements Updatable {
     private final NvTimer timer;
     private final NvSprite sprite;
 

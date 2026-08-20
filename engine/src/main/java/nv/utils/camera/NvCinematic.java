@@ -1,7 +1,7 @@
 package nv.utils.camera;
 
 import nv.core.NvContext;
-import nv.core.UpdateCycle;
+import nv.core.Updatable;
 import nv.core.annotations.ReadyComponent;
 import nv.core.camera.NvCamera;
 import nv.core.graphic.NvGraphic;
@@ -13,7 +13,7 @@ import nv.core.graphic.NvGraphic;
  */
 @ReadyComponent
 @SuppressWarnings("unused")
-public abstract class NvCinematic extends NvCamera implements UpdateCycle {
+public abstract class NvCinematic extends NvCamera implements Updatable {
     protected boolean started = false;
     protected int xStart, yStart;
     protected float initialZoom;
