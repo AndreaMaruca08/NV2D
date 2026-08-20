@@ -129,7 +129,7 @@ public class NvPixelGraphic extends NvGraphic {
         float cx = tx(cachedCompX + x);
         float cy = ty(cachedCompY + y);
 
-        float rScaled = radius * camera.zoom;
+        float rScaled = cachedIsHUD ? radius : radius * camera.zoom;
         setVertex(dynamicVertices, 0, cx, cy, r, g, b, wu, wv, 0f);
 
         for (int i = 0; i < accuracy; i++) {
@@ -182,7 +182,7 @@ public class NvPixelGraphic extends NvGraphic {
         float nx = -dy / length;
         float ny = dx / length;
 
-        float half = thickness * 0.5f;
+        float half = (cachedIsHUD ? thickness : thickness * camera.zoom) * 0.5f;
 
         nx *= half;
         ny *= half;
@@ -223,9 +223,9 @@ public class NvPixelGraphic extends NvGraphic {
         float y1 = ty(cachedCompY + y);
         float x2 = tx(cachedCompX + x + w);
         float y2 = ty(cachedCompY + y + h);
-        float rScaled = radius * camera.zoom;
+        float rScaled = cachedIsHUD ? radius : radius * camera.zoom;
 
-        float maxR = Math.min(w, h) / 2f * camera.zoom;
+        float maxR = Math.min(w, h) / 2f * (cachedIsHUD ? 1f : camera.zoom);
         if (rScaled > maxR) rScaled = maxR;
 
         int numVerts = 4 + 4 * (segments + 1);
@@ -328,10 +328,12 @@ public class NvPixelGraphic extends NvGraphic {
         float cursorX = tx(cachedCompX + textX);
         float startY = ty(cachedCompY + textY);
 
+        float effectiveScale = cachedIsHUD ? fontScale : fontScale * camera.zoom;
+
         for (int i = 0; i < charCount; i++) {
             var glyph = fontAtlas.getGlyph(text.charAt(i));
-            float scaledWidth = glyph.width * fontScale;
-            float scaledHeight = glyph.height * fontScale;
+            float scaledWidth = glyph.width * effectiveScale;
+            float scaledHeight = glyph.height * effectiveScale;
             float x0 = cursorX;
             float x1 = cursorX + scaledWidth;
             float y1 = startY + scaledHeight;
@@ -348,7 +350,7 @@ public class NvPixelGraphic extends NvGraphic {
             dynamicIndices[index + 3] = vertex + 2;
             dynamicIndices[index + 4] = vertex + 3;
             dynamicIndices[index + 5] = vertex;
-            cursorX += glyph.advance * fontScale;
+            cursorX += glyph.advance * effectiveScale;
         }
         comp.append(dynamicVertices, vertexFloatCount, dynamicIndices, indexCount);
     }

@@ -26,6 +26,10 @@ public class NvControlledCamera extends NvCamera implements Updatable, KeyboardL
 
     private float velocity;
 
+    public float zoomTick = 0.05f;
+    public float minZoom = 0.5f;
+    public float maxZoom = Float.POSITIVE_INFINITY;
+
     protected boolean[] keys = new boolean[GLFW_KEY_LAST];
 
     public NvControlledCamera(float x, float y, float velocity) {
@@ -121,13 +125,14 @@ public class NvControlledCamera extends NvCamera implements Updatable, KeyboardL
         if (hasMoved){
             x += movX;
             y += movY;
+
             setXY(x, y);
         }
         if(keys[GLFW_KEY_Z]){
-            zoomOnCenter(0.05f, 1f, Float.POSITIVE_INFINITY);
+            zoomOnCenter(zoomTick, minZoom, maxZoom);
             NvContext.markSceneDirty();
         }else if(keys[GLFW_KEY_X]){
-            zoomOnCenter(-0.05f, 1f, Float.POSITIVE_INFINITY);
+            zoomOnCenter(-zoomTick, minZoom, maxZoom);
             NvContext.markSceneDirty();
         }
     }

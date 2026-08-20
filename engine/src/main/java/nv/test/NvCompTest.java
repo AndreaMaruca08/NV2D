@@ -17,7 +17,7 @@ public class NvCompTest {
 
     @BeforeEach
     void setUp() {
-        NvGraphic.camera = new NvCamera(0f, 0f, 100f);
+        NvGraphic.camera = new NvCamera(0f, 0f, 1f);
         parent = new MockComp(10, 20, 100, 200);
         child = new MockComp(30, 40, 50, 60);
     }

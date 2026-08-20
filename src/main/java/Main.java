@@ -1,5 +1,6 @@
 import nv.core.ContextBuilder;
 import nv.core.NvContext;
+import nv.utils.camera.NvControlledCamera;
 
 //Example
 void main() {

@@ -1,3 +1,4 @@
+
 package nv.core.components;
 
 import nv.core.annotations.EngineCore;
@@ -54,6 +55,10 @@ public class NvCont extends NvRgbComp {
 
     public NvCont(int x, int y, int w, int h, boolean showBorder) {
         super(x, y, w, h);
+
+        // NvCont agisce come sfondo/schermata: impostato come HUD
+        // in modo che lo sfondo sia sempre ancorato allo schermo a qualsiasi zoom
+        setHUD(true);
 
         this.showBorder = showBorder;
 
@@ -119,22 +124,12 @@ public class NvCont extends NvRgbComp {
      * @param dt delta time
      */
     public void tickAllComponents(float dt) {
-
-        /*
-         * Store the size before ticking.
-         *
-         * Components added during the current tick will therefore
-         * be processed starting from the next tick.
-         */
         int n = allComponents.size();
 
         for (int i = 0; i < n; i++) {
             allComponents.get(i).tick(dt);
         }
 
-        /*
-         * Collect components that requested destruction.
-         */
         toDestroy.clear();
 
         for (int i = 0; i < allComponents.size(); i++) {
@@ -145,46 +140,21 @@ public class NvCont extends NvRgbComp {
             }
         }
 
-        /*
-         * Destroy components after the iteration.
-         */
         for (NvComp comp : toDestroy) {
-
-            /*
-             * If an ancestor was already destroyed, this component
-             * has already been removed from the flat list.
-             */
             if (!allComponents.contains(comp)) {
                 continue;
             }
 
-            /*
-             * NvComp handles the actual destruction recursively.
-             */
             comp.actualDestroy();
-
-            /*
-             * Remove the component and its complete subtree from
-             * the flat list.
-             */
             removeFromFlatListRecursive(comp);
 
-            /*
-             * Remove the component from the hierarchy.
-             */
             NvComp parent = comp.getParent();
-
             if (parent != null) {
                 parent.getChildren().remove(comp);
             }
         }
     }
 
-    /**
-     * Removes a component and all of its descendants from the flat list.
-     *
-     * @param comp component to remove
-     */
     private void removeFromFlatListRecursive(NvComp comp) {
         allComponents.remove(comp);
 
@@ -224,9 +194,10 @@ public class NvCont extends NvRgbComp {
             );
         }
 
+        // Disegna lo sfondo partendo da (0, 0) fino a tutta la larghezza e altezza dello schermo
         g.drawRect(
-                camera.x,
-                camera.y,
+                0,
+                0,
                 getW(),
                 getH(),
                 r,
