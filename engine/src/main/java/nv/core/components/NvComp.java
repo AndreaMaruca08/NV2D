@@ -18,6 +18,7 @@ import nv.core.io.Hoverable;
 import java.util.ArrayList;
 import java.util.List;
 
+import static nv.core.errors.NvLogger.logInfo;
 import static nv.core.graphic.NvGraphic.camera;
 
 /**
@@ -329,13 +330,39 @@ public abstract class NvComp implements Updatable, Drawable {
         cleanDirty();
     }
 
-    public boolean isInside(int x, int y){
-        float shiftedX = camera.x + x;
-        float shiftedY = camera.y + y;
-        return  shiftedX >= this.x &&
-                shiftedX <= this.x + this.w &&
-                shiftedY >= this.y &&
-                shiftedY <= this.y + this.h;
+    public boolean isInside(int x, int y) {
+        float worldX;
+        float worldY;
+
+        if (isHUD()) {
+            worldX = x;
+            worldY = y;
+        } else {
+            float safeZoom = Math.max(camera.zoom, 0.0001f);
+            worldX = camera.x + (x / safeZoom);
+            worldY = camera.y + (y / safeZoom);
+        }
+
+        //handles rotation
+        if (rotation != 0) {
+            float pivotWorldX = this.x + this.w * this.pivotX;
+            float pivotWorldY = this.y + this.h * this.pivotY;
+
+            float rad = (float) Math.toRadians(-rotation);
+            float cos = (float) Math.cos(rad);
+            float sin = (float) Math.sin(rad);
+
+            float dx = worldX - pivotWorldX;
+            float dy = worldY - pivotWorldY;
+
+            worldX = pivotWorldX + (dx * cos - dy * sin);
+            worldY = pivotWorldY + (dx * sin + dy * cos);
+        }
+
+        return worldX >= this.x &&
+                worldX <= this.x + this.w &&
+                worldY >= this.y &&
+                worldY <= this.y + this.h;
     }
 
     public abstract void drawIntern(NvGraphic g);
