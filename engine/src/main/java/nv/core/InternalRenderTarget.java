@@ -23,6 +23,7 @@ public final class InternalRenderTarget implements AutoCloseable {
     private final long imageHandle;
     private final long memoryHandle;
     private final long imageViewHandle;
+    private final long samplerHandle;
     private final long framebufferHandle;
 
     public InternalRenderTarget(VkDevice device,
@@ -47,7 +48,7 @@ public final class InternalRenderTarget implements AutoCloseable {
                     .format(format)
                     .tiling(VK_IMAGE_TILING_OPTIMAL)
                     .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-                    .usage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+                    .usage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
                     .sharingMode(VK_SHARING_MODE_EXCLUSIVE)
                     .samples(VK_SAMPLE_COUNT_1_BIT);
 
@@ -93,6 +94,23 @@ public final class InternalRenderTarget implements AutoCloseable {
             }
             this.imageViewHandle = pView.get(0);
 
+            // Sampler per sampling lineare o shader post-processing
+            VkSamplerCreateInfo samplerInfo = VkSamplerCreateInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO)
+                    .magFilter(VK_FILTER_LINEAR)
+                    .minFilter(VK_FILTER_LINEAR)
+                    .addressModeU(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+                    .addressModeV(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+                    .addressModeW(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+                    .borderColor(VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK)
+                    .unnormalizedCoordinates(false);
+
+            LongBuffer pSampler = stack.mallocLong(1);
+            if (vkCreateSampler(device, samplerInfo, null, pSampler) != VK_SUCCESS) {
+                throw new EngineEx("Unable to create internal render target sampler");
+            }
+            this.samplerHandle = pSampler.get(0);
+
             VkFramebufferCreateInfo fbInfo = VkFramebufferCreateInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO)
                     .renderPass(renderPass)
@@ -117,6 +135,14 @@ public final class InternalRenderTarget implements AutoCloseable {
         return imageHandle;
     }
 
+    public long getImageViewHandle() {
+        return imageViewHandle;
+    }
+
+    public long getSamplerHandle() {
+        return samplerHandle;
+    }
+
     public int getWidth() {
         return width;
     }
@@ -132,6 +158,7 @@ public final class InternalRenderTarget implements AutoCloseable {
     @Override
     public void close() {
         vkDestroyFramebuffer(device, framebufferHandle, null);
+        vkDestroySampler(device, samplerHandle, null);
         vkDestroyImageView(device, imageViewHandle, null);
         vkDestroyImage(device, imageHandle, null);
         vkFreeMemory(device, memoryHandle, null);

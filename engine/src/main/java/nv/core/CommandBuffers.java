@@ -712,6 +712,324 @@ public final class CommandBuffers {
         }
     }
 
+    /**
+     * Records scene rendering into offscreen target and then executes the
+     * fullscreen post-processing pipeline directly into the swapchain image.
+     */
+    public void recordWithPostProcess(
+            int imageIndex,
+            float[] bgColor,
+            long renderPass,
+            long framebuffer,
+            long pipelineHandle,
+            long pipelineLayoutHandle,
+            long texturePipelineHandle,
+            long texturePipelineLayoutHandle,
+            long vertexBufferHandle,
+            long indexBufferHandle,
+            int graphicsIndexCount,
+            int imageIndexCount,
+            int imageIndexOffset,
+            long descriptorSet,
+            long sourceImageHandle,
+            int width,
+            int height,
+            int swapchainWidth,
+            int swapchainHeight,
+            boolean sourceImageInitialized,
+            PostProcessPipeline postProcessPipeline,
+            PostProcessSettings postProcessSettings,
+            float time
+    ) {
+
+        VkCommandBuffer commandBuffer = commandBuffers[imageIndex];
+
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+
+            beginCommandBuffer(commandBuffer, stack);
+
+            /*
+             * Transition internal render target:
+             * TRANSFER_SRC / UNDEFINED -> COLOR_ATTACHMENT
+             */
+            VkImageMemoryBarrier.Buffer targetBarrier =
+                    VkImageMemoryBarrier.calloc(1, stack)
+                            .sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER)
+                            .oldLayout(
+                                    sourceImageInitialized
+                                            ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
+                                            : VK_IMAGE_LAYOUT_UNDEFINED
+                            )
+                            .newLayout(
+                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+                            )
+                            .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                            .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                            .image(sourceImageHandle)
+                            .subresourceRange(r -> r
+                                    .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                                    .baseMipLevel(0)
+                                    .levelCount(1)
+                                    .baseArrayLayer(0)
+                                    .layerCount(1)
+                            )
+                            .srcAccessMask(
+                                    sourceImageInitialized
+                                            ? VK_ACCESS_TRANSFER_READ_BIT
+                                            : 0
+                            )
+                            .dstAccessMask(
+                                    VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+                            );
+
+            vkCmdPipelineBarrier(
+                    commandBuffer,
+                    sourceImageInitialized
+                            ? VK_PIPELINE_STAGE_TRANSFER_BIT
+                            : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                    0,
+                    null,
+                    null,
+                    targetBarrier
+            );
+
+            beginRenderPass(
+                    commandBuffer,
+                    stack,
+                    bgColor,
+                    renderPass,
+                    framebuffer,
+                    width,
+                    height
+            );
+
+            setViewportAndScissor(
+                    commandBuffer,
+                    stack,
+                    width,
+                    height
+            );
+
+            LongBuffer pDescriptorSets = stack.longs(descriptorSet);
+            LongBuffer buffers = stack.longs(vertexBufferHandle);
+            LongBuffer offsets = stack.longs(0L);
+
+            if (graphicsIndexCount > 0 || imageIndexCount > 0) {
+
+                if (graphicsIndexCount > 0) {
+                    vkCmdBindPipeline(
+                            commandBuffer,
+                            VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            pipelineHandle
+                    );
+
+                    vkCmdBindDescriptorSets(
+                            commandBuffer,
+                            VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            pipelineLayoutHandle,
+                            0,
+                            pDescriptorSets,
+                            null
+                    );
+
+                    vkCmdBindVertexBuffers(
+                            commandBuffer,
+                            0,
+                            buffers,
+                            offsets
+                    );
+
+                    vkCmdBindIndexBuffer(
+                            commandBuffer,
+                            indexBufferHandle,
+                            0,
+                            VK_INDEX_TYPE_UINT32
+                    );
+
+                    vkCmdDrawIndexed(
+                            commandBuffer,
+                            graphicsIndexCount,
+                            1,
+                            0,
+                            0,
+                            0
+                    );
+                }
+
+                if (imageIndexCount > 0) {
+                    vkCmdBindPipeline(
+                            commandBuffer,
+                            VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            texturePipelineHandle
+                    );
+
+                    if (graphicsIndexCount == 0) {
+                        vkCmdBindDescriptorSets(
+                                commandBuffer,
+                                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                texturePipelineLayoutHandle,
+                                0,
+                                pDescriptorSets,
+                                null
+                        );
+
+                        vkCmdBindVertexBuffers(
+                                commandBuffer,
+                                0,
+                                buffers,
+                                offsets
+                        );
+
+                        vkCmdBindIndexBuffer(
+                                commandBuffer,
+                                indexBufferHandle,
+                                0,
+                                VK_INDEX_TYPE_UINT32
+                        );
+                    }
+
+                    vkCmdDrawIndexed(
+                            commandBuffer,
+                            imageIndexCount,
+                            1,
+                            imageIndexOffset,
+                            0,
+                            0
+                    );
+                }
+            }
+
+            vkCmdEndRenderPass(commandBuffer);
+
+            /*
+             * Transition internal target:
+             * COLOR_ATTACHMENT -> SHADER_READ_ONLY
+             */
+            try (MemoryStack bs = MemoryStack.stackPush()) {
+                VkImageMemoryBarrier.Buffer readBarrier =
+                        VkImageMemoryBarrier.calloc(1, bs)
+                                .sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER)
+                                .oldLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+                                .newLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+                                .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                                .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                                .image(sourceImageHandle)
+                                .subresourceRange(r -> r
+                                        .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                                        .baseMipLevel(0)
+                                        .levelCount(1)
+                                        .baseArrayLayer(0)
+                                        .layerCount(1)
+                                )
+                                .srcAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
+                                .dstAccessMask(VK_ACCESS_SHADER_READ_BIT);
+
+                vkCmdPipelineBarrier(
+                        commandBuffer,
+                        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                        0,
+                        null,
+                        null,
+                        readBarrier
+                );
+            }
+
+            /*
+             * Swapchain Post-Processing Render Pass:
+             * Renders fullscreen quad with postprocessing directly into swapchain.
+             */
+            VkRenderPassBeginInfo ppPassInfo =
+                    VkRenderPassBeginInfo.calloc(stack)
+                            .sType(VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO)
+                            .renderPass(postProcessPipeline.getSwapchainRenderPassHandle())
+                            .framebuffer(postProcessPipeline.getFramebuffer(imageIndex))
+                            .renderArea(ra -> ra
+                                    .offset(o -> o.set(0, 0))
+                                    .extent(e -> e.set(swapchainWidth, swapchainHeight))
+                            );
+
+            vkCmdBeginRenderPass(
+                    commandBuffer,
+                    ppPassInfo,
+                    VK_SUBPASS_CONTENTS_INLINE
+            );
+
+            setViewportAndScissor(
+                    commandBuffer,
+                    stack,
+                    swapchainWidth,
+                    swapchainHeight
+            );
+
+            vkCmdBindPipeline(
+                    commandBuffer,
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    postProcessPipeline.getPipelineHandle()
+            );
+
+            LongBuffer pPPDescriptorSets =
+                    stack.longs(postProcessPipeline.getDescriptorSetHandle());
+
+            vkCmdBindDescriptorSets(
+                    commandBuffer,
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    postProcessPipeline.getPipelineLayoutHandle(),
+                    0,
+                    pPPDescriptorSets,
+                    null
+            );
+
+            postProcessSettings.pushConstants(
+                    commandBuffer,
+                    postProcessPipeline.getPipelineLayoutHandle(),
+                    time
+            );
+
+            // Draw fullscreen triangle (3 vertices, 0 vertex buffer)
+            vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+
+            vkCmdEndRenderPass(commandBuffer);
+
+            /*
+             * Transition internal target:
+             * SHADER_READ_ONLY -> TRANSFER_SRC (ready for Screenshot / next frame)
+             */
+            try (MemoryStack bs = MemoryStack.stackPush()) {
+                VkImageMemoryBarrier.Buffer transferSrcBarrier =
+                        VkImageMemoryBarrier.calloc(1, bs)
+                                .sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER)
+                                .oldLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+                                .newLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+                                .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                                .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                                .image(sourceImageHandle)
+                                .subresourceRange(r -> r
+                                        .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                                        .baseMipLevel(0)
+                                        .levelCount(1)
+                                        .baseArrayLayer(0)
+                                        .layerCount(1)
+                                )
+                                .srcAccessMask(VK_ACCESS_SHADER_READ_BIT)
+                                .dstAccessMask(VK_ACCESS_TRANSFER_READ_BIT);
+
+                vkCmdPipelineBarrier(
+                        commandBuffer,
+                        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                        VK_PIPELINE_STAGE_TRANSFER_BIT,
+                        0,
+                        null,
+                        null,
+                        transferSrcBarrier
+                );
+            }
+
+            endCommandBuffer(commandBuffer);
+        }
+    }
+
     private void beginCommandBuffer(
             VkCommandBuffer commandBuffer,
             MemoryStack stack

@@ -1,5 +1,6 @@
 import nv.core.ContextBuilder;
 import nv.core.NvContext;
+import nv.core.PostProcessSettings;
 import nv.utils.camera.NvControlledCamera;
 
 //Example
@@ -8,6 +9,9 @@ void main() {
     NvContext context = new ContextBuilder("START")
             .setVsync(true)
             .setIdleWhenUnfocused(true)
+//          .configurePostProcess((settings) -> { for post processing
+//              settings.enableCRT(100, 1);
+//          })
             .build();
     // first page
     var page = context.newPage();

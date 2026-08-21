@@ -71,6 +71,8 @@ public final class NvContext implements Runnable {
     private InternalRenderTarget internalRenderTarget;
     private boolean internalRenderTargetInitialized;
     private Updatable currentCameraUpdatable;
+    private PostProcessSettings postProcessSettings = new PostProcessSettings();
+    private PostProcessPipeline postProcessPipeline;
 
     private final int MAX_VERTICES;
     private final int MAX_INDICES;
@@ -290,6 +292,25 @@ public final class NvContext implements Runnable {
 
     public Swapchain getSwapchain() {
         return swapchain;
+    }
+
+    public PostProcessSettings getPostProcess() {
+        return postProcessSettings;
+    }
+
+    public void setPostProcess(PostProcessSettings settings) {
+        this.postProcessSettings = settings != null ? settings : new PostProcessSettings();
+        markSceneDirty();
+    }
+
+    public void enableRetroCRT() {
+        this.postProcessSettings.presetRetroCRT();
+        markSceneDirty();
+    }
+
+    public void disablePostProcess() {
+        this.postProcessSettings.setEnabled(false);
+        markSceneDirty();
     }
 
     /**
@@ -738,6 +759,9 @@ public final class NvContext implements Runnable {
         createInternalRenderTarget();
         buildCombinedGeometry();
 
+        this.postProcessPipeline = new PostProcessPipeline(device, swapchain, internalRenderTarget);
+        logEngine("PostProcess pipeline created");
+
         this.commandBuffers = new CommandBuffers(device, pipeline, swapchain);
         createSyncObjects();
 
@@ -851,8 +875,11 @@ public final class NvContext implements Runnable {
             inputPending = false;
             tickHandler(deltaTime);
 
+            boolean hasAnimatedPostProcess = postProcessSettings.isEnabled() &&
+                    (postProcessSettings.getFilmGrainStrength() > 0 || postProcessSettings.getScanlineStrength() > 0);
+
             boolean canRender = !idleWhenUnfocused || windowFocused;
-            boolean shouldDraw = canRender && (sceneDirty || framebufferResized);
+            boolean shouldDraw = canRender && (sceneDirty || framebufferResized || hasAnimatedPostProcess);
             if (shouldDraw) {
                 drawFrame();
             }
@@ -922,7 +949,7 @@ public final class NvContext implements Runnable {
         return idleFps;
     }
 
-    /** Updated in 1.6. */
+    /** Updated in 1.6.2 with PostProcessPipeline */
     private void drawFrame() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             vkWaitForFences(device, inFlightFence, true, Long.MAX_VALUE);
@@ -942,40 +969,73 @@ public final class NvContext implements Runnable {
 
             int imageIndex = pImageIndex.get(0);
 
-            // Only record new commands if the scene is dirty, framebuffer resized, or command buffer for this image is dirty
-            if (sceneDirty || framebufferResized || commandBufferDirty[imageIndex]) {
+            boolean hasAnimatedPostProcess = postProcessSettings.isEnabled() &&
+                    (postProcessSettings.getFilmGrainStrength() > 0 || postProcessSettings.getScanlineStrength() > 0);
+
+            // Record commands if scene is dirty, resized, dirty buffer, or animated post-processing
+            if (sceneDirty || framebufferResized || commandBufferDirty[imageIndex] || hasAnimatedPostProcess) {
                 long fenceSignaledAt = System.nanoTime();
                 if (gpuSubmitTime > 0) {
                     gpuTotalMs = (fenceSignaledAt - gpuSubmitTime) / 1_000_000f;
                 }
 
-                rebuildScene(); // This will set sceneDirty = false
+                if (sceneDirty || framebufferResized) {
+                    rebuildScene(); // This will set sceneDirty = false
+                }
                 ubo.update(imageIndex, 0f, getEffectiveRenderWidth(), getEffectiveRenderHeight(), 0f);
 
-                commandBuffers.recordOffscreen(
-                        imageIndex,
-                        backgroundColor,
-                        renderPass,
-                        internalRenderTarget.getFramebufferHandle(),
-                        pipeline.getHandle(),
-                        pipeline.getPipelineLayoutHandle(),
-                        texturePipeline.getHandle(),
-                        texturePipeline.getPipelineLayoutHandle(),
-                        dynamicVertexBuffer.getHandle(),
-                        dynamicIndexBuffer.getHandle(),
-                        graphicsIndexCount,
-                        imageIndexCount,
-                        imageIndexOffset,
-                        descriptorManager.getDescriptorSet(imageIndex),
-                        internalRenderTarget.getImageHandle(),
-                        swapchain.getImages()[imageIndex],
-                        internalRenderTarget.getWidth(),
-                        internalRenderTarget.getHeight(),
-                        swapchain.getWidth(),
-                        swapchain.getHeight(),
-                        pixelPerfect,
-                        internalRenderTargetInitialized
-                );
+                if (postProcessSettings.isEnabled()) {
+                    commandBuffers.recordWithPostProcess(
+                            imageIndex,
+                            backgroundColor,
+                            renderPass,
+                            internalRenderTarget.getFramebufferHandle(),
+                            pipeline.getHandle(),
+                            pipeline.getPipelineLayoutHandle(),
+                            texturePipeline.getHandle(),
+                            texturePipeline.getPipelineLayoutHandle(),
+                            dynamicVertexBuffer.getHandle(),
+                            dynamicIndexBuffer.getHandle(),
+                            graphicsIndexCount,
+                            imageIndexCount,
+                            imageIndexOffset,
+                            descriptorManager.getDescriptorSet(imageIndex),
+                            internalRenderTarget.getImageHandle(),
+                            internalRenderTarget.getWidth(),
+                            internalRenderTarget.getHeight(),
+                            swapchain.getWidth(),
+                            swapchain.getHeight(),
+                            internalRenderTargetInitialized,
+                            postProcessPipeline,
+                            postProcessSettings,
+                            (float) glfwGetTime()
+                    );
+                } else {
+                    commandBuffers.recordOffscreen(
+                            imageIndex,
+                            backgroundColor,
+                            renderPass,
+                            internalRenderTarget.getFramebufferHandle(),
+                            pipeline.getHandle(),
+                            pipeline.getPipelineLayoutHandle(),
+                            texturePipeline.getHandle(),
+                            texturePipeline.getPipelineLayoutHandle(),
+                            dynamicVertexBuffer.getHandle(),
+                            dynamicIndexBuffer.getHandle(),
+                            graphicsIndexCount,
+                            imageIndexCount,
+                            imageIndexOffset,
+                            descriptorManager.getDescriptorSet(imageIndex),
+                            internalRenderTarget.getImageHandle(),
+                            swapchain.getImages()[imageIndex],
+                            internalRenderTarget.getWidth(),
+                            internalRenderTarget.getHeight(),
+                            swapchain.getWidth(),
+                            swapchain.getHeight(),
+                            pixelPerfect,
+                            internalRenderTargetInitialized
+                    );
+                }
 
                 internalRenderTargetInitialized = true;
                 commandBufferDirty[imageIndex] = false;
@@ -1094,6 +1154,9 @@ public final class NvContext implements Runnable {
                 descriptorManager.getDescriptorSetLayoutHandle()
         );
         this.commandBuffers = new CommandBuffers(device, pipeline, swapchain);
+        if (postProcessPipeline != null) {
+            postProcessPipeline.recreateSwapchain(swapchain, internalRenderTarget);
+        }
         sceneDirty = true;
     }
 
@@ -1634,6 +1697,10 @@ public final class NvContext implements Runnable {
         }
 
         if (commandBuffers      != null) commandBuffers.free();
+        if (postProcessPipeline != null) {
+            postProcessPipeline.close();
+            postProcessPipeline = null;
+        }
         if (internalRenderTarget != null) {
             internalRenderTarget.close();
             internalRenderTarget = null;

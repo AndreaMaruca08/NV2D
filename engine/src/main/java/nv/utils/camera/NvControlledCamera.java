@@ -131,7 +131,6 @@ public class NvControlledCamera extends NvCamera implements Updatable, KeyboardL
         }
         if(keys[GLFW_KEY_Z]){
             zoomOnCenter(zoomTick, minZoom, maxZoom);
-            Screenshot.savePNG("screenshot.png");
             NvContext.markSceneDirty();
         }else if(keys[GLFW_KEY_X]){
             zoomOnCenter(-zoomTick, minZoom, maxZoom);

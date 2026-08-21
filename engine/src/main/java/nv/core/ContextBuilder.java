@@ -98,6 +98,22 @@ public final class ContextBuilder {
     }
 
     /**
+     * Enables the Retro CRT TV simulation preset (curvature, scanlines, vignette, bloom, aberration).
+     */
+    public ContextBuilder enableRetroCRT() {
+        ctx.getPostProcess().presetRetroCRT();
+        return this;
+    }
+
+    /**
+     * Configures the post-processing settings via a lambda.
+     */
+    public ContextBuilder configurePostProcess(java.util.function.Consumer<PostProcessSettings> config) {
+        config.accept(ctx.getPostProcess());
+        return this;
+    }
+
+    /**
      * Builds the application
      * @return the built context
      */
