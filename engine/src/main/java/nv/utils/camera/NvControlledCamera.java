@@ -7,6 +7,7 @@ import nv.core.camera.NvCamera;
 import nv.core.graphic.NvGraphic;
 import nv.core.io.KeyboardListener;
 import nv.core.io.KeyboardSystem;
+import nv.core.io.Screenshot;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_D;
@@ -130,6 +131,7 @@ public class NvControlledCamera extends NvCamera implements Updatable, KeyboardL
         }
         if(keys[GLFW_KEY_Z]){
             zoomOnCenter(zoomTick, minZoom, maxZoom);
+            Screenshot.savePNG("screenshot.png");
             NvContext.markSceneDirty();
         }else if(keys[GLFW_KEY_X]){
             zoomOnCenter(-zoomTick, minZoom, maxZoom);

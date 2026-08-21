@@ -272,6 +272,26 @@ public final class NvContext implements Runnable {
         return rootComponent;
     }
 
+    public VkDevice getDevice() {
+        return device;
+    }
+
+    public VkPhysicalDevice getPhysicalDevice() {
+        return physicalDevice;
+    }
+
+    public VkQueue getGraphicsQueue() {
+        return graphicsQueue;
+    }
+
+    public InternalRenderTarget getInternalRenderTarget() {
+        return internalRenderTarget;
+    }
+
+    public Swapchain getSwapchain() {
+        return swapchain;
+    }
+
     /**
      *  <h2>To create a new page, use: NvCont.newPage()</h2>
      * @param key key to get or change the page
