@@ -1,12 +1,9 @@
 import nv.core.ContextBuilder;
 import nv.core.NvContext;
-import nv.core.PostProcessSettings;
-import nv.utils.camera.NvControlledCamera;
 
-//Example
 void main() {
-    // build the game
-    NvContext context = new ContextBuilder("START")
+    // builds the game
+    NvContext context = new ContextBuilder("START") // <- app/game name
             .setVsync(true)
             .setIdleWhenUnfocused(true)
 //          .configurePostProcess((settings) -> { for post processing
@@ -21,5 +18,5 @@ void main() {
     //it will be drawn automatically
 
     // run the game
-    context.run();
+    context.run(); //  (don't put anything after this line, it won't be executed until the end)
 }
