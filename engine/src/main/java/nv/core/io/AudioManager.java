@@ -48,9 +48,9 @@ public final class AudioManager {
      */
     private static final Map<String, Float> speedCache = new ConcurrentHashMap<>(10);
 
-    private static final float DEFAULT_SPEED = 1.0f;
-    private static final float MIN_SPEED = 0.05f;
-    private static final float MAX_SPEED = 40f;
+    public static final float DEFAULT_SPEED = 1.0f;
+    public static final float MIN_SPEED = 0.05f;
+    public static final float MAX_SPEED = 40f;
 
 
     /**
@@ -60,7 +60,7 @@ public final class AudioManager {
      */
     private static final Map<String, Float> volumeCache = new ConcurrentHashMap<>(10);
 
-    private static final float DEFAULT_VOLUME = 1.0f;
+    public static final float DEFAULT_VOLUME = 1.0f;
     private static final String PREFIX = "audio/";
     private static long audioDevice;
     private static long audioContext;
@@ -321,6 +321,23 @@ public final class AudioManager {
      */
     public static void playLoop(String filePath) {
         int sourceId = getOrCreateSource(PREFIX + filePath);
+
+        if (sourceId == -1) {
+            return;
+        }
+
+        AL10.alSourcei(sourceId, AL10.AL_LOOPING, AL10.AL_TRUE);
+        AL10.alSourcePlay(sourceId);
+    }
+    /**
+     * Plays an audio file continuously on a loop.
+     *
+     * @param filePath audio file
+     */
+    public static void playLoopExternal(String filePath) {
+        String path = new File(filePath).getAbsolutePath();
+
+        int sourceId = getOrCreateSource(path);
 
         if (sourceId == -1) {
             return;
