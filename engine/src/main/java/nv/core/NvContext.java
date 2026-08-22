@@ -676,7 +676,6 @@ public final class NvContext implements Runnable {
             mouseY = (int) y;
             mouseMoved = true;
             inputPending = true;
-            markSceneDirty(); // Mouse movement might change hover state, so mark dirty
         });
         try (MemoryStack stack = MemoryStack.stackPush()) {
             IntBuffer w = stack.mallocInt(1);
