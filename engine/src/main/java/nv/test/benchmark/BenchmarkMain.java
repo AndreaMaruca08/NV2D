@@ -6,7 +6,7 @@ import nv.utils.camera.NvControlledCamera;
 
 //BENCHMARK MAIN
 void main() {
-    NvContext context = new ContextBuilder("Benchmark", 6000000,6000000)
+    NvContext context = new ContextBuilder("Benchmark", true, 6000000,6000000)
             .setVsync(true)
             .setIdleWhenUnfocused(true)
             .build();

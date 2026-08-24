@@ -383,22 +383,27 @@ public final class NvContext implements Runnable {
 
     public static NvContext getInstance(){
         if(appInstance == null)
-            appInstance = new NvContext("NV2D game");
+            appInstance = new NvContext("NV2D game", true);
         return appInstance;
     }
-    public static NvContext createInstance(String name, Dimension windowDimension){
+    public static NvContext createInstance(String name, boolean windowResizable, Dimension windowDimension){
         if(appInstance == null)
-            appInstance = new NvContext(name, windowDimension);
+            appInstance = new NvContext(name, windowResizable, windowDimension);
         return appInstance;
     }
-    public static NvContext createInstance(String name, int maxVertices, int maxIndices){
+    public static NvContext createInstance(String name, boolean windowResizable, int maxVertices, int maxIndices){
         if(appInstance == null)
-            appInstance = new NvContext(name, maxVertices, maxIndices, SCREEN);
+            appInstance = new NvContext(name, maxVertices, maxIndices, windowResizable, SCREEN);
         return appInstance;
     }
-    public static NvContext createInstance(String name){
+    public static NvContext createInstance(String name, boolean windowResizable, Dimension windowDimension, int maxVertices, int maxIndices){
         if(appInstance == null)
-            appInstance = new NvContext(name);
+            appInstance = new NvContext(name, maxVertices, maxIndices, windowResizable, windowDimension);
+        return appInstance;
+    }
+    public static NvContext createInstance(String name, boolean windowResizable){
+        if(appInstance == null)
+            appInstance = new NvContext(name, windowResizable);
         return appInstance;
     }
 
@@ -413,7 +418,7 @@ public final class NvContext implements Runnable {
         }
     }
 
-    private NvContext(String name, int maxVertices, int maxIndices, Dimension windowDim) {
+    private NvContext(String name, int maxVertices, int maxIndices, boolean resizable, Dimension windowDim) {
         handleMacPath();
         MoltenVKBootstrap.setup();
 
@@ -424,7 +429,7 @@ public final class NvContext implements Runnable {
         var nano = System.nanoTime();
 
         NvLogger.initialize(name, MAJOR_VERSION, MINOR_VERSION, PATCH);
-        initWindow(name, windowDim);
+        initWindow(name, resizable, windowDim);
         logEngine("Window initialized");
         initVulkan();
         logEngine("Vulkan initialized");
@@ -440,16 +445,16 @@ public final class NvContext implements Runnable {
         logEngine("-----------Program started successfully-------------");
     }
 
-    private NvContext(String name) {
-        this(name, DEF_MAX_VERTICES, DEF_MAX_INDICES, SCREEN);
+    private NvContext(String name, boolean windowResizable) {
+        this(name, DEF_MAX_VERTICES, DEF_MAX_INDICES, windowResizable, SCREEN);
     }
 
-    private NvContext(Dimension windowDimension) {
-        this("NV2D game", DEF_MAX_VERTICES, DEF_MAX_INDICES, windowDimension);
+    private NvContext(boolean windowResizable, Dimension windowDimension) {
+        this("NV2D project", DEF_MAX_VERTICES, DEF_MAX_INDICES, windowResizable, windowDimension);
     }
 
-    private NvContext(String name, Dimension windowDimension) {
-        this(name, DEF_MAX_VERTICES, DEF_MAX_INDICES, windowDimension);
+    private NvContext(String name, boolean windowResizable, Dimension windowDimension) {
+        this(name, DEF_MAX_VERTICES, DEF_MAX_INDICES, windowResizable, windowDimension);
     }
 
     /**
@@ -643,11 +648,11 @@ public final class NvContext implements Runnable {
         sceneDirty = true;
     }
 
-    private void initWindow(String name, Dimension windowDimension) {
+    private void initWindow(String name, boolean resizable, Dimension windowDimension) {
         if (!glfwInit()) throw new EngineEx("Impossibile inizializzare GLFW");
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+        glfwWindowHint(GLFW_RESIZABLE, resizable ? GLFW_TRUE : GLFW_FALSE);
 
         window = glfwCreateWindow(windowDimension.width, windowDimension.height, name, 0, 0);
         if (window == 0) throw new EngineEx("Impossibile creare la finestra GLFW");

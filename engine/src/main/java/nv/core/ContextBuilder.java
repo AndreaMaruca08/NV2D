@@ -2,6 +2,8 @@ package nv.core;
 
 import nv.core.annotations.EngineCore;
 
+import java.awt.*;
+
 /**
  * <p>The correct way to build the application with multiple build options</p>
  * @since 1.0
@@ -12,12 +14,23 @@ import nv.core.annotations.EngineCore;
 public final class ContextBuilder {
     private final NvContext ctx;
 
-    public ContextBuilder(String name, int vertexBufferSize, int indicesBufferSize){
-        ctx = NvContext.createInstance(name, vertexBufferSize, indicesBufferSize);
+    public ContextBuilder(String name, boolean windowResizable, int vertexBufferSize, int indicesBufferSize){
+        ctx = NvContext.createInstance(name, windowResizable, vertexBufferSize, indicesBufferSize);
+    }
+
+    public ContextBuilder(String name, boolean windowResizable, Dimension windowSize){
+        ctx = NvContext.createInstance(name, windowResizable);
+    }
+
+    public ContextBuilder(String name, boolean windowResizable, Dimension windowSize, int vertexBufferSize, int indicesBufferSize){
+        ctx = NvContext.createInstance(name, windowResizable);
     }
 
     public ContextBuilder(String name){
-        ctx = NvContext.createInstance(name);
+        ctx = NvContext.createInstance(name, true);
+    }
+    public ContextBuilder(String name, boolean resizable){
+        ctx = NvContext.createInstance(name, resizable);
     }
 
     /**
