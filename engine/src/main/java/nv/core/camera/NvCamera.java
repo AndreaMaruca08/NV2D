@@ -81,20 +81,27 @@ public class NvCamera {
     }
     public boolean isComponentInRendering(NvComp comp) {
         if (context == null) context = NvContext.getInstance();
+        float renderW = context.getRenderWidth();
+        float renderH = context.getRenderHeight();
+        float safeZoom = Math.max(zoom, 0.0001f);
+        return isComponentInRendering(comp, renderW, renderH, renderW / safeZoom, renderH / safeZoom);
+    }
+
+    public boolean isComponentInRendering(NvComp comp, float renderW, float renderH, float viewW, float viewH) {
+        int cx = comp.getX();
+        int cy = comp.getY();
+        int cw = comp.getW();
+        int ch = comp.getH();
 
         if (comp.isHUD()) {
-            return comp.getX() + comp.getW() >= 0 && comp.getX() <= context.getRenderWidth() &&
-                    comp.getY() + comp.getH() >= 0 && comp.getY() <= context.getRenderHeight();
+            return cx + cw >= 0 && cx <= renderW &&
+                    cy + ch >= 0 && cy <= renderH;
         }
 
-        float safeZoom = Math.max(zoom, 0.0001f);
-        float viewW = context.getRenderWidth() / safeZoom;
-        float viewH = context.getRenderHeight() / safeZoom;
-
-        return comp.getX() + comp.getW() >= this.x &&
-                comp.getX() <= this.x + viewW &&
-                comp.getY() + comp.getH() >= this.y &&
-                comp.getY() <= this.y + viewH;
+        return cx + cw >= this.x &&
+                cx <= this.x + viewW &&
+                cy + ch >= this.y &&
+                cy <= this.y + viewH;
     }
 
     public void zoom(float amount){

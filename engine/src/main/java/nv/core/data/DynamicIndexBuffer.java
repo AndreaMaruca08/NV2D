@@ -20,6 +20,7 @@ public final class DynamicIndexBuffer implements AutoCloseable {
     private final long buffer;
     private final long bufferMemory;
     private final ByteBuffer mappedData;
+    private final java.nio.IntBuffer mappedIntBuffer;
     private final long bufferSize;
     private final int maxIndexCount;
 
@@ -66,6 +67,7 @@ public final class DynamicIndexBuffer implements AutoCloseable {
                 throw new EngineEx("Impossible to map Dynamic Index Buffer memory!");
             }
             this.mappedData = MemoryUtil.memByteBuffer(pData.get(0), (int) bufferSize);
+            this.mappedIntBuffer = this.mappedData.asIntBuffer();
         }
     }
 
@@ -83,8 +85,8 @@ public final class DynamicIndexBuffer implements AutoCloseable {
                     "Indices (" + indexCount + ") exceed the buffer capacity (" + maxIndexCount + ")!");
         }
 
-        mappedData.clear();
-        mappedData.asIntBuffer().put(indices, 0, indexCount);
+        mappedIntBuffer.clear();
+        mappedIntBuffer.put(indices, 0, indexCount);
 
         return indexCount;
     }

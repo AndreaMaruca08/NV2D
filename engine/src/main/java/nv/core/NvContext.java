@@ -133,7 +133,7 @@ public final class NvContext implements Runnable {
 
     private final Map<String, NvCont> pages = new HashMap<>(10);
 
-    private static final int PARALLEL_UPDATE_THRESHOLD = 4;
+    private static final int PARALLEL_UPDATE_THRESHOLD = 64;
     private final List<Updatable> updatable = new CopyOnWriteArrayList<>();
     private final List<Drawable> drawables = new CopyOnWriteArrayList<>();
 
@@ -426,6 +426,7 @@ public final class NvContext implements Runnable {
     }
 
     private NvContext(String name, int maxVertices, int maxIndices, boolean resizable, Dimension windowDim) {
+        appInstance = this;
         handleMacPath();
         MoltenVKBootstrap.setup();
 

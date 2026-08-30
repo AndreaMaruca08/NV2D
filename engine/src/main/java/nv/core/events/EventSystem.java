@@ -30,7 +30,10 @@ public final class EventSystem {
             Class<T> type,
             T event
     ) {
-        get(type).emit(event);
+        ListenerList<T> list = get(type);
+        if (list != null) {
+            list.emit(event);
+        }
     }
 
     private <T extends NvEvent> ListenerList<T> getOrCreate(
@@ -43,12 +46,7 @@ public final class EventSystem {
             Class<T> type
     ) {
         ListenerList<?> list = listeners.get(type);
-
-        if (list == null) {
-            return new ListenerList<>();
-        }
-
-        return getTyped(list);
+        return list != null ? getTyped(list) : null;
     }
 
     @SuppressWarnings("unchecked")
@@ -61,15 +59,20 @@ public final class EventSystem {
     private static final class ListenerList<T extends NvEvent> {
 
         private final List<Consumer<T>> listeners = new ArrayList<>();
+        @SuppressWarnings("unchecked")
+        private volatile Consumer<T>[] snapshot = (Consumer<T>[]) new Consumer[0];
 
-        void add(Consumer<T> listener) {
+        @SuppressWarnings("unchecked")
+        synchronized void add(Consumer<T> listener) {
             listeners.add(listener);
+            snapshot = listeners.toArray((Consumer<T>[]) new Consumer[listeners.size()]);
         }
 
         void emit(T event) {
-            List<Consumer<T>> snapshot = List.copyOf(listeners);
-
-            snapshot.forEach(listener -> listener.accept(event));
+            Consumer<T>[] localSnapshot = this.snapshot;
+            for (int i = 0; i < localSnapshot.length; i++) {
+                localSnapshot[i].accept(event);
+            }
         }
     }
 }

@@ -18,14 +18,15 @@ public final class KeyboardSystem {
     public static GLFWKeyCallbackI keyboardCallBack(){
         return (_, key, _, action, mods) -> {
             NvContext.notifyInputEvent();
+            if (key < 0 || key > GLFW_KEY_LAST) {
+                return;
+            }
             if(action == GLFW_PRESS || action == GLFW_REPEAT){
                 keys[key] = true;
                 focused.onKeyPressed(keys, mods);
             }
             else if (action == GLFW_RELEASE) {
                 focused.onKeyReleased(keys, mods);
-                if(key == -1)
-                    return;
                 keys[key] = false;
             }
         };

@@ -555,4 +555,12 @@ public abstract class NvGraphic implements AppendableGeometry {
         }
         return new Scene(vertices, indices);
     }
+
+    public float getRenderWidth() {
+        return w;
+    }
+
+    public float getRenderHeight() {
+        return h;
+    }
 }

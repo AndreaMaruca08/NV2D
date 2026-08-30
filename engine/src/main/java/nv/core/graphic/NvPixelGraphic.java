@@ -229,63 +229,43 @@ public class NvPixelGraphic extends NvGraphic {
         if (rScaled > maxR) rScaled = maxR;
 
         int numVerts = 4 + 4 * (segments + 1);
-        float[] verts = new float[numVerts * FLOATS_PER_VERTEX];
-
-        float[][] corners = {
-                {x1 + rScaled, y1 + rScaled},
-                {x2 - rScaled, y1 + rScaled},
-                {x2 - rScaled, y2 - rScaled},
-                {x1 + rScaled, y2 - rScaled}
-        };
-
+        int vertexFloatCount = numVerts * FLOATS_PER_VERTEX;
         int numIndices = 30 + 12 * segments;
-        int[] inds = new int[numIndices];
 
-        int vIdx = 0;
-        float[] inner = {
-                x1 + rScaled, y1 + rScaled,
-                x2 - rScaled, y1 + rScaled,
-                x2 - rScaled, y2 - rScaled,
-                x1 + rScaled, y2 - rScaled
-        };
+        ensureDynamicCapacity(vertexFloatCount, numIndices);
 
-        for(int i=0; i<4; i++) {
-            int off = vIdx * 8;
-            verts[off] = inner[i*2];
-            verts[off + 1] = inner[i*2+1];
-            verts[off + 2] = r;
-            verts[off + 3] = g;
-            verts[off + 4] = b;
-            verts[off + 5] = wu;
-            verts[off + 6] = wv;
-            verts[off + 7] = a;
-            vIdx++;
-        }
+        float cx0 = x1 + rScaled, cy0 = y1 + rScaled;
+        float cx1 = x2 - rScaled, cy1 = y1 + rScaled;
+        float cx2 = x2 - rScaled, cy2 = y2 - rScaled;
+        float cx3 = x1 + rScaled, cy3 = y2 - rScaled;
 
+        setVertex(dynamicVertices, 0, cx0, cy0, r, g, b, wu, wv, a);
+        setVertex(dynamicVertices, 1, cx1, cy1, r, g, b, wu, wv, a);
+        setVertex(dynamicVertices, 2, cx2, cy2, r, g, b, wu, wv, a);
+        setVertex(dynamicVertices, 3, cx3, cy3, r, g, b, wu, wv, a);
+
+        int vIdx = 4;
         int iIdx = 0;
-        inds[iIdx++] = 0; inds[iIdx++] = 1; inds[iIdx++] = 2;
-        inds[iIdx++] = 2; inds[iIdx++] = 3; inds[iIdx++] = 0;
+        dynamicIndices[iIdx++] = 0; dynamicIndices[iIdx++] = 1; dynamicIndices[iIdx++] = 2;
+        dynamicIndices[iIdx++] = 2; dynamicIndices[iIdx++] = 3; dynamicIndices[iIdx++] = 0;
 
-        for(int c=0; c<4; c++) {
-            float startAngle = (float) (Math.PI + c * Math.PI/2);
+        for (int c = 0; c < 4; c++) {
+            float cornerX = (c == 0 || c == 3) ? cx0 : cx1;
+            float cornerY = (c == 0 || c == 1) ? cy0 : cy2;
+
+            float startAngle = (float) (Math.PI + c * Math.PI / 2);
             int cornerCenterIdx = c;
 
-            for(int s=0; s<=segments; s++) {
-                float angle = startAngle + (float)(s * (Math.PI/2) / segments);
-                int off = vIdx * 8;
-                verts[off]     = corners[c][0] + (float)Math.cos(angle) * rScaled;
-                verts[off + 1] = corners[c][1] + (float)Math.sin(angle) * rScaled;
-                verts[off + 2] = r;
-                verts[off + 3] = g;
-                verts[off + 4] = b;
-                verts[off + 5] = wu;
-                verts[off + 6] = wv;
-                verts[off + 7] = a;
+            for (int s = 0; s <= segments; s++) {
+                float angle = startAngle + (float) (s * (Math.PI / 2) / segments);
+                float vx = cornerX + (float) Math.cos(angle) * rScaled;
+                float vy = cornerY + (float) Math.sin(angle) * rScaled;
+                setVertex(dynamicVertices, vIdx, vx, vy, r, g, b, wu, wv, a);
 
-                if(s > 0) {
-                    inds[iIdx++] = cornerCenterIdx;
-                    inds[iIdx++] = vIdx - 1;
-                    inds[iIdx++] = vIdx;
+                if (s > 0) {
+                    dynamicIndices[iIdx++] = cornerCenterIdx;
+                    dynamicIndices[iIdx++] = vIdx - 1;
+                    dynamicIndices[iIdx++] = vIdx;
                 }
                 vIdx++;
             }
@@ -293,25 +273,25 @@ public class NvPixelGraphic extends NvGraphic {
 
         int a0_end = 4 + segments;
         int a1_start = 4 + segments + 1;
-        inds[iIdx++] = 0; inds[iIdx++] = 1; inds[iIdx++] = a1_start;
-        inds[iIdx++] = a1_start; inds[iIdx++] = a0_end; inds[iIdx++] = 0;
+        dynamicIndices[iIdx++] = 0; dynamicIndices[iIdx++] = 1; dynamicIndices[iIdx++] = a1_start;
+        dynamicIndices[iIdx++] = a1_start; dynamicIndices[iIdx++] = a0_end; dynamicIndices[iIdx++] = 0;
 
-        int a1_end = 4 + 2*segments + 1;
-        int a2_start = 4 + 2*segments + 2;
-        inds[iIdx++] = 1; inds[iIdx++] = 2; inds[iIdx++] = a2_start;
-        inds[iIdx++] = a2_start; inds[iIdx++] = a1_end; inds[iIdx++] = 1;
+        int a1_end = 4 + 2 * segments + 1;
+        int a2_start = 4 + 2 * segments + 2;
+        dynamicIndices[iIdx++] = 1; dynamicIndices[iIdx++] = 2; dynamicIndices[iIdx++] = a2_start;
+        dynamicIndices[iIdx++] = a2_start; dynamicIndices[iIdx++] = a1_end; dynamicIndices[iIdx++] = 1;
 
-        int a2_end = 4 + 3*segments + 2;
-        int a3_start = 4 + 3*segments + 3;
-        inds[iIdx++] = 2; inds[iIdx++] = 3; inds[iIdx++] = a3_start;
-        inds[iIdx++] = a3_start; inds[iIdx++] = a2_end; inds[iIdx++] = 2;
+        int a2_end = 4 + 3 * segments + 2;
+        int a3_start = 4 + 3 * segments + 3;
+        dynamicIndices[iIdx++] = 2; dynamicIndices[iIdx++] = 3; dynamicIndices[iIdx++] = a3_start;
+        dynamicIndices[iIdx++] = a3_start; dynamicIndices[iIdx++] = a2_end; dynamicIndices[iIdx++] = 2;
 
-        int a3_end = 4 + 4*segments + 3;
+        int a3_end = 4 + 4 * segments + 3;
         int a0_start = 4;
-        inds[iIdx++] = 3; inds[iIdx++] = 0; inds[iIdx++] = a0_start;
-        inds[iIdx++] = a0_start; inds[iIdx++] = a3_end; inds[iIdx++] = 3;
+        dynamicIndices[iIdx++] = 3; dynamicIndices[iIdx++] = 0; dynamicIndices[iIdx++] = a0_start;
+        dynamicIndices[iIdx++] = a0_start; dynamicIndices[iIdx++] = a3_end; dynamicIndices[iIdx++] = 3;
 
-        comp.append(verts, inds);
+        comp.append(dynamicVertices, vertexFloatCount, dynamicIndices, numIndices);
     }
 
     @Override

@@ -20,6 +20,7 @@ public final class DynamicVertexBuffer implements AutoCloseable {
     private final long buffer;
     private final long bufferMemory;
     private final ByteBuffer mappedData;
+    private final java.nio.FloatBuffer mappedFloatBuffer;
     private final long bufferSize;
 
     public DynamicVertexBuffer(VkDevice device, VkPhysicalDevice physicalDevice, long sizeInBytes) {
@@ -65,6 +66,7 @@ public final class DynamicVertexBuffer implements AutoCloseable {
                 throw new EngineEx("Impossible to map Dynamic Vertex Buffer memory!");
             }
             this.mappedData = MemoryUtil.memByteBuffer(pData.get(0), (int) bufferSize);
+            this.mappedFloatBuffer = this.mappedData.asFloatBuffer();
         }
     }
 
@@ -82,8 +84,8 @@ public final class DynamicVertexBuffer implements AutoCloseable {
             throw new EngineEx(
                     "Vertices (" + requiredSize + " bytes) exceed the buffer capacity (" + bufferSize + " bytes)!");
         }
-        mappedData.clear();
-        mappedData.asFloatBuffer().put(vertices, 0, floatCount);
+        mappedFloatBuffer.clear();
+        mappedFloatBuffer.put(vertices, 0, floatCount);
     }
 
     public long getHandle() {

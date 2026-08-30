@@ -47,7 +47,7 @@ public enum Vector2D {
     private static final Vector2D[] VALUES = values();
 
     public Vector2D opposite() {
-        return fromVector(-x, -y);
+        return VALUES[(ordinal() + 8) % VALUES.length];
     }
 
     public Vector2D clockwise() {
@@ -59,7 +59,7 @@ public enum Vector2D {
     }
 
     public static Vector2D fromVector(float x, float y) {
-        for (Vector2D dir : values()) {
+        for (Vector2D dir : VALUES) {
             if (dir.x == x && dir.y == y) {
                 return dir;
             }

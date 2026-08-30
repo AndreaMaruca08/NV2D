@@ -36,6 +36,7 @@ public final class FontAtlas {
     private final int height;
     private final ByteBuffer pixelBuffer;
     private final Map<Character, Glyph> glyphs = new HashMap<>();
+    private final Glyph[] asciiGlyphs = new Glyph[128];
 
     public FontAtlas(Font font) {
         int imgSize = 512;
@@ -77,7 +78,9 @@ public final class FontAtlas {
             float uMax = (float) (x + charWidth) / imgSize;
             float vMax = (float) (y - fm.getAscent() + rowHeight) / imgSize;
 
-            glyphs.put(c, new Glyph(charWidth, rowHeight, uMin, vMin, uMax, vMax, charWidth));
+            Glyph glyph = new Glyph(charWidth, rowHeight, uMin, vMin, uMax, vMax, charWidth);
+            glyphs.put(c, glyph);
+            asciiGlyphs[i] = glyph;
 
             x += charWidth + 2;
         }
@@ -111,8 +114,13 @@ public final class FontAtlas {
     }
 
     public Glyph getGlyph(char c) {
-        // Ritorna il carattere richiesto, o un punto interrogativo/spazio se non esiste (fallback)
-        return glyphs.getOrDefault(c, glyphs.getOrDefault('?', glyphs.get(' ')));
+        if (c < 128) {
+            Glyph g = asciiGlyphs[c];
+            if (g != null) {
+                return g;
+            }
+        }
+        return glyphs.getOrDefault(c, asciiGlyphs['?'] != null ? asciiGlyphs['?'] : asciiGlyphs[' ']);
     }
 
     public int getWidth() {

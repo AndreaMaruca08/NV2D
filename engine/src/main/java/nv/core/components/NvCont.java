@@ -1,6 +1,7 @@
 
 package nv.core.components;
 
+import nv.core.NvContext;
 import nv.core.annotations.EngineCore;
 import nv.core.graphic.NvGraphic;
 
@@ -55,9 +56,6 @@ public class NvCont extends NvRgbComp {
 
     public NvCont(int x, int y, int w, int h, boolean showBorder) {
         super(x, y, w, h);
-
-        // NvCont agisce come sfondo/schermata: impostato come HUD
-        // in modo che lo sfondo sia sempre ancorato allo schermo a qualsiasi zoom
         setHUD(true);
 
         this.showBorder = showBorder;
@@ -166,10 +164,17 @@ public class NvCont extends NvRgbComp {
     public void drawAllComponents(NvGraphic g) {
         draw(g);
 
-        for (int i = 0; i < allComponents.size(); i++) {
+        float renderW = g.getRenderWidth();
+        float renderH = g.getRenderHeight();
+        float safeZoom = Math.max(camera.zoom, 0.0001f);
+        float viewW = renderW / safeZoom;
+        float viewH = renderH / safeZoom;
+
+        int size = allComponents.size();
+        for (int i = 0; i < size; i++) {
             NvComp comp = allComponents.get(i);
 
-            if (camera.isComponentInRendering(comp)) {
+            if (camera.isComponentInRendering(comp, renderW, renderH, viewW, viewH)) {
                 comp.draw(g);
             }
         }

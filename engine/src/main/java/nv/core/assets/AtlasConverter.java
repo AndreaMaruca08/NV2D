@@ -167,19 +167,19 @@ public final class AtlasConverter {
         int w = img.getWidth();
         int h = img.getHeight();
 
+        int[] pixels = new int[w * h];
+        img.getRGB(0, 0, w, h, pixels, 0, w);
+
         // Use MemoryUtil.memAlloc to be compatible with MemoryUtil.memFree in NvImage
         ByteBuffer buf = MemoryUtil.memAlloc(w * h * 4);
 
-        for (int y = 0; y < h; y++) {
-            for (int x = 0; x < w; x++) {
+        for (int i = 0; i < pixels.length; i++) {
+            int argb = pixels[i];
 
-                int argb = img.getRGB(x, y);
-
-                buf.put((byte) ((argb >> 16) & 0xFF));
-                buf.put((byte) ((argb >> 8) & 0xFF));
-                buf.put((byte) (argb & 0xFF));
-                buf.put((byte) ((argb >> 24) & 0xFF));
-            }
+            buf.put((byte) ((argb >> 16) & 0xFF));
+            buf.put((byte) ((argb >> 8) & 0xFF));
+            buf.put((byte) (argb & 0xFF));
+            buf.put((byte) ((argb >> 24) & 0xFF));
         }
 
         buf.flip();

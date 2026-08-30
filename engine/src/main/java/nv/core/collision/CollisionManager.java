@@ -53,10 +53,10 @@ public final class CollisionManager {
         for (int idx = 0; idx < n; idx++) {
             NvComp comp = canCollide.get(idx);
 
-            int cellX = comp.getX() / COLLISION_CELL_SIZE;
-            int cellY = comp.getY() / COLLISION_CELL_SIZE;
-            int endX = (comp.getX() + comp.getW()) / COLLISION_CELL_SIZE;
-            int endY = (comp.getY() + comp.getH()) / COLLISION_CELL_SIZE;
+            int cellX = Math.floorDiv(comp.getX(), COLLISION_CELL_SIZE);
+            int cellY = Math.floorDiv(comp.getY(), COLLISION_CELL_SIZE);
+            int endX = Math.floorDiv(comp.getX() + comp.getW(), COLLISION_CELL_SIZE);
+            int endY = Math.floorDiv(comp.getY() + comp.getH(), COLLISION_CELL_SIZE);
 
             for (int x = cellX; x <= endX; x++) {
                 for (int y = cellY; y <= endY; y++) {
@@ -78,14 +78,14 @@ public final class CollisionManager {
 
             int[] indices = values[slot];
             for (int i = 0; i < cellSize; i++) {
-                NvComp a = canCollide.get(indices[i]);
+                int aIndex = indices[i];
+                NvComp a = canCollide.get(aIndex);
                 for (int j = i + 1; j < cellSize; j++) {
-                    int aIndex = indices[i];
                     int bIndex = indices[j];
                     if (!checkedPairs.add(aIndex, bIndex)) {
                         continue;
                     }
-                    NvComp b = canCollide.get(indices[j]);
+                    NvComp b = canCollide.get(bIndex);
                     if (a.getZIndex() != b.getZIndex())
                         continue;
                     if (collisionSystem.isColliding(a, b)) {
@@ -129,8 +129,8 @@ public final class CollisionManager {
                 grow();
             }
 
-            int min = Math.min(first, second);
-            int max = Math.max(first, second);
+            int min = (first < second) ? first : second;
+            int max = (first < second) ? second : first;
             long key = ((long) min << 32) | (max & 0xFFFF_FFFFL);
             int slot = indexFor(key);
             if (used[slot]) {
