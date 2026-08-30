@@ -34,14 +34,14 @@ public abstract class NvComp implements Updatable, Drawable {
     private NvComp parent;
     private final List<NvComp> children;
     private List<NvComp> rootComponentList;
-    private int x, y, w, h;
+    private float x, y, w, h;
     protected boolean isHovered;
     protected boolean childrenFirst;
     public float rotation = 0;
     public float pivotX = 0.5f;
     public float pivotY = 0.5f;
-    protected int hoveredX = -1;
-    protected int hoveredY = -1;
+    protected float hoveredX = -1;
+    protected float hoveredY = -1;
     protected int weight = CollisionSystem.NO_WEIGHT;
     public boolean border = false;
     protected boolean isHUD = false;
@@ -50,7 +50,7 @@ public abstract class NvComp implements Updatable, Drawable {
     boolean shouldGetDestroyed = false;
     private boolean dirty = false;
 
-    public NvComp(int x, int y, int w, int h) {
+    public NvComp(float x, float y, float w, float h) {
         children = new ArrayList<>();
         this.parent = null;
         this.x = x;
@@ -106,11 +106,11 @@ public abstract class NvComp implements Updatable, Drawable {
         return parent;
     }
 
-    public int getY() {
+    public float getY() {
         return y;
     }
 
-    public int getX() {
+    public float getX() {
         return x;
     }
 
@@ -119,11 +119,11 @@ public abstract class NvComp implements Updatable, Drawable {
         markDirty();
     }
 
-    public int getH() {
+    public float getH() {
         return h;
     }
 
-    public int getW() {
+    public float getW() {
         return w;
     }
 
@@ -136,28 +136,28 @@ public abstract class NvComp implements Updatable, Drawable {
         markDirty();
     }
 
-    public void setX(int x) {
+    public void setX(float x) {
         if (this.x != x) {
             this.x = x;
             markDirty();
         }
     }
 
-    public void setY(int y) {
+    public void setY(float y) {
         if (this.y != y) {
             this.y = y;
             markDirty();
         }
     }
 
-    public void setH(int h) {
+    public void setH(float h) {
         if (this.h != h) {
             this.h = h;
             markDirty();
         }
     }
 
-    public void setW(int w) {
+    public void setW(float w) {
         if (this.w != w) {
             this.w = w;
             markDirty();
@@ -277,8 +277,8 @@ public abstract class NvComp implements Updatable, Drawable {
     protected void mouseOut(){}
 
     public void translate(Vector2D v, float amount){
-        this.x += (int) (v.x * amount);
-        this.y += (int) (v.y * amount);
+        this.x += v.x * amount;
+        this.y += v.y * amount;
         markDirty();
     }
 

@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * This class represents a deck of and you can .
+ * This class represents a deck of cards, and you can change the active card like the change of a page in a website
  * @author Andrea Maruca
  * @since 1.6
  */

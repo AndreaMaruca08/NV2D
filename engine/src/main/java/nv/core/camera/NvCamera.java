@@ -88,10 +88,10 @@ public class NvCamera {
     }
 
     public boolean isComponentInRendering(NvComp comp, float renderW, float renderH, float viewW, float viewH) {
-        int cx = comp.getX();
-        int cy = comp.getY();
-        int cw = comp.getW();
-        int ch = comp.getH();
+        float cx = comp.getX();
+        float cy = comp.getY();
+        float cw = comp.getW();
+        float ch = comp.getH();
 
         if (comp.isHUD()) {
             return cx + cw >= 0 && cx <= renderW &&

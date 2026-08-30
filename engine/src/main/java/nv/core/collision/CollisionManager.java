@@ -53,10 +53,10 @@ public final class CollisionManager {
         for (int idx = 0; idx < n; idx++) {
             NvComp comp = canCollide.get(idx);
 
-            int cellX = Math.floorDiv(comp.getX(), COLLISION_CELL_SIZE);
-            int cellY = Math.floorDiv(comp.getY(), COLLISION_CELL_SIZE);
-            int endX = Math.floorDiv(comp.getX() + comp.getW(), COLLISION_CELL_SIZE);
-            int endY = Math.floorDiv(comp.getY() + comp.getH(), COLLISION_CELL_SIZE);
+            int cellX = floorDivFloat(comp.getX());
+            int cellY = floorDivFloat(comp.getY());
+            int endX = floorDivFloat(comp.getX() + comp.getW());
+            int endY = floorDivFloat(comp.getY() + comp.getH());
 
             for (int x = cellX; x <= endX; x++) {
                 for (int y = cellY; y <= endY; y++) {
@@ -99,6 +99,10 @@ public final class CollisionManager {
             }
         }
     }
+    private static int floorDivFloat(float value) {
+        int i = (int) (value / (float) CollisionManager.COLLISION_CELL_SIZE);
+        return (i < 0 && i * (float) CollisionManager.COLLISION_CELL_SIZE != value) ? i - 1 : i;
+    }
 
     /** Reusable primitive set that prevents a pair spanning multiple cells from being processed repeatedly. */
     private static final class PairSet {
@@ -129,8 +133,8 @@ public final class CollisionManager {
                 grow();
             }
 
-            int min = (first < second) ? first : second;
-            int max = (first < second) ? second : first;
+            int min = Math.min(first, second);
+            int max = Math.max(first, second);
             long key = ((long) min << 32) | (max & 0xFFFF_FFFFL);
             int slot = indexFor(key);
             if (used[slot]) {

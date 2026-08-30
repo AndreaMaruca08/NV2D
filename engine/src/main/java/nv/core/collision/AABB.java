@@ -13,10 +13,10 @@ public final class AABB implements CollisionSystem{
 
     @Override
     public boolean isColliding(NvComp a, NvComp b) {
-        int x1 = a.getX(); int x2 = b.getX();
-        int y1 = a.getY(); int y2 = b.getY();
-        int w1 = a.getW(); int w2 = b.getW();
-        int h1 = a.getH(); int h2 = b.getH();
+        float x1 = a.getX(); float x2 = b.getX();
+        float y1 = a.getY(); float y2 = b.getY();
+        float w1 = a.getW(); float w2 = b.getW();
+        float h1 = a.getH(); float h2 = b.getH();
 
         return x1 < x2 + w2 &&
                x1 + w1 > x2 &&
@@ -26,16 +26,16 @@ public final class AABB implements CollisionSystem{
 
     @Override
     public void resolveCollision(NvComp a, NvComp b) {
-        int dx1 = (a.getX() + a.getW()) - b.getX();
-        int dx2 = (b.getX() + b.getW()) - a.getX();
-        int dy1 = (a.getY() + a.getH()) - b.getY();
-        int dy2 = (b.getY() + b.getH()) - a.getY();
+        float dx1 = (a.getX() + a.getW()) - b.getX();
+        float dx2 = (b.getX() + b.getW()) - a.getX();
+        float dy1 = (a.getY() + a.getH()) - b.getY();
+        float dy2 = (b.getY() + b.getH()) - a.getY();
 
-        int ox = Math.min(dx1, dx2);
-        int oy = Math.min(dy1, dy2);
+        float ox = Math.min(dx1, dx2);
+        float oy = Math.min(dy1, dy2);
 
-        int wA = a.getWeight();
-        int wB = b.getWeight();
+        float wA = a.getWeight();
+        float wB = b.getWeight();
 
         if (wA == Integer.MAX_VALUE && wB == Integer.MAX_VALUE) return;
 
@@ -45,30 +45,30 @@ public final class AABB implements CollisionSystem{
         } else if (wB == Integer.MAX_VALUE) {
             ratioA = 1; ratioB = 0;
         } else {
-            float totalWeight = (float) wA + wB;
-            ratioA = totalWeight <= 0 ? 0.5f : (float) wB / totalWeight;
-            ratioB = totalWeight <= 0 ? 0.5f : (float) wA / totalWeight;
+            float totalWeight = wA + wB;
+            ratioA = totalWeight <= 0 ? 0.5f : wB / totalWeight;
+            ratioB = totalWeight <= 0 ? 0.5f : wA / totalWeight;
         }
 
         if (ox < oy) {
             float correctionA = ox * ratioA;
             float correctionB = ox * ratioB;
             if (dx1 < dx2) {
-                a.setX(Math.round(a.getX() - correctionA));
-                b.setX(Math.round(b.getX() + correctionB));
+                a.setX(a.getX() - correctionA);
+                b.setX(b.getX() + correctionB);
             } else {
-                a.setX(Math.round(a.getX() + correctionA));
-                b.setX(Math.round(b.getX() - correctionB));
+                a.setX(a.getX() + correctionA);
+                b.setX(b.getX() - correctionB);
             }
         } else {
             float correctionA = oy * ratioA;
             float correctionB = oy * ratioB;
             if (dy1 < dy2) {
-                a.setY(Math.round(a.getY() - correctionA));
-                b.setY(Math.round(b.getY() + correctionB));
+                a.setY(a.getY() - correctionA);
+                b.setY(b.getY() + correctionB);
             } else {
-                a.setY(Math.round(a.getY() + correctionA));
-                b.setY(Math.round(b.getY() - correctionB));
+                a.setY(a.getY() + correctionA);
+                b.setY(b.getY() - correctionB);
             }
         }
     }
