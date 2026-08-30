@@ -9,6 +9,7 @@ import nv.core.components.NvCont;
 import nv.core.data.*;
 import nv.core.errors.NvLogger;
 import nv.core.errors.ex.EngineEx;
+import nv.core.events.EventSystem;
 import nv.core.graphic.NvGraphic;
 import nv.core.graphic.NvPixelGraphic;
 import nv.core.io.*;
@@ -53,8 +54,8 @@ import static org.lwjgl.vulkan.EXTDescriptorIndexing.*;
 @SuppressWarnings("all")
 public final class NvContext implements Runnable {
     private static final int MAJOR_VERSION = 1;
-    private static final int MINOR_VERSION = 6;
-    private static final int PATCH = 2;
+    private static final int MINOR_VERSION = 7;
+    private static final int PATCH = 0;
     private static final String ENGINE_NAME = "NV2D";
 
     private long window;
@@ -73,6 +74,8 @@ public final class NvContext implements Runnable {
     private Updatable currentCameraUpdatable;
     private PostProcessSettings postProcessSettings = new PostProcessSettings();
     private PostProcessPipeline postProcessPipeline;
+
+    private final EventSystem eventSystem;
 
     private final int MAX_VERTICES;
     private final int MAX_INDICES;
@@ -298,6 +301,10 @@ public final class NvContext implements Runnable {
         return postProcessSettings;
     }
 
+    public EventSystem events() {
+        return eventSystem;
+    }
+
     public void setPostProcess(PostProcessSettings settings) {
         this.postProcessSettings = settings != null ? settings : new PostProcessSettings();
         markSceneDirty();
@@ -437,6 +444,8 @@ public final class NvContext implements Runnable {
         logEngine("Collisions initialized");
         AudioManager.init();
         logEngine("OpenAL Audio Engine initialized successfully.");
+        this.eventSystem = new EventSystem();
+        logEngine("Event system initialized");
         GameSaveManager.initialize("save/"+name + "_save.bin");
         logEngine("GameSaveManager initialized successfully");
 
