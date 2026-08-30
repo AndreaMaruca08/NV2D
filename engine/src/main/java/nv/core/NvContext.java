@@ -793,7 +793,7 @@ public final class NvContext implements Runnable {
     }
 
     private void buildCombinedGeometry() {
-        long vertexBufferSize = (long) MAX_VERTICES * 8 * Float.BYTES;
+        long vertexBufferSize = (long) MAX_VERTICES * NvGraphic.FLOATS_PER_VERTEX * Float.BYTES;
         this.dynamicVertexBuffer = new DynamicVertexBuffer(device, physicalDevice, vertexBufferSize);
         this.dynamicIndexBuffer  = new DynamicIndexBuffer(device, physicalDevice, MAX_INDICES);
         rebuildScene();

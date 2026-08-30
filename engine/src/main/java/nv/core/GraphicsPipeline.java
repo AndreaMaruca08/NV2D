@@ -2,6 +2,7 @@ package nv.core;
 
 import nv.core.annotations.EngineCore;
 import nv.core.errors.ex.EngineEx;
+import nv.core.graphic.NvGraphic;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -54,15 +55,15 @@ public final class GraphicsPipeline implements AutoCloseable {
                     .pName(stack.UTF8("main"));
 
 
-            // 1. Vertex Input (8 FLOAT STRIDE: vec2 pos + vec3 color + vec2 UV + float texIndex)
+            // 1. Vertex Input (9 FLOAT STRIDE: vec2 pos + vec3 color + vec2 UV + float texIndex + float alpha)
             VkVertexInputBindingDescription.Buffer bindingDescription =
                     VkVertexInputBindingDescription.calloc(1, stack);
             bindingDescription.binding(0);
-            bindingDescription.stride(8 * Float.BYTES); // 2 pos + 3 color + 2 uv + 1 texIndex = 8 float
+            bindingDescription.stride(NvGraphic.FLOATS_PER_VERTEX * Float.BYTES); // 2 pos + 3 color + 2 uv + 1 texIndex + 1 alpha = 9 float
             bindingDescription.inputRate(VK_VERTEX_INPUT_RATE_VERTEX);
 
             VkVertexInputAttributeDescription.Buffer attributeDescriptions =
-                    VkVertexInputAttributeDescription.calloc(4, stack);
+                    VkVertexInputAttributeDescription.calloc(5, stack);
 
             // location 0: vec2 posizione
             attributeDescriptions.get(0)
@@ -91,6 +92,13 @@ public final class GraphicsPipeline implements AutoCloseable {
                     .location(3)
                     .format(VK_FORMAT_R32_SFLOAT)
                     .offset(7 * Float.BYTES);
+
+            // location 4: float alpha
+            attributeDescriptions.get(4)
+                    .binding(0)
+                    .location(4)
+                    .format(VK_FORMAT_R32_SFLOAT)
+                    .offset(8 * Float.BYTES);
 
             VkPipelineVertexInputStateCreateInfo vertexInputInfo =
                     VkPipelineVertexInputStateCreateInfo.calloc(stack);
@@ -158,13 +166,15 @@ public final class GraphicsPipeline implements AutoCloseable {
                             VK_COLOR_COMPONENT_B_BIT |
                             VK_COLOR_COMPONENT_A_BIT
             );
-            // Setup del blending Alpha standard (fondamentale per i Font)
+            // Setup del blending Alpha standard (fondamentale per i Font e per setTransparency)
             colorBlendAttachment.blendEnable(true);
             colorBlendAttachment.srcColorBlendFactor(VK_BLEND_FACTOR_SRC_ALPHA);
             colorBlendAttachment.dstColorBlendFactor(VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA);
             colorBlendAttachment.colorBlendOp(VK_BLEND_OP_ADD);
+            // ONE / ONE_MINUS_SRC_ALPHA: l'alpha del framebuffer si accumula invece di essere
+            // sovrascritto, cosi' un disegno traslucido non "buca" lo sfondo opaco sottostante.
             colorBlendAttachment.srcAlphaBlendFactor(VK_BLEND_FACTOR_ONE);
-            colorBlendAttachment.dstAlphaBlendFactor(VK_BLEND_FACTOR_ZERO);
+            colorBlendAttachment.dstAlphaBlendFactor(VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA);
             colorBlendAttachment.alphaBlendOp(VK_BLEND_OP_ADD);
 
             VkPipelineColorBlendStateCreateInfo colorBlending =

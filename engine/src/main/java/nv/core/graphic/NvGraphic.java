@@ -37,7 +37,11 @@ import java.util.Arrays;
 @EngineCore
 @SuppressWarnings("unused")
 public abstract class NvGraphic implements AppendableGeometry {
-    public static final int FLOATS_PER_VERTEX = 8;
+    /**
+     * Floats per vertex: {@code x, y, r, g, b, u, v, texIndex, a}.
+     * Alpha is the last component so the shader reads it at {@code location = 4}.
+     */
+    public static final int FLOATS_PER_VERTEX = 9;
     private static final double TWO_PI = 2.0 * Math.PI;
 
     protected NvComp component;
@@ -57,7 +61,7 @@ public abstract class NvGraphic implements AppendableGeometry {
     protected float w, h;
     protected float wu, wv;
 
-    protected float r=0, g=0, b=0, a=0;
+    protected float r=0, g=0, b=0, a=1;
 
     protected float currentFontScale = 1.0f;
 
@@ -108,6 +112,7 @@ public abstract class NvGraphic implements AppendableGeometry {
         this.batchVertexCount = 0;
         this.batchIndexCount = 0;
         this.batchMode = false;
+        this.a = 1f;
     }
 
     public void setRGB(float r, float g, float b){
@@ -116,12 +121,34 @@ public abstract class NvGraphic implements AppendableGeometry {
         this.b = b;
     }
 
+    public void setRGBA(float r, float g, float b, float alpha){
+        setRGB(r, g, b);
+        setTransparency(alpha);
+    }
+
     public void setFontScale(float scale) {
         this.currentFontScale = scale;
     }
 
+    /**
+     * Sets the alpha applied to every shape, glyph and image emitted afterwards.
+     * <p>
+     * {@code 1} is fully opaque, {@code 0} fully invisible. The value is sticky exactly like
+     * {@link #setRGB(float, float, float)} and is reset to {@code 1} at the start of each frame.
+     * <p>
+     * Blending happens in submission order, so a translucent shape only blends with what was
+     * drawn <em>before</em> it. Components extending {@code NvStateless} cache their geometry:
+     * call {@code invalidate()} on them after changing the alpha, otherwise the cached
+     * (old-alpha) vertices keep being reused.
+     *
+     * @param alpha opacity, clamped to {@code [0, 1]}
+     */
     public void setTransparency(float alpha){
-        this.a = alpha;
+        this.a = alpha < 0f ? 0f : (alpha > 1f ? 1f : alpha);
+    }
+
+    public float getTransparency(){
+        return a;
     }
 
     public void setComponent(NvComp component){
@@ -518,6 +545,10 @@ public abstract class NvGraphic implements AppendableGeometry {
     }
 
     public static Scene generateTextGeometry(String text, float startX, float startY, FontAtlas atlas, float r, float g, float b) {
+        return generateTextGeometry(text, startX, startY, atlas, r, g, b, 1f);
+    }
+
+    public static Scene generateTextGeometry(String text, float startX, float startY, FontAtlas atlas, float r, float g, float b, float a) {
         int n = text.length();
         float[] vertices = new float[n * 4 * FLOATS_PER_VERTEX];
         int[] indices  = new int[n * 6];
@@ -533,15 +564,19 @@ public abstract class NvGraphic implements AppendableGeometry {
             vertices[v     ] = x0;    vertices[v +  1] = y0;
             vertices[v +  2] = r;    vertices[v +  3] = g;    vertices[v +  4] = b;
             vertices[v +  5] = glyph.uMin; vertices[v +  6] = glyph.vMin; vertices[v +  7] = 0f;
-            vertices[v +  8] = x1;    vertices[v +  9] = y0;
-            vertices[v + 10] = r;    vertices[v + 11] = g;    vertices[v + 12] = b;
-            vertices[v + 13] = glyph.uMax; vertices[v + 14] = glyph.vMin; vertices[v + 15] = 0f;
-            vertices[v + 16] = x1;    vertices[v + 17] = y1;
-            vertices[v + 18] = r;    vertices[v + 19] = g;    vertices[v + 20] = b;
-            vertices[v + 21] = glyph.uMax; vertices[v + 22] = glyph.vMax; vertices[v + 23] = 0f;
-            vertices[v + 24] = x0;    vertices[v + 25] = y1;
-            vertices[v + 26] = r;    vertices[v + 27] = g;    vertices[v + 28] = b;
-            vertices[v + 29] = glyph.uMin; vertices[v + 30] = glyph.vMax; vertices[v + 31] = 0f;
+            vertices[v +  8] = a;
+            vertices[v +  9] = x1;    vertices[v + 10] = y0;
+            vertices[v + 11] = r;    vertices[v + 12] = g;    vertices[v + 13] = b;
+            vertices[v + 14] = glyph.uMax; vertices[v + 15] = glyph.vMin; vertices[v + 16] = 0f;
+            vertices[v + 17] = a;
+            vertices[v + 18] = x1;    vertices[v + 19] = y1;
+            vertices[v + 20] = r;    vertices[v + 21] = g;    vertices[v + 22] = b;
+            vertices[v + 23] = glyph.uMax; vertices[v + 24] = glyph.vMax; vertices[v + 25] = 0f;
+            vertices[v + 26] = a;
+            vertices[v + 27] = x0;    vertices[v + 28] = y1;
+            vertices[v + 29] = r;    vertices[v + 30] = g;    vertices[v + 31] = b;
+            vertices[v + 32] = glyph.uMin; vertices[v + 33] = glyph.vMax; vertices[v + 34] = 0f;
+            vertices[v + 35] = a;
 
             int idx = i * 6, base = i * 4;
             indices[idx]     = base;

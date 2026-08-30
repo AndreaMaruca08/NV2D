@@ -74,9 +74,9 @@ public class NvPixelGraphic extends NvGraphic {
         float y1 = ty(cachedCompY + y);
         float apexY = ty(cachedCompY + y - cachedCompH);
 
-        setVertex(triangleVertices, 0, x1, y1, r, g, b, wu, wv, 0f);
-        setVertex(triangleVertices, 1, x2, y1, r, g, b, wu, wv, 0f);
-        setVertex(triangleVertices, 2, (x1 + x2) * 0.5f, apexY, r, g, b, wu, wv, 0f);
+        setVertex(triangleVertices, 0, x1, y1, r, g, b, wu, wv, 0f, a);
+        setVertex(triangleVertices, 1, x2, y1, r, g, b, wu, wv, 0f, a);
+        setVertex(triangleVertices, 2, (x1 + x2) * 0.5f, apexY, r, g, b, wu, wv, 0f, a);
         comp.append(triangleVertices, TRIANGLE_INDICES);
     }
 
@@ -109,7 +109,7 @@ public class NvPixelGraphic extends NvGraphic {
                 }
             }
 
-            setVertex(dynamicVertices, i, vx, vy, vr, vg, vb, wu, wv, 0f);
+            setVertex(dynamicVertices, i, vx, vy, vr, vg, vb, wu, wv, 0f, a);
         }
 
         comp.append(dynamicVertices, vertexFloatCount, indices, indices.length);
@@ -130,7 +130,7 @@ public class NvPixelGraphic extends NvGraphic {
         float cy = ty(cachedCompY + y);
 
         float rScaled = cachedIsHUD ? radius : radius * camera.zoom;
-        setVertex(dynamicVertices, 0, cx, cy, r, g, b, wu, wv, 0f);
+        setVertex(dynamicVertices, 0, cx, cy, r, g, b, wu, wv, 0f, a);
 
         for (int i = 0; i < accuracy; i++) {
             float angle = (float) (i * TWO_PI / accuracy);
@@ -138,7 +138,7 @@ public class NvPixelGraphic extends NvGraphic {
             int vi = i + 1;
             float lx = (float) Math.cos(angle) * rScaled;
             float ly = (float) Math.sin(angle) * rScaled;
-            setVertex(dynamicVertices, vi, cx + lx, cy + ly, r, g, b, wu, wv, 0f);
+            setVertex(dynamicVertices, vi, cx + lx, cy + ly, r, g, b, wu, wv, 0f, a);
 
             int idx = i * 3;
             int cur = i + 1;
@@ -187,10 +187,10 @@ public class NvPixelGraphic extends NvGraphic {
         nx *= half;
         ny *= half;
 
-        setVertex(quadVertices, 0, x1 + nx, y1 + ny, r, g, b, wu, wv, 0f);
-        setVertex(quadVertices, 1, x2 + nx, y2 + ny, r, g, b, wu, wv, 0f);
-        setVertex(quadVertices, 2, x2 - nx, y2 - ny, r, g, b, wu, wv, 0f);
-        setVertex(quadVertices, 3, x1 - nx, y1 - ny, r, g, b, wu, wv, 0f);
+        setVertex(quadVertices, 0, x1 + nx, y1 + ny, r, g, b, wu, wv, 0f, a);
+        setVertex(quadVertices, 1, x2 + nx, y2 + ny, r, g, b, wu, wv, 0f, a);
+        setVertex(quadVertices, 2, x2 - nx, y2 - ny, r, g, b, wu, wv, 0f, a);
+        setVertex(quadVertices, 3, x1 - nx, y1 - ny, r, g, b, wu, wv, 0f, a);
         comp.append(quadVertices, QUAD_INDICES);
     }
 
@@ -206,10 +206,10 @@ public class NvPixelGraphic extends NvGraphic {
         float x2 = tx(cachedCompX + x + w);
         float y2 = ty(cachedCompY + y + h);
 
-        setVertex(quadVertices, 0, x1, y1, r, g, b, wu, wv, 0f);
-        setVertex(quadVertices, 1, x2, y1, r, g, b, wu, wv, 0f);
-        setVertex(quadVertices, 2, x2, y2, r, g, b, wu, wv, 0f);
-        setVertex(quadVertices, 3, x1, y2, r, g, b, wu, wv, 0f);
+        setVertex(quadVertices, 0, x1, y1, r, g, b, wu, wv, 0f, a);
+        setVertex(quadVertices, 1, x2, y1, r, g, b, wu, wv, 0f, a);
+        setVertex(quadVertices, 2, x2, y2, r, g, b, wu, wv, 0f, a);
+        setVertex(quadVertices, 3, x1, y2, r, g, b, wu, wv, 0f, a);
         comp.append(quadVertices, QUAD_INDICES);
     }
 
@@ -239,10 +239,10 @@ public class NvPixelGraphic extends NvGraphic {
         float cx2 = x2 - rScaled, cy2 = y2 - rScaled;
         float cx3 = x1 + rScaled, cy3 = y2 - rScaled;
 
-        setVertex(dynamicVertices, 0, cx0, cy0, r, g, b, wu, wv, a);
-        setVertex(dynamicVertices, 1, cx1, cy1, r, g, b, wu, wv, a);
-        setVertex(dynamicVertices, 2, cx2, cy2, r, g, b, wu, wv, a);
-        setVertex(dynamicVertices, 3, cx3, cy3, r, g, b, wu, wv, a);
+        setVertex(dynamicVertices, 0, cx0, cy0, r, g, b, wu, wv, 0f, a);
+        setVertex(dynamicVertices, 1, cx1, cy1, r, g, b, wu, wv, 0f, a);
+        setVertex(dynamicVertices, 2, cx2, cy2, r, g, b, wu, wv, 0f, a);
+        setVertex(dynamicVertices, 3, cx3, cy3, r, g, b, wu, wv, 0f, a);
 
         int vIdx = 4;
         int iIdx = 0;
@@ -260,7 +260,7 @@ public class NvPixelGraphic extends NvGraphic {
                 float angle = startAngle + (float) (s * (Math.PI / 2) / segments);
                 float vx = cornerX + (float) Math.cos(angle) * rScaled;
                 float vy = cornerY + (float) Math.sin(angle) * rScaled;
-                setVertex(dynamicVertices, vIdx, vx, vy, r, g, b, wu, wv, a);
+                setVertex(dynamicVertices, vIdx, vx, vy, r, g, b, wu, wv, 0f, a);
 
                 if (s > 0) {
                     dynamicIndices[iIdx++] = cornerCenterIdx;
@@ -318,10 +318,10 @@ public class NvPixelGraphic extends NvGraphic {
             float x1 = cursorX + scaledWidth;
             float y1 = startY + scaledHeight;
             int vertex = i * 4;
-            setVertex(dynamicVertices, vertex, x0, startY, r, g, b, glyph.uMin, glyph.vMin, 0f);
-            setVertex(dynamicVertices, vertex + 1, x1, startY, r, g, b, glyph.uMax, glyph.vMin, 0f);
-            setVertex(dynamicVertices, vertex + 2, x1, y1, r, g, b, glyph.uMax, glyph.vMax, 0f);
-            setVertex(dynamicVertices, vertex + 3, x0, y1, r, g, b, glyph.uMin, glyph.vMax, 0f);
+            setVertex(dynamicVertices, vertex, x0, startY, r, g, b, glyph.uMin, glyph.vMin, 0f, a);
+            setVertex(dynamicVertices, vertex + 1, x1, startY, r, g, b, glyph.uMax, glyph.vMin, 0f, a);
+            setVertex(dynamicVertices, vertex + 2, x1, y1, r, g, b, glyph.uMax, glyph.vMax, 0f, a);
+            setVertex(dynamicVertices, vertex + 3, x0, y1, r, g, b, glyph.uMin, glyph.vMax, 0f, a);
 
             int index = i * 6;
             dynamicIndices[index] = vertex;
@@ -359,16 +359,16 @@ public class NvPixelGraphic extends NvGraphic {
             dr = dg = db = 1f;
         }
 
-        setVertex(quadVertices, 0, x1, y1, dr, dg, db, u0, v0, texIndex);
-        setVertex(quadVertices, 1, x2, y1, dr, dg, db, u1, v0, texIndex);
-        setVertex(quadVertices, 2, x2, y2, dr, dg, db, u1, v1, texIndex);
-        setVertex(quadVertices, 3, x1, y2, dr, dg, db, u0, v1, texIndex);
+        setVertex(quadVertices, 0, x1, y1, dr, dg, db, u0, v0, texIndex, a);
+        setVertex(quadVertices, 1, x2, y1, dr, dg, db, u1, v0, texIndex, a);
+        setVertex(quadVertices, 2, x2, y2, dr, dg, db, u1, v1, texIndex, a);
+        setVertex(quadVertices, 3, x1, y2, dr, dg, db, u0, v1, texIndex, a);
         appendImageGeometry(quadVertices, QUAD_INDICES);
     }
 
     private static void setVertex(float[] target, int vertexIndex,
                                   float x, float y, float r, float g, float b,
-                                  float u, float v, float textureIndex) {
+                                  float u, float v, float textureIndex, float alpha) {
         int offset = vertexIndex * FLOATS_PER_VERTEX;
         target[offset] = x;
         target[offset + 1] = y;
@@ -378,6 +378,7 @@ public class NvPixelGraphic extends NvGraphic {
         target[offset + 5] = u;
         target[offset + 6] = v;
         target[offset + 7] = textureIndex;
+        target[offset + 8] = alpha;
     }
 
     private void ensureDynamicCapacity(int vertexFloatCount, int indexCount) {
