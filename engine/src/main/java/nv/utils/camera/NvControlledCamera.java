@@ -120,8 +120,8 @@ public class NvControlledCamera extends NvCamera implements Updatable, KeyboardL
             dy /= length;
         }
 
-        int movX = (int) (dx * velocity * dt);
-        int movY = (int) (dy * velocity * dt);
+        float movX = dx * velocity * dt / zoom;
+        float movY = dy * velocity * dt / zoom;
 
         boolean hasMoved = movX != 0 || movY != 0;
 
