@@ -1,6 +1,5 @@
 import nv.core.ContextBuilder;
 import nv.core.NvContext;
-import nv.core.ScreenSize;
 
 import java.awt.*;
 
