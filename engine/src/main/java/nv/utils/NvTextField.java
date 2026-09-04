@@ -30,7 +30,7 @@ public class NvTextField extends NvComp implements KeyboardListener, Clickable {
     private boolean password = false;
     private KeyboardListener old;
 
-    public NvTextField(int x, int y, int w, int h, Color bgColor, Color txtColor) {
+    public NvTextField(float x, float y, float w, float h, Color bgColor, Color txtColor) {
         super(x, y, w, h);
         this.bR = bgColor.getRed() / 255f;
         this.bG = bgColor.getGreen() / 255f;

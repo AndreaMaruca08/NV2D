@@ -11,7 +11,7 @@ import nv.core.annotations.EngineCore;
 @SuppressWarnings("unused")
 public abstract class NvRgbComp extends NvComp {
     protected float r=0, g=0, b=0;
-    public NvRgbComp(int x, int y, int w, int h) {
+    public NvRgbComp(float x, float y, float w, float h) {
         super(x, y, w, h);
     }
 

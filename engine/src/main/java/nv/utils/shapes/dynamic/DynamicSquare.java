@@ -14,7 +14,7 @@ import nv.core.graphic.NvGraphic;
 @ReadyComponent
 @SuppressWarnings("unused")
 public class DynamicSquare extends NvRgbComp implements Collidable {
-    public DynamicSquare(int x, int y, int w, int h) {
+    public DynamicSquare(float x, float y, float w, float h) {
         super(x, y, w, h);
 
     }

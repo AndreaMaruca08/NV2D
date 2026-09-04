@@ -21,7 +21,7 @@ public abstract class NvMovingComp extends NvComp {
     protected Vector2D direction;
     protected boolean gravity;
 
-    public NvMovingComp(int x, int y, int w, int h,
+    public NvMovingComp(float x, float y, float w, float h,
                         float velocityX, float velocityY,
                         boolean followGravity, Vector2D direction
     ) {

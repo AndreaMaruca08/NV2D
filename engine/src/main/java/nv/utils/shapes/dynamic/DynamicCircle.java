@@ -15,7 +15,7 @@ import nv.core.graphic.NvGraphic;
 @ReadyComponent
 @SuppressWarnings("unused")
 public class DynamicCircle extends NvRgbComp implements Collidable {
-    public DynamicCircle(int x, int y, int radius) {
+    public DynamicCircle(float x, float y, int radius) {
         super(x, y, radius, radius);
     }
 

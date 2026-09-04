@@ -18,7 +18,7 @@ public abstract class NvStateless extends NvComp implements AppendableGeometry {
     protected int indexCount;
     public boolean initialized = false;
 
-    public NvStateless(int x, int y, int w, int h) {
+    public NvStateless(float x, float y, float w, float h) {
         super(x, y, w, h);
         this.vertices = new float[1024 * FLOATS_PER_VERTEX];
         this.indices = new int[1024];

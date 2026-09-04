@@ -14,7 +14,7 @@ import nv.core.graphic.NvGraphic;
 @ReadyComponent
 @SuppressWarnings("unused")
 public class DynamicHexagon extends NvRgbComp implements Collidable {
-    public DynamicHexagon(int x, int y, int radius) {
+    public DynamicHexagon(float x, float y, float radius) {
         super(x, y, radius, radius);
     }
 

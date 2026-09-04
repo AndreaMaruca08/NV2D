@@ -18,7 +18,7 @@ import nv.core.graphic.NvGraphic;
 public class StaticPentagon extends NvStateless implements Collidable {
     private float r=0, g=0, b=0;
     private final float radius;
-    public StaticPentagon(int x, int y, int radius) {
+    public StaticPentagon(float x, float y, float radius) {
         this.radius = radius;
         super(x, y, radius/2, radius/2);
     }

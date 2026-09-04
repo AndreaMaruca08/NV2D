@@ -6,7 +6,7 @@ import nv.core.graphic.NvGraphic;
 
 public class NvLabel extends NvRgbComp {
     private String text;
-    public NvLabel(int x, int y) {
+    public NvLabel(float x, float y) {
         super(x, y, 0,0);
     }
     public void changeText(String newText){

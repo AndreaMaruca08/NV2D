@@ -18,7 +18,7 @@ import nv.core.graphic.NvGraphic;
 public class StaticCircle extends NvStateless implements Collidable {
     private float r = 0, g = 0, b = 0;
     private final float radius;
-    public StaticCircle(int x, int y, int radius) {
+    public StaticCircle(float x, float y, float radius) {
         super(x, y, radius/2, radius/2);
         this.radius = radius;
     }

@@ -13,7 +13,7 @@ import nv.core.graphic.NvGraphic;
 @ReadyComponent
 @SuppressWarnings("unused")
 public class DynamicTriangle extends NvRgbComp implements Collidable {
-    public DynamicTriangle(int x, int y, int w, int h) {
+    public DynamicTriangle(float x, float y, float w, float h) {
         super(x, y, w, h);
     }
 

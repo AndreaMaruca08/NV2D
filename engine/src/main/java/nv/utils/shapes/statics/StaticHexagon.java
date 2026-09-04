@@ -18,7 +18,7 @@ import nv.core.graphic.NvGraphic;
 public class StaticHexagon extends NvStateless implements Collidable {
     private float r, g, b;
     private final float radius;
-    public StaticHexagon(int x, int y, int radius) {
+    public StaticHexagon(float x, float y, float radius) {
         super(x, y, radius, radius);
         this.radius = radius;
     }

@@ -36,10 +36,10 @@ public class NvProgressBar extends NvComp {
     private float cornerRadius = 6.0f;
 
     public NvProgressBar(
-            int x,
-            int y,
-            int w,
-            int h,
+            float x,
+            float y,
+            float w,
+            float h,
             float maxValue,
             float minValue,
             float value,
@@ -54,10 +54,10 @@ public class NvProgressBar extends NvComp {
     }
 
     public NvProgressBar(
-            int x,
-            int y,
-            int w,
-            int h,
+            float x,
+            float y,
+            float w,
+            float h,
             float maxValue,
             float minValue,
             float value

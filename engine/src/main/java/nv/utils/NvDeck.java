@@ -20,14 +20,14 @@ public class NvDeck extends NvComp{
 
     private int index = 0;
 
-    public NvDeck(List<NvComp> cards, int x, int y, int w, int h) {
+    public NvDeck(List<NvComp> cards, float x, float y, float w, float h) {
         super(x,y,w,h);
         this.cards = cards;
         for(NvComp c : cards){
             adjust(c);
         }
     }
-    public NvDeck(int x, int y, int w, int h){
+    public NvDeck(float x, float y, float w, float h){
         super(x,y,w,h);
     }
 

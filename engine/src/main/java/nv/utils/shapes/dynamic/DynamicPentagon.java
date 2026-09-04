@@ -14,7 +14,7 @@ import nv.core.graphic.NvGraphic;
 @ReadyComponent
 @SuppressWarnings("unused")
 public class DynamicPentagon extends NvRgbComp implements Collidable {
-    public DynamicPentagon(int x, int y, int radius) {
+    public DynamicPentagon(float x, float y, float radius) {
         super(x, y, radius, radius);
     }
 

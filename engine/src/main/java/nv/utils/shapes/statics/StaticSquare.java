@@ -17,7 +17,7 @@ import nv.core.graphic.NvGraphic;
 @SuppressWarnings("unused")
 public class StaticSquare extends NvStateless implements Collidable {
     protected float r, g, b;
-    public StaticSquare(int x, int y, int w, int h) {
+    public StaticSquare(float x, float y, float w, float h) {
         super(x, y, w, h);
 
     }
