@@ -1692,7 +1692,7 @@ public final class NvContext implements Runnable {
         rootComponent.setH(Math.max(1, Math.round(getEffectiveRenderHeight())));
     }
 
-    private void cleanup() {
+    public void cleanup() {
         logEngine("-----------Clean up-----------");
         logEngine("Cleaning up allocated memory before exiting");
         if (mouseButtonCallback != null) {
