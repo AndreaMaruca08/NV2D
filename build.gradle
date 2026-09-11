@@ -466,13 +466,12 @@ launch4j {
     icon = "${project.projectDir}/src/main/resources/gameicon/gameIcon.ico"
     jvmOptions = [
             '--enable-native-access=ALL-UNNAMED',
-            '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
-            '--add-opens', 'java.base/sun.misc=ALL-UNNAMED'
+            '--add-opens=java.base/java.lang=ALL-UNNAMED',
+            '--add-opens=java.base/sun.misc=ALL-UNNAMED'
     ]
     outputDir = "dist/${project.name}"
     libraryDir = '.'
 }
-
 tasks.named('createExe') {
     group = 'nv package'
     description = 'Genera MyApp.exe da nvBuildWindows tramite Launch4j (funziona da qualsiasi OS)'
