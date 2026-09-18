@@ -13,6 +13,7 @@ import nv.core.events.EventSystem;
 import nv.core.graphic.NvGraphic;
 import nv.core.graphic.NvPixelGraphic;
 import nv.core.io.*;
+import nv.core.gpu.GpuCompute;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFWImage;
 import org.lwjgl.glfw.GLFWKeyCallback;
@@ -54,7 +55,7 @@ import static org.lwjgl.vulkan.EXTDescriptorIndexing.*;
 @SuppressWarnings("all")
 public final class NvContext implements Runnable {
     private static final int MAJOR_VERSION = 1;
-    private static final int MINOR_VERSION = 7;
+    private static final int MINOR_VERSION = 8;
     private static final int PATCH = 0;
     private static final String ENGINE_NAME = "NV2D";
 
@@ -68,6 +69,8 @@ public final class NvContext implements Runnable {
     private CommandBuffers commandBuffers;
     private VkPhysicalDevice physicalDevice;
     private VkQueue graphicsQueue;
+    private int graphicsQueueFamilyIndex;
+    private GpuCompute gpuCompute;
     private long renderPass;
     private InternalRenderTarget internalRenderTarget;
     private boolean internalRenderTargetInitialized;
@@ -287,6 +290,15 @@ public final class NvContext implements Runnable {
 
     public VkQueue getGraphicsQueue() {
         return graphicsQueue;
+    }
+
+    /** Returns the engine-owned Vulkan compute facade. */
+    public synchronized GpuCompute gpu() {
+        if (gpuCompute == null) {
+            gpuCompute = new GpuCompute(device, physicalDevice, graphicsQueue, graphicsQueueFamilyIndex);
+            logEngine("GPU compute API initialized");
+        }
+        return gpuCompute;
     }
 
     public InternalRenderTarget getInternalRenderTarget() {
@@ -1615,6 +1627,7 @@ public final class NvContext implements Runnable {
                             pQueue.get(0),
                             device
                     );
+            this.graphicsQueueFamilyIndex = graphicsQFI;
         }
     }
     /** Updated in 1.6. */
@@ -1737,6 +1750,7 @@ public final class NvContext implements Runnable {
         if (dynamicIndexBuffer  != null) dynamicIndexBuffer.close();
         if (swapchain           != null) swapchain.close();
         updatePool.shutdownNow();
+        if (gpuCompute         != null) gpuCompute.close();
         if (surface             != 0)    vkDestroySurfaceKHR(instance, surface, null);
         if (device              != null) vkDestroyDevice(device, null);
         if (instance            != null) vkDestroyInstance(instance, null);

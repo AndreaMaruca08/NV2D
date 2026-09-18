@@ -48,6 +48,8 @@ repositories {
 //Put your project dependencies here
 dependencies {
     implementation project(':engine') //do not remove or change
+    implementation "org.lwjgl:lwjgl-tinyfd:$lwjglVersion"
+    runtimeOnly "org.lwjgl:lwjgl-tinyfd::$lwjglNatives"
 }
 
 sourceSets {
@@ -75,7 +77,7 @@ tasks.named('jar') {
     }
 }
 
-project.ext.lwjglModules = ['lwjgl', 'lwjgl-glfw', 'lwjgl-openal', 'lwjgl-stb']
+project.ext.lwjglModules = ['lwjgl', 'lwjgl-glfw', 'lwjgl-openal', 'lwjgl-stb', 'lwjgl-tinyfd']
 
 Configuration makeNativesConfig(String platform) {
     def safeName = "natives_${platform.replace('-', '_')}"
