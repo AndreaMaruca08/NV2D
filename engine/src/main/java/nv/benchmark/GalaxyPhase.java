@@ -1,4 +1,4 @@
-package nv.test.benchmark;
+package nv.benchmark;
 
 import nv.core.components.NvComp;
 import nv.core.graphic.NvGraphic;

@@ -1,5 +1,3 @@
-package nv.test;
-
 import nv.core.NvContext;
 import nv.core.components.NvComp;
 import sun.misc.Unsafe;

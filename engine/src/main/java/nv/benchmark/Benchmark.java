@@ -1,4 +1,4 @@
-package nv.test.benchmark;
+package nv.benchmark;
 
 import com.sun.management.OperatingSystemMXBean;
 import nv.core.NvContext;

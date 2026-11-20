@@ -1,16 +1,13 @@
-package nv.test;
-
 import nv.core.io.AppPathUtils;
 import nv.core.io.GameSaveManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Assertions;
 
 import java.io.File;
 import java.io.Serializable;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("GameSaveManager Unit Tests")
 public class GameSaveManagerTest {
@@ -53,10 +50,10 @@ public class GameSaveManagerTest {
 
         TestSaveData loaded = GameSaveManager.get(TestSaveData.class);
 
-        assertNotNull(loaded, "Loaded save data should not be null");
-        assertEquals("Hero", loaded.playerName);
-        assertEquals(9999, loaded.score);
-        assertEquals(87.5f, loaded.health, 0.0001f);
+        Assertions.assertNotNull(loaded, "Loaded save data should not be null");
+        Assertions.assertEquals("Hero", loaded.playerName);
+        Assertions.assertEquals(9999, loaded.score);
+        Assertions.assertEquals(87.5f, loaded.health, 0.0001f);
     }
 
     @Test
@@ -64,6 +61,6 @@ public class GameSaveManagerTest {
     void testReadNonExistentFile() {
         GameSaveManager.initialize("save/non_existent_file_12345.bin");
         TestSaveData loaded = GameSaveManager.get(TestSaveData.class);
-        assertNull(loaded, "Reading non-existent save file should return null");
+        Assertions.assertNull(loaded, "Reading non-existent save file should return null");
     }
 }

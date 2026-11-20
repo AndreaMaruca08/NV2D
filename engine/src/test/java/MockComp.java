@@ -1,5 +1,3 @@
-package nv.test;
-
 import nv.core.collision.Collidable;
 import nv.core.components.NvComp;
 import nv.core.graphic.NvGraphic;

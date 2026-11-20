@@ -11,5 +11,6 @@
     <inspection_tool class="JavadocDeclaration" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="ADDITIONAL_TAGS" value="snippet:" />
     </inspection_tool>
+    <inspection_tool class="JvmTaintAnalysis" enabled="true" level="WARNING" enabled_by_default="true" />
   </profile>
 </component>

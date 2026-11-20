@@ -1,13 +1,10 @@
-package nv.test;
-
 import nv.core.events.EventSystem;
 import nv.core.events.NvEvent;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class EventSystemTest {
 
@@ -25,7 +22,7 @@ class EventSystemTest {
 
         eventSystem.emit(TestEvent.class, event);
 
-        assertEquals(event, received.get());
+        Assertions.assertEquals(event, received.get());
     }
 
 
@@ -39,7 +36,7 @@ class EventSystemTest {
 
         eventSystem.emit(TestEvent.class, new TestEvent("Hello"));
 
-        assertEquals(3, counter.get());
+        Assertions.assertEquals(3, counter.get());
     }
 
 
@@ -52,8 +49,8 @@ class EventSystemTest {
         eventSystem.on(AnotherEvent.class, _ -> anotherEventCounter.incrementAndGet());
         eventSystem.emit(TestEvent.class, new TestEvent("Hello"));
 
-        assertEquals(1, testEventCounter.get());
-        assertEquals(0, anotherEventCounter.get());
+        Assertions.assertEquals(1, testEventCounter.get());
+        Assertions.assertEquals(0, anotherEventCounter.get());
     }
 
     @Test
@@ -63,13 +60,13 @@ class EventSystemTest {
         eventSystem.on(TestEvent.class, event -> receivedMessage.set(event.message()));
         eventSystem.emit(TestEvent.class, new TestEvent("Hello World"));
 
-        assertEquals("Hello World", receivedMessage.get());
+        Assertions.assertEquals("Hello World", receivedMessage.get());
     }
 
 
     @Test
     void shouldDoNothingWhenNoListenersAreRegistered() {
-        assertDoesNotThrow(() -> eventSystem.emit(TestEvent.class, new TestEvent("Hello")));
+        Assertions.assertDoesNotThrow(() -> eventSystem.emit(TestEvent.class, new TestEvent("Hello")));
     }
 
 
@@ -82,7 +79,7 @@ class EventSystemTest {
         eventSystem.emit(TestEvent.class, new TestEvent("Second"));
         eventSystem.emit(TestEvent.class, new TestEvent("Third"));
 
-        assertEquals(3, counter.get());
+        Assertions.assertEquals(3, counter.get());
     }
 
 
@@ -98,8 +95,8 @@ class EventSystemTest {
         eventSystem.emit(TestEvent.class, new TestEvent("Hello"));
         eventSystem.emit(AnotherEvent.class, new AnotherEvent(42));
 
-        assertEquals("Hello", message.get());
-        assertEquals(42, value.get());
+        Assertions.assertEquals("Hello", message.get());
+        Assertions.assertEquals(42, value.get());
     }
 
 
@@ -114,7 +111,7 @@ class EventSystemTest {
 
         eventSystem.emit(TestEvent.class, new TestEvent("Hello"));
 
-        assertEquals(2, counter.get());
+        Assertions.assertEquals(2, counter.get());
     }
 
 
@@ -130,10 +127,10 @@ class EventSystemTest {
 
         eventSystem.emit(TestEvent.class, new TestEvent("Hello"));
 
-        assertEquals(1, counter.get());
+        Assertions.assertEquals(1, counter.get());
 
         eventSystem.emit(TestEvent.class, new TestEvent("Hello"));
 
-        assertEquals(3, counter.get());
+        Assertions.assertEquals(3, counter.get());
     }
 }

@@ -1,4 +1,4 @@
-package nv.test.benchmark;
+package nv.benchmark;
 
 import nv.core.annotations.EngineCore;
 import nv.core.components.NvComp;

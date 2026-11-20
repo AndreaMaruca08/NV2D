@@ -175,8 +175,6 @@ tasks.register('nvBuild') {
 
 tasks.register('nvBenchmark', JavaExec) {
     group = 'nv bench'
-    description = 'Avvia il benchmark da engine/src/main/java/nv/test/benchmark/BenchmarkMain.java'
-
     classpath = sourceSets.main.runtimeClasspath + project(':engine').sourceSets.main.output
 
     mainClass = 'BenchmarkMain'

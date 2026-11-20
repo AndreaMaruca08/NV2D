@@ -1,7 +1,6 @@
 import nv.core.ContextBuilder;
 import nv.core.NvContext;
-import nv.core.PostProcessSettings;
-import nv.test.benchmark.Benchmark;
+import nv.benchmark.Benchmark;
 import nv.utils.camera.NvControlledCamera;
 
 //BENCHMARK MAIN
@@ -14,9 +13,9 @@ void main() {
     var page = context.newPage();
     page.setBackgroundColor(0,0,0);
 
-    page.addChild(new Benchmark(4000, 1000));
+    page.addChild(new Benchmark(4000, 5));
 
-    new NvControlledCamera((int)(context.getRenderWidth()/2), (int)(context.getRenderHeight()/2), 500);
+    new NvControlledCamera((int)(context.getRenderWidth()/2), (int)(context.getRenderHeight()/2), 1000);
 
     context.run();
 }
